@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { state, elements } from '../state.js';
-import { toScreen, getStrokeStyle, getLineWidth } from '../utils.js';
+import { toScreen, getStrokeStyle, getLineWidth, distToSegment } from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions, surfaceOptions } from '../../shared/options-generators.js';
 import { FLIPPER_DEFAULTS } from '../../shared/object-defaults.js';
@@ -245,6 +245,25 @@ export function renderFlipper(item, isSelected) {
   }
 
   elements.ctx.setLineDash([]);
+}
+
+export function hitTestFlipper(item, worldX, worldY, center, distFromCenter) {
+  const baseRadius = item.base_radius ?? FLIPPER_DEFAULTS.baseRadius;
+  const endRadius = item.end_radius ?? FLIPPER_DEFAULTS.endRadius;
+  const flipperRadius = item.flipper_radius_max ?? FLIPPER_DEFAULTS.flipperRadiusMax;
+  const angle = ((item.start_angle ?? FLIPPER_DEFAULTS.startAngle) * Math.PI) / 180;
+
+  if (distFromCenter < baseRadius) return true;
+
+  const endX = center.x + Math.sin(angle) * flipperRadius;
+  const endY = center.y - Math.cos(angle) * flipperRadius;
+
+  const distFromEnd = Math.sqrt((worldX - endX) ** 2 + (worldY - endY) ** 2);
+  if (distFromEnd < endRadius) return true;
+
+  if (distToSegment(worldX, worldY, center.x, center.y, endX, endY) < baseRadius) return true;
+
+  return false;
 }
 
 export function flipperProperties(item) {

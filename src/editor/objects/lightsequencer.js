@@ -78,6 +78,10 @@ export function renderLightSequencer(item, isSelected) {
   elements.ctx.fill();
 }
 
+export function hitTestLightSequencer(item, worldX, worldY, center, distFromCenter) {
+  return distFromCenter < 18;
+}
+
 export function lightSequencerProperties(item) {
   return `
     <div class="prop-tabs">

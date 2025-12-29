@@ -1,6 +1,13 @@
 import * as THREE from 'three';
 import { state, elements } from '../state.js';
-import { toScreen, generateSmoothedPath, getStrokeStyle, getLineWidth, getFillColorWithAlpha } from '../utils.js';
+import {
+  toScreen,
+  generateSmoothedPath,
+  getStrokeStyle,
+  getLineWidth,
+  getFillColorWithAlpha,
+  pointInPolygon,
+} from '../utils.js';
 import { loadTexture } from '../texture-loader.js';
 import { imageOptions } from '../../shared/options-generators.js';
 import { FLASHER_DEFAULTS } from '../../shared/object-defaults.js';
@@ -134,6 +141,15 @@ export function renderFlasher(item, isSelected) {
     elements.ctx.lineTo(p3.x, p3.y);
     elements.ctx.stroke();
   }
+}
+
+export function hitTestFlasher(item, worldX, worldY) {
+  if (!item.drag_points || item.drag_points.length < 3) return false;
+  const pts = item.drag_points.map(p => {
+    const v = p.vertex || p;
+    return { x: v.x, y: v.y };
+  });
+  return pointInPolygon(worldX, worldY, pts);
 }
 
 function getStyleOptions(mode, selectedStyle) {

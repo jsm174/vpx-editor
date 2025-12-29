@@ -11,6 +11,25 @@ import { getItemCenter } from '../shared/position-utils.js';
 import { getItemNameFromFileName } from '../shared/gameitem-utils.js';
 export { getItemCenter, getItemNameFromFileName };
 
+let hitTestHandlers = null;
+
+export function initHitTestHandlers(objects) {
+  hitTestHandlers = {
+    Bumper: objects.hitTestBumper,
+    Decal: objects.hitTestDecal,
+    Flasher: objects.hitTestFlasher,
+    Flipper: objects.hitTestFlipper,
+    Light: objects.hitTestLight,
+    LightSequencer: objects.hitTestLightSequencer,
+    Ramp: objects.hitTestRamp,
+    Reel: objects.hitTestReel,
+    Rubber: objects.hitTestRubber,
+    TextBox: objects.hitTestTextBox,
+    Trigger: objects.hitTestTrigger,
+    Wall: objects.hitTestWall,
+  };
+}
+
 export function getSelectColor() {
   return state.editorColors?.elementSelect || DEFAULT_ELEMENT_SELECT_COLOR;
 }
@@ -479,7 +498,7 @@ export function zoomToFitItems(itemNames, animate = true) {
   animationId = requestAnimationFrame(animateStep);
 }
 
-function distToSegment(px, py, x1, y1, x2, y2) {
+export function distToSegment(px, py, x1, y1, x2, y2) {
   const dx = x2 - x1;
   const dy = y2 - y1;
   const lenSq = dx * dx + dy * dy;
@@ -493,7 +512,7 @@ function distToSegment(px, py, x1, y1, x2, y2) {
   return Math.sqrt((px - nearX) ** 2 + (py - nearY) ** 2);
 }
 
-function pointInPolygon(px, py, points) {
+export function pointInPolygon(px, py, points) {
   let inside = false;
   for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
     const xi = points[i].x,
@@ -507,7 +526,7 @@ function pointInPolygon(px, py, points) {
   return inside;
 }
 
-function distToPath(px, py, points, threshold) {
+export function distToPath(px, py, points, threshold) {
   for (let i = 0; i < points.length - 1; i++) {
     const p1 = points[i];
     const p2 = points[i + 1];
@@ -526,168 +545,12 @@ export function hitTestItem(item, worldX, worldY) {
   const dy = worldY - center.y;
   const distFromCenter = Math.sqrt(dx * dx + dy * dy);
 
-  if (item._type === 'Bumper') return distFromCenter < (item.radius || 45);
-  if (item._type === 'Kicker') return distFromCenter < (item.radius || 25);
-  if (item._type === 'Trigger') {
-    const shape = (item.shape || 'wire_a').toLowerCase();
-    if (shape === 'star' || shape === 'button') {
-      return distFromCenter < (item.radius || 25);
-    }
-    if (item.drag_points && item.drag_points.length >= 3) {
-      const pts = item.drag_points.map(p => {
-        const v = p.vertex || p;
-        return { x: v.x, y: v.y };
-      });
-      return pointInPolygon(worldX, worldY, pts) || distToPath(worldX, worldY, pts, 10);
-    }
-    return distFromCenter < (item.radius || 25);
-  }
-  if (item._type === 'Ball') return distFromCenter < (item.radius || 25);
-  if (item._type === 'Light') {
-    const radius = item.falloff_radius ?? item.falloff ?? 50;
-    return distFromCenter < radius;
-  }
-  if (item._type === 'Timer') return distFromCenter < 20;
-  if (item._type === 'Primitive') {
-    const size = item.size || { x: 100, y: 100 };
-    const maxSize = Math.max(size.x, size.y, size.z || 100) / 2;
-    return distFromCenter < Math.max(maxSize, 25);
-  }
-  if (item._type === 'HitTarget') {
-    const size = item.size || { x: 50, y: 50 };
-    const maxSize = Math.max(size.x, size.y, size.z || 50) / 2;
-    return distFromCenter < Math.max(maxSize, 25);
-  }
-
-  if (item._type === 'Decal' && center) {
-    const halfW = (item.width || 100) / 2;
-    const halfH = (item.height || 100) / 2;
-    const rot = ((item.rotation || 0) * Math.PI) / 180;
-    const cos = Math.cos(-rot);
-    const sin = Math.sin(-rot);
-    const localX = dx * cos - dy * sin;
-    const localY = dx * sin + dy * cos;
-    return Math.abs(localX) <= halfW && Math.abs(localY) <= halfH;
-  }
-
-  if (item._type === 'Flipper' && item.center) {
-    const baseRadius = item.base_radius ?? 21;
-    const endRadius = item.end_radius ?? 13;
-    const flipperRadius = item.flipper_radius_max ?? 130;
-    const angle = ((item.start_angle ?? 121) * Math.PI) / 180;
-
-    const cx = item.center.x;
-    const cy = item.center.y;
-
-    if (distFromCenter < baseRadius) return true;
-
-    const endX = cx + Math.sin(angle) * flipperRadius;
-    const endY = cy - Math.cos(angle) * flipperRadius;
-    const distFromEnd = Math.sqrt((worldX - endX) ** 2 + (worldY - endY) ** 2);
-    if (distFromEnd < endRadius) return true;
-
-    if (distToSegment(worldX, worldY, cx, cy, endX, endY) < baseRadius) return true;
-
-    return false;
-  }
-
-  if (item._type === 'Gate' || item._type === 'Spinner') {
-    const halfLen = (item.length || 50) / 2;
-    return distFromCenter < halfLen;
-  }
-
-  if (item._type === 'Plunger' && item.center) {
-    const w = item.width || 25;
-    const s = item.stroke || 80;
-    const h = item.height || 20;
-    return (
-      worldX >= item.center.x - w &&
-      worldX <= item.center.x + w &&
-      worldY >= item.center.y - s &&
-      worldY <= item.center.y + h
-    );
-  }
-
-  if (item.ver1 && item.ver2) {
-    const minX = Math.min(item.ver1.x, item.ver2.x);
-    const maxX = Math.max(item.ver1.x, item.ver2.x);
-    const minY = Math.min(item.ver1.y, item.ver2.y);
-    const maxY = Math.max(item.ver1.y, item.ver2.y);
-    return worldX >= minX && worldX <= maxX && worldY >= minY && worldY <= maxY;
-  }
-
-  if (item._type === 'Ramp' && item.drag_points && item.drag_points.length >= 2) {
-    const widthBottom = item.width_bottom ?? 75;
-    const widthTop = item.width_top ?? 60;
-    const centerline = generateSmoothedPath(item.drag_points, false, 4.0);
-    if (centerline.length >= 2) {
-      const { left, right } = generateRampShape(centerline, widthBottom, widthTop);
-      const polygon = [...left, ...right.slice().reverse()];
-      return pointInPolygon(worldX, worldY, polygon);
-    }
-  }
-
-  if (item.drag_points && item.drag_points.length >= 2) {
-    const pts = item.drag_points.map(p => {
-      const v = p.vertex || p;
-      return { x: v.x, y: v.y };
-    });
-    if (pts.length >= 3) {
-      return pointInPolygon(worldX, worldY, pts) || distToPath(worldX, worldY, pts, 15);
-    }
-    return distToPath(worldX, worldY, pts, 15);
+  const handler = hitTestHandlers?.[item._type];
+  if (handler) {
+    return handler(item, worldX, worldY, center, distFromCenter);
   }
 
   return distFromCenter < 25;
-}
-
-function getItemSize(item) {
-  if (item._type === 'Flipper') {
-    return (item.base_radius || 21) * (item.flipper_radius_max || 130);
-  }
-  if (item._type === 'Bumper') {
-    const r = (item.radius || 45) * 2;
-    return r * r;
-  }
-  if (item._type === 'Kicker' || item._type === 'Trigger') {
-    const r = item.radius || 25;
-    return r * r;
-  }
-  if (item._type === 'Light') {
-    const r = item.falloff_radius ?? item.falloff ?? 50;
-    return r * r;
-  }
-  if (item._type === 'Gate' || item._type === 'Spinner') {
-    const len = item.length || 50;
-    return len * len;
-  }
-  if (item._type === 'Plunger') {
-    return (item.width || 25) * (item.stroke || 80);
-  }
-  if (item._type === 'Primitive' || item._type === 'Timer') {
-    return 100;
-  }
-  if (item._type === 'Decal') {
-    return (item.width || 100) * (item.height || 100);
-  }
-  if (item.drag_points && item.drag_points.length >= 2) {
-    const pts = item.drag_points.map(p => p.vertex || p);
-    let minX = Infinity,
-      minY = Infinity,
-      maxX = -Infinity,
-      maxY = -Infinity;
-    for (const p of pts) {
-      minX = Math.min(minX, p.x);
-      minY = Math.min(minY, p.y);
-      maxX = Math.max(maxX, p.x);
-      maxY = Math.max(maxY, p.y);
-    }
-    return (maxX - minX) * (maxY - minY);
-  }
-  if (item.ver1 && item.ver2) {
-    return Math.abs(item.ver2.x - item.ver1.x) * Math.abs(item.ver2.y - item.ver1.y);
-  }
-  return 1000;
 }
 
 export function findItemsAtPoint(items, worldX, worldY) {
@@ -699,11 +562,10 @@ export function findItemsAtPoint(items, worldX, worldY) {
     const item = items[name];
     if (!item || !isItemVisible(item, name)) continue;
     if (hitTestItem(item, worldX, worldY)) {
-      hits.push({ name, drawOrder: i, size: getItemSize(item) });
+      hits.push(name);
     }
   }
-  hits.sort((a, b) => b.drawOrder - a.drawOrder || a.size - b.size);
-  return hits.map(h => h.name);
+  return hits;
 }
 
 export function findNodeAtPoint(item, worldX, worldY, thresholdPx = 10) {

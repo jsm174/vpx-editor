@@ -45,6 +45,17 @@ export function renderReel(item, isSelected) {
   }
 }
 
+export function hitTestReel(item, worldX, worldY) {
+  const v1 = item.ver1 || { x: 0, y: 0 };
+  const reelCount = Math.min(item.reel_count ?? REEL_DEFAULTS.reelCount, 32);
+  const reelWidth = item.width ?? REEL_DEFAULTS.width;
+  const reelHeight = item.height ?? REEL_DEFAULTS.height;
+  const spacing = item.reel_spacing ?? REEL_DEFAULTS.reelSpacing;
+  const boxW = reelCount * (reelWidth + spacing) + spacing;
+  const boxH = reelHeight + spacing * 2;
+  return worldX >= v1.x && worldX <= v1.x + boxW && worldY >= v1.y && worldY <= v1.y + boxH;
+}
+
 export function reelProperties(item) {
   const v1 = item.ver1 || { x: 0, y: 0 };
   return `

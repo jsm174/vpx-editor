@@ -149,6 +149,11 @@ export function renderBumper(item, isSelected) {
   }
 }
 
+export function hitTestBumper(item, worldX, worldY, center, distFromCenter) {
+  const r = (item.radius ?? BUMPER_DEFAULTS.radius) * 1.5;
+  return distFromCenter < r;
+}
+
 export function bumperProperties(item) {
   return `
     ${propTabs([

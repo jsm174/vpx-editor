@@ -1,6 +1,13 @@
 import * as THREE from 'three';
 import { state, elements } from '../state.js';
-import { toScreen, generateSmoothedPath, getStrokeStyle, getLineWidth, getFillColorWithAlpha } from '../utils.js';
+import {
+  toScreen,
+  generateSmoothedPath,
+  getStrokeStyle,
+  getLineWidth,
+  getFillColorWithAlpha,
+  pointInPolygon,
+} from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
 import { RUBBER_DEFAULTS } from '../../shared/object-defaults.js';
@@ -162,6 +169,20 @@ export function renderRubber(item, isSelected) {
       elements.ctx.stroke();
     }
   }
+}
+
+export function hitTestRubber(item, worldX, worldY) {
+  if (!item.drag_points || item.drag_points.length < 2) return false;
+  const thickness = item.thickness ?? RUBBER_DEFAULTS.thickness;
+  const pts = item.drag_points.map(p => {
+    const v = p.vertex || p;
+    return { x: v.x, y: v.y };
+  });
+  const centerline = generateSmoothedPath(pts, true, RUBBER_2D_ACCURACY);
+  if (centerline.length < 2) return false;
+  const { left, right } = generateRubberShape(centerline, thickness, true);
+  const polygon = [...left, ...right.slice().reverse()];
+  return pointInPolygon(worldX, worldY, polygon);
 }
 
 export function rubberProperties(item) {

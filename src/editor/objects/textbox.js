@@ -18,6 +18,12 @@ export function renderTextBox(item, isSelected) {
   elements.ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
 }
 
+export function hitTestTextBox(item, worldX, worldY) {
+  const v1 = item.ver1 || { x: 0, y: 0 };
+  const v2 = item.ver2 || { x: 100, y: 100 };
+  return worldX >= v1.x && worldX <= v2.x && worldY >= v1.y && worldY <= v2.y;
+}
+
 export function textBoxProperties(item) {
   const v1 = item.ver1 || { x: 0, y: 0 };
   const v2 = item.ver2 || { x: 100, y: 100 };

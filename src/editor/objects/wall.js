@@ -1,6 +1,13 @@
 import * as THREE from 'three';
 import { state, elements } from '../state.js';
-import { toScreen, generateSmoothedPath, getStrokeStyle, getLineWidth, getFillColorWithAlpha } from '../utils.js';
+import {
+  toScreen,
+  generateSmoothedPath,
+  getStrokeStyle,
+  getLineWidth,
+  getFillColorWithAlpha,
+  pointInPolygon,
+} from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
 import { WALL_DEFAULTS } from '../../shared/object-defaults.js';
@@ -140,6 +147,15 @@ export function renderWall(item, isSelected) {
   }
 }
 
+export function hitTestWall(item, worldX, worldY) {
+  if (!item.drag_points || item.drag_points.length < 3) return false;
+  const pts = item.drag_points.map(p => {
+    const v = p.vertex || p;
+    return { x: v.x, y: v.y };
+  });
+  return pointInPolygon(worldX, worldY, pts);
+}
+
 export function wallProperties(item) {
   return `
     <div class="prop-tabs">
@@ -257,7 +273,7 @@ export function wallProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Elasticity Falloff</label>
-          <input type="number" class="prop-input" data-prop="elasticity_falloff" value="${(item.elasticity_falloff ?? WALL_DEFAULTS.elasticity_FALLOFF).toFixed(3)}" step="0.05">
+          <input type="number" class="prop-input" data-prop="elasticity_falloff" value="${(item.elasticity_falloff ?? WALL_DEFAULTS.elasticityFalloff).toFixed(3)}" step="0.05">
         </div>
         <div class="prop-row">
           <label class="prop-label">Friction</label>

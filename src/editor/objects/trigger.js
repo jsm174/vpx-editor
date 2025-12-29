@@ -1,6 +1,13 @@
 import * as THREE from 'three';
 import { state, elements } from '../state.js';
-import { toScreen, generateSmoothedPath, getStrokeStyle, getLineWidth, getFillColorWithAlpha } from '../utils.js';
+import {
+  toScreen,
+  generateSmoothedPath,
+  getStrokeStyle,
+  getLineWidth,
+  getFillColorWithAlpha,
+  pointInPolygon,
+} from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, surfaceOptions } from '../../shared/options-generators.js';
 import { TRIGGER_DEFAULTS } from '../../shared/object-defaults.js';
@@ -195,6 +202,19 @@ export function renderTrigger(item, isSelected) {
       }
     }
   }
+}
+
+export function hitTestTrigger(item, worldX, worldY, center, distFromCenter) {
+  const shape = (item.shape || 'wire_a').toLowerCase();
+  if (shape === 'star' || shape === 'button') {
+    return distFromCenter < (item.radius ?? TRIGGER_DEFAULTS.radius);
+  }
+  if (!item.drag_points || item.drag_points.length < 3) return false;
+  const pts = item.drag_points.map(p => {
+    const v = p.vertex || p;
+    return { x: v.x, y: v.y };
+  });
+  return pointInPolygon(worldX, worldY, pts);
 }
 
 export function triggerProperties(item) {

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { state, elements } from '../state.js';
-import { toScreen, generateSmoothedPath, getStrokeStyle, getLineWidth } from '../utils.js';
+import { toScreen, generateSmoothedPath, getStrokeStyle, getLineWidth, pointInPolygon } from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { imageOptions, surfaceOptions } from '../../shared/options-generators.js';
 import { createMeshGeometry } from '../../shared/mesh-utils.js';
@@ -145,6 +145,18 @@ export function renderLight(item, isSelected) {
     elements.ctx.arc(cx, cy, meshRadius, 0, Math.PI * 2);
     elements.ctx.stroke();
   }
+}
+
+export function hitTestLight(item, worldX, worldY, center, distFromCenter) {
+  if (item.drag_points && item.drag_points.length >= 3) {
+    const pts = item.drag_points.map(p => {
+      const v = p.vertex || p;
+      return { x: v.x, y: v.y };
+    });
+    return pointInPolygon(worldX, worldY, pts);
+  }
+  const falloff = item.falloff_radius ?? item.falloff ?? LIGHT_DEFAULTS.falloff;
+  return distFromCenter < falloff;
 }
 
 function getLightRenderMode(item) {

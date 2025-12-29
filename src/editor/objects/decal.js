@@ -41,6 +41,21 @@ export function renderDecal(item, isSelected) {
   elements.ctx.stroke();
 }
 
+export function hitTestDecal(item, worldX, worldY, center) {
+  const w = item.width ?? DECAL_DEFAULTS.width;
+  const h = item.height ?? DECAL_DEFAULTS.height;
+  const hw = w / 2;
+  const hh = h / 2;
+  const rot = ((item.rotation ?? DECAL_DEFAULTS.rotation) * Math.PI) / 180;
+  const dx = worldX - center.x;
+  const dy = worldY - center.y;
+  const cs = Math.cos(-rot);
+  const sn = Math.sin(-rot);
+  const rx = dx * cs - dy * sn;
+  const ry = dx * sn + dy * cs;
+  return Math.abs(rx) <= hw && Math.abs(ry) <= hh;
+}
+
 export function decalProperties(item) {
   const center = item.center || item.vCenter || { x: 0, y: 0 };
   return `

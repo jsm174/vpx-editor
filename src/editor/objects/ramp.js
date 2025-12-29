@@ -7,6 +7,7 @@ import {
   getStrokeStyle,
   getLineWidth,
   getFillColorWithAlpha,
+  pointInPolygon,
 } from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
@@ -405,6 +406,21 @@ export function renderRamp(item, isSelected) {
       }
     }
   }
+}
+
+export function hitTestRamp(item, worldX, worldY) {
+  if (!item.drag_points || item.drag_points.length < 2) return false;
+  const widthBottom = item.width_bottom ?? RAMP_DEFAULTS.widthBottom;
+  const widthTop = item.width_top ?? RAMP_DEFAULTS.widthTop;
+  const pts = item.drag_points.map(p => {
+    const v = p.vertex || p;
+    return { x: v.x, y: v.y };
+  });
+  const centerline = generateSmoothedPath(pts, false, 4.0);
+  if (centerline.length < 2) return false;
+  const { left, right } = generateRampShape(centerline, widthBottom, widthTop);
+  const polygon = [...left, ...right.slice().reverse()];
+  return pointInPolygon(worldX, worldY, polygon);
 }
 
 export function rampProperties(item) {

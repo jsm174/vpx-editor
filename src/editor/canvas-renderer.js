@@ -1,5 +1,5 @@
 import { state, elements, isItemVisible, isItemSelected, dragRect } from './state.js';
-import { toScreen, updateZoomDisplay, getItemNameFromFileName } from './utils.js';
+import { toScreen, updateZoomDisplay, getItemNameFromFileName, initHitTestHandlers } from './utils.js';
 import { objectTypes } from './object-types.js';
 import {
   renderFlipper,
@@ -23,7 +23,34 @@ import {
   renderLightSequencer,
   renderBall,
   renderPartGroup,
+  hitTestBumper,
+  hitTestDecal,
+  hitTestFlasher,
+  hitTestFlipper,
+  hitTestLight,
+  hitTestLightSequencer,
+  hitTestRamp,
+  hitTestReel,
+  hitTestRubber,
+  hitTestTextBox,
+  hitTestTrigger,
+  hitTestWall,
 } from './objects/index.js';
+
+initHitTestHandlers({
+  hitTestBumper,
+  hitTestDecal,
+  hitTestFlasher,
+  hitTestFlipper,
+  hitTestLight,
+  hitTestLightSequencer,
+  hitTestRamp,
+  hitTestReel,
+  hitTestRubber,
+  hitTestTextBox,
+  hitTestTrigger,
+  hitTestWall,
+});
 
 const BACKGLASS_WIDTH = 1000;
 const BACKGLASS_HEIGHT = 750;
