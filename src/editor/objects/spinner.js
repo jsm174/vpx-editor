@@ -116,6 +116,6 @@ export function spinnerProperties(item) {
     `
     )}
 
-    ${timerTab(item, SPINNER_DEFAULTS.timerInterval)}
+    ${timerTab(item, SPINNER_DEFAULTS.timer_interval)}
   `;
 }

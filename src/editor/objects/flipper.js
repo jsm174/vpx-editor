@@ -415,7 +415,7 @@ export function flipperProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Interval (ms)</label>
-          <input type="number" class="prop-input" data-prop="timer_interval" value="${item.timer_interval ?? FLIPPER_DEFAULTS.timerInterval}" step="10" min="1">
+          <input type="number" class="prop-input" data-prop="timer_interval" value="${item.timer_interval ?? FLIPPER_DEFAULTS.timer_interval}" step="10" min="1">
         </div>
       </div>
     </div>

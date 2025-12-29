@@ -198,6 +198,6 @@ export function gateProperties(item) {
     `
     )}
 
-    ${timerTab(item, GATE_DEFAULTS.timerInterval)}
+    ${timerTab(item, GATE_DEFAULTS.timer_interval)}
   `;
 }

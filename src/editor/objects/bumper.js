@@ -206,6 +206,6 @@ export function bumperProperties(item) {
     `
     )}
 
-    ${timerTab(item, BUMPER_DEFAULTS.timerInterval)}
+    ${timerTab(item, BUMPER_DEFAULTS.timer_interval)}
   `;
 }

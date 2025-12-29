@@ -3,7 +3,7 @@ export const BALL_DEFAULTS = {
   mass: 1.0,
   bulb_intensity_scale: 1.0,
   playfield_reflection_strength: 1.0,
-  timerInterval: 100,
+  timer_interval: 100,
 };
 
 export const BUMPER_DEFAULTS = {
@@ -15,7 +15,7 @@ export const BUMPER_DEFAULTS = {
   force: 15.0,
   threshold: 1.0,
   scatter: 0.0,
-  timerInterval: 100,
+  timer_interval: 100,
 };
 
 export const DECAL_DEFAULTS = {
@@ -33,7 +33,7 @@ export const FLASHER_DEFAULTS = {
   filterAmount: 100,
   depthBias: 0.0,
   renderStyle: 0,
-  timerInterval: 100,
+  timer_interval: 100,
 };
 
 export const FLIPPER_DEFAULTS = {
@@ -57,7 +57,7 @@ export const FLIPPER_DEFAULTS = {
   mass: 1.0,
   torqueDamping: 0.75,
   torqueDampingAngle: 6.0,
-  timerInterval: 100,
+  timer_interval: 100,
 };
 
 export const GATE_DEFAULTS = {
@@ -68,7 +68,7 @@ export const GATE_DEFAULTS = {
   friction: 0.02,
   damping: 0.985,
   gravityFactor: 0.25,
-  timerInterval: 100,
+  timer_interval: 100,
 };
 
 export const HITTARGET_DEFAULTS = {
@@ -86,7 +86,7 @@ export const HITTARGET_DEFAULTS = {
   depthBias: 0.0,
   disableLightingTop: 0.0,
   disableLightingBelow: 1.0,
-  timerInterval: 100,
+  timer_interval: 100,
 };
 
 export const KICKER_DEFAULTS = {
@@ -95,7 +95,7 @@ export const KICKER_DEFAULTS = {
   hitHeight: 35.0,
   hitAccuracy: 0.5,
   scatter: 0.0,
-  timerInterval: 100,
+  timer_interval: 100,
 };
 
 export const LIGHT_DEFAULTS = {
@@ -113,19 +113,19 @@ export const LIGHT_DEFAULTS = {
   blinkPattern: '10',
   blinkInterval: 125,
   depthBias: 0.0,
-  timerInterval: 100,
+  timer_interval: 100,
 };
 
 export const LIGHTSEQUENCER_DEFAULTS = {
   posX: 500.0,
   posY: 1000.0,
   updateInterval: 25,
-  timerInterval: 100,
+  timer_interval: 100,
 };
 
 export const PARTGROUP_DEFAULTS = {
   playerModeVisibilityMask: 0xffff,
-  timerInterval: 100,
+  timer_interval: 100,
 };
 
 export const PLUNGER_DEFAULTS = {
@@ -148,7 +148,7 @@ export const PLUNGER_DEFAULTS = {
   springLoops: 8.0,
   springEndLoops: 2.5,
   animFrames: 1,
-  timerInterval: 100,
+  timer_interval: 100,
 };
 
 export const PRIMITIVE_DEFAULTS = {
@@ -189,7 +189,7 @@ export const RAMP_DEFAULTS = {
   scatter: 0.0,
   threshold: 2.0,
   depthBias: 0.0,
-  timerInterval: 100,
+  timer_interval: 100,
 };
 
 export const REEL_DEFAULTS = {
@@ -202,7 +202,7 @@ export const REEL_DEFAULTS = {
   updateInterval: 50,
   imagesPerGridRow: 1,
   backColor: '#000000',
-  timerInterval: 100,
+  timer_interval: 100,
 };
 
 export const RUBBER_DEFAULTS = {
@@ -216,7 +216,7 @@ export const RUBBER_DEFAULTS = {
   elasticityFalloff: 0.3,
   friction: 0.6,
   scatter: 5.0,
-  timerInterval: 100,
+  timer_interval: 100,
 };
 
 export const SPINNER_DEFAULTS = {
@@ -227,14 +227,14 @@ export const SPINNER_DEFAULTS = {
   elasticity: 0.3,
   angleMax: 0.0,
   angleMin: 0.3,
-  timerInterval: 100,
+  timer_interval: 100,
 };
 
 export const TEXTBOX_DEFAULTS = {
   backColor: '#000000',
   fontColor: '#ffffff',
   intensityScale: 1.0,
-  timerInterval: 100,
+  timer_interval: 100,
 };
 
 export const TIMER_DEFAULTS = {
@@ -249,7 +249,7 @@ export const TRIGGER_DEFAULTS = {
   hitHeight: 50.0,
   animSpeed: 1.0,
   wireThickness: 0.0,
-  timerInterval: 100,
+  timer_interval: 100,
 };
 
 export const WALL_DEFAULTS = {
@@ -264,5 +264,5 @@ export const WALL_DEFAULTS = {
   threshold: 2.0,
   disableLightingTop: 0.0,
   disableLightingBelow: 1.0,
-  timerInterval: 100,
+  timer_interval: 100,
 };
