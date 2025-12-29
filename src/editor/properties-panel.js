@@ -1,4 +1,5 @@
 import { state, elements, undoManager, isItemSelected } from './state.js';
+import { getItemNameFromFileName } from '../shared/gameitem-utils.js';
 import { VIEW_MODE_3D } from '../shared/constants.js';
 import { getCollectionNameForItem } from './collections.js';
 import { render } from './canvas-renderer.js';
@@ -1541,9 +1542,8 @@ export async function renameObject(oldName, newName) {
   const gameitemsResult = await window.vpxEditor.readFile(gameitemsPath);
   if (gameitemsResult.success) {
     const gameitems = JSON.parse(gameitemsResult.content);
-    const itemInfo = gameitems.find(i => i.name === oldName);
+    const itemInfo = gameitems.find(i => i.file_name && getItemNameFromFileName(i.file_name) === oldName);
     if (itemInfo) {
-      itemInfo.name = newName;
       itemInfo.file_name = `${type}.${newName}.json`;
       await window.vpxEditor.writeFile(gameitemsPath, JSON.stringify(gameitems, null, 2));
       state.gameitems = gameitems;

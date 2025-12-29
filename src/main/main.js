@@ -2217,7 +2217,7 @@ ipcMain.handle('update-item-image', async (event, itemName, itemType, oldImage, 
     const gameitemsContent = await fs.promises.readFile(gameitemsPath, 'utf-8');
     const gameitems = JSON.parse(gameitemsContent);
 
-    const itemInfo = gameitems.find(i => i.name === itemName);
+    const itemInfo = gameitems.find(i => i.file_name && getItemNameFromFileName(i.file_name) === itemName);
     if (!itemInfo) return { success: false, error: 'Item not found' };
 
     const itemPath = path.join(ctx.extractedDir, 'gameitems', itemInfo.file_name);
@@ -3620,7 +3620,7 @@ ipcMain.handle('update-item-material', async (event, itemName, itemType, oldMate
     const gameitemsContent = await fs.promises.readFile(gameitemsPath, 'utf-8');
     const gameitems = JSON.parse(gameitemsContent);
 
-    const itemInfo = gameitems.find(i => i.name === itemName);
+    const itemInfo = gameitems.find(i => i.file_name && getItemNameFromFileName(i.file_name) === itemName);
     if (!itemInfo) return { success: false, error: 'Item not found' };
 
     const itemPath = path.join(ctx.extractedDir, 'gameitems', itemInfo.file_name);
