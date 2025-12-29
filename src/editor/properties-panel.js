@@ -7,6 +7,7 @@ import { refresh3DScene, render3D, is3DInitialized, invalidateItem } from './can
 import { loadBackdropImage } from './table-loader.js';
 import { objectTypeLabels } from './toolbar-init.js';
 import { selectItem, updateItemsList } from './items-panel.js';
+import { updateLayersList } from './layers-panel.js';
 import {
   flipperProperties,
   bumperProperties,
@@ -1519,6 +1520,12 @@ export async function renameObject(oldName, newName) {
     return;
   }
 
+  if (type === 'Primitive') {
+    const oldObjPath = oldPath.replace('.json', '.obj');
+    const newObjPath = newPath.replace('.json', '.obj');
+    await window.vpxEditor.renameFile(oldObjPath, newObjPath);
+  }
+
   item.name = newName;
   item._fileName = newFileName;
 
@@ -1554,6 +1561,7 @@ export async function renameObject(oldName, newName) {
   state.primarySelectedItem = newName;
 
   updateItemsList();
+  updateLayersList();
   selectItem(newName, true);
 
   if (state.viewMode === VIEW_MODE_3D && is3DInitialized()) {
