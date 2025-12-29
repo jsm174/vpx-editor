@@ -37,7 +37,7 @@ export function ballProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Reflection Forced</label>
-          <input type="checkbox" class="prop-input" data-prop="forceReflection" ${item.forceReflection ? 'checked' : ''}>
+          <input type="checkbox" class="prop-input" data-prop="force_reflection" ${item.force_reflection ? 'checked' : ''}>
         </div>
       </div>
       <div class="prop-group">
@@ -52,15 +52,15 @@ export function ballProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Spherical Map</label>
-          <input type="checkbox" class="prop-input" data-prop="sphericalMapping" ${item.sphericalMapping !== false ? 'checked' : ''}>
+          <input type="checkbox" class="prop-input" data-prop="spherical_mapping" ${item.spherical_mapping !== false ? 'checked' : ''}>
         </div>
         <div class="prop-row">
           <label class="prop-label">Decal</label>
-          <select class="prop-select" data-prop="decal">${imageOptions(item.decal)}</select>
+          <select class="prop-select" data-prop="image_decal">${imageOptions(item.image_decal)}</select>
         </div>
         <div class="prop-row">
           <label class="prop-label">Logo Mode</label>
-          <input type="checkbox" class="prop-input" data-prop="decalMode" ${item.decalMode ? 'checked' : ''}>
+          <input type="checkbox" class="prop-input" data-prop="decal_mode" ${item.decal_mode ? 'checked' : ''}>
         </div>
         <div class="prop-row">
           <label class="prop-label">Tint</label>
@@ -71,11 +71,11 @@ export function ballProperties(item) {
         <div class="prop-group-title">Reflections</div>
         <div class="prop-row">
           <label class="prop-label">Playfield Strength</label>
-          <input type="number" class="prop-input" data-prop="playfieldReflectionStrength" value="${(item.playfieldReflectionStrength ?? BALL_DEFAULTS.playfieldReflectionStrength).toFixed(2)}" step="0.1" min="0">
+          <input type="number" class="prop-input" data-prop="playfield_reflection_strength" value="${(item.playfield_reflection_strength ?? BALL_DEFAULTS.playfield_reflection_strength).toFixed(2)}" step="0.1" min="0">
         </div>
         <div class="prop-row">
           <label class="prop-label">Bulb Strength</label>
-          <input type="number" class="prop-input" data-prop="bulbIntensityScale" value="${(item.bulbIntensityScale ?? BALL_DEFAULTS.bulbIntensityScale).toFixed(2)}" step="0.1" min="0">
+          <input type="number" class="prop-input" data-prop="bulb_intensity_scale" value="${(item.bulb_intensity_scale ?? BALL_DEFAULTS.bulb_intensity_scale).toFixed(2)}" step="0.1" min="0">
         </div>
       </div>
       <div class="prop-group">

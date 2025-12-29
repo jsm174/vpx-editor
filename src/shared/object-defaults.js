@@ -1,8 +1,8 @@
 export const BALL_DEFAULTS = {
   radius: 25.0,
   mass: 1.0,
-  bulbIntensityScale: 1.0,
-  playfieldReflectionStrength: 1.0,
+  bulb_intensity_scale: 1.0,
+  playfield_reflection_strength: 1.0,
   timerInterval: 100,
 };
 
