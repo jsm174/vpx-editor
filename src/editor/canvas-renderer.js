@@ -1,5 +1,5 @@
 import { state, elements, isItemVisible, isItemSelected, dragRect } from './state.js';
-import { toScreen, updateZoomDisplay } from './utils.js';
+import { toScreen, updateZoomDisplay, getItemNameFromFileName } from './utils.js';
 import { objectTypes } from './object-types.js';
 import {
   renderFlipper,
@@ -197,8 +197,11 @@ export function render() {
     renderGrid(playWidth, playHeight);
   }
 
-  for (const [name, item] of Object.entries(state.items)) {
-    if (!isItemVisible(item, name)) continue;
+  for (const gi of state.gameitems) {
+    if (!gi.file_name) continue;
+    const name = getItemNameFromFileName(gi.file_name);
+    const item = state.items[name];
+    if (!item || !isItemVisible(item, name)) continue;
     renderItem(name, item);
   }
 

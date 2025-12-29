@@ -1,5 +1,6 @@
 import { UndoRecord } from './undo-record.js';
 import { state, elements } from '../state.js';
+import { getItemNameFromFileName } from '../utils.js';
 
 class UndoManager {
   constructor() {
@@ -622,7 +623,9 @@ class UndoManager {
     delete state.items[itemName];
 
     const fileNameOnly = item._fileName?.replace('gameitems/', '');
-    const index = state.gameitems.findIndex(gi => gi.file_name === fileNameOnly || gi.name === itemName);
+    const index = state.gameitems.findIndex(
+      gi => gi.file_name === fileNameOnly || (gi.file_name && getItemNameFromFileName(gi.file_name) === itemName)
+    );
     if (index >= 0) {
       state.gameitems.splice(index, 1);
       await this._saveGameitemsList();

@@ -36,7 +36,7 @@ import { setMaxTextureSize } from './texture-loader.js';
 import { clearPrimitiveMeshCache } from './objects/primitive.js';
 import { showNodeContextMenu, showObjectContextMenu, showCanvasContextMenu, hideContextMenu } from './context-menu.js';
 import { deleteObject } from './object-factory.js';
-import { copyItem, cutItem, pasteItem, hasClipboard } from './clipboard.js';
+import { copyItem, cutItem, pasteItem, hasClipboard, updateClipboardMenuState } from './clipboard.js';
 import { getGroupedCollectionForItem, createCollectionFromSelection } from './collections.js';
 import { setCallback } from '../shared/callbacks.js';
 import {
@@ -824,27 +824,6 @@ function updateUndoRedoButtons() {
   window.vpxEditor.updateUndoState({ canUndo, canRedo });
 }
 
-async function updateClipboardMenuState() {
-  const hasSelection = state.selectedItems.length > 0;
-  const clipboardHasData = await hasClipboard();
-
-  let allLocked = true;
-  for (const name of state.selectedItems) {
-    const item = state.items[name];
-    if (item && !item.is_locked) {
-      allLocked = false;
-      break;
-    }
-  }
-  const isLocked = hasSelection && allLocked;
-
-  window.vpxEditor.updateClipboardState({
-    hasSelection,
-    hasClipboard: clipboardHasData,
-    isLocked,
-  });
-}
-
 undoManager.setOnChange(updateUndoRedoButtons);
 
 undoBtn.addEventListener('click', async () => {
@@ -1263,6 +1242,7 @@ window.vpxEditor.onGamedataChanged?.(gamedata => {
 
 window.vpxEditor.onGameitemsChanged?.(gameitems => {
   state.gameitems = gameitems;
+  renderCurrentView();
 });
 
 window.vpxEditor.onUndo?.(async () => {

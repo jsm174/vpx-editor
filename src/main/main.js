@@ -24,6 +24,7 @@ import {
   DEFAULT_UNIT_CONVERSION,
   DEFAULT_VPINBALL_PATH_MACOS,
 } from '../shared/constants.js';
+import { getItemNameFromFileName } from '../shared/gameitem-utils.js';
 import {
   settings,
   loadSettings,
@@ -3187,9 +3188,7 @@ ipcMain.on('save-drawing-order', async (event, data) => {
 
     const itemNameToIndex = {};
     for (let i = 0; i < gameitems.length; i++) {
-      const fileName = gameitems[i].file_name;
-      const name = fileName.replace(/^\w+\./, '').replace(/\.json$/, '');
-      itemNameToIndex[name] = i;
+      itemNameToIndex[getItemNameFromFileName(gameitems[i].file_name)] = i;
     }
 
     const indicesToMove = data.order.map(name => itemNameToIndex[name]).filter(i => i !== undefined);
@@ -3198,8 +3197,8 @@ ipcMain.on('save-drawing-order', async (event, data) => {
       const movedItems = indicesToMove.map(i => gameitems[i]);
       const newGameitems = gameitems.filter((_, i) => !indicesToMove.includes(i));
 
-      for (let i = movedItems.length - 1; i >= 0; i--) {
-        newGameitems.splice(minIndex, 0, movedItems[i]);
+      for (let i = 0; i < movedItems.length; i++) {
+        newGameitems.splice(minIndex + i, 0, movedItems[movedItems.length - 1 - i]);
       }
 
       ctx.window.webContents.send('undo-begin', 'Change drawing order');

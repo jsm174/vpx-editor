@@ -4,6 +4,7 @@ import { showItemsPanelContextMenu, showPartGroupContextMenu } from './context-m
 import { updatePropertiesPanel } from './properties-panel.js';
 import { TreeControl } from './components/tree-control.js';
 import { registerCallback, invokeCallback } from '../shared/callbacks.js';
+import { getItemNameFromFileName } from './utils.js';
 
 function showInfoModal(title, message) {
   const modal = document.getElementById('info-modal');
@@ -495,7 +496,7 @@ async function reassignGroupToGroup(groupName, newParentName) {
 
 function isNameUnique(name) {
   if (state.items[name]) return false;
-  if (state.gameitems?.some(gi => gi.name === name)) return false;
+  if (state.gameitems?.some(gi => gi.file_name && getItemNameFromFileName(gi.file_name) === name)) return false;
   return true;
 }
 

@@ -8,7 +8,8 @@ import {
   BOUNDS_PADDING,
 } from '../shared/constants.js';
 import { getItemCenter } from '../shared/position-utils.js';
-export { getItemCenter };
+import { getItemNameFromFileName } from '../shared/gameitem-utils.js';
+export { getItemCenter, getItemNameFromFileName };
 
 export function getSelectColor() {
   return state.editorColors?.elementSelect || DEFAULT_ELEMENT_SELECT_COLOR;
@@ -691,13 +692,17 @@ function getItemSize(item) {
 
 export function findItemsAtPoint(items, worldX, worldY) {
   const hits = [];
-  for (const [name, item] of Object.entries(items)) {
-    if (!isItemVisible(item, name)) continue;
+  for (let i = state.gameitems.length - 1; i >= 0; i--) {
+    const gi = state.gameitems[i];
+    if (!gi.file_name) continue;
+    const name = getItemNameFromFileName(gi.file_name);
+    const item = items[name];
+    if (!item || !isItemVisible(item, name)) continue;
     if (hitTestItem(item, worldX, worldY)) {
-      hits.push({ name, size: getItemSize(item) });
+      hits.push({ name, drawOrder: i, size: getItemSize(item) });
     }
   }
-  hits.sort((a, b) => a.size - b.size);
+  hits.sort((a, b) => b.drawOrder - a.drawOrder || a.size - b.size);
   return hits.map(h => h.name);
 }
 

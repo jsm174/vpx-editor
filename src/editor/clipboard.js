@@ -140,3 +140,24 @@ export async function hasClipboard() {
 export async function clearClipboard() {
   await window.vpxEditor.setClipboardData(null);
 }
+
+export async function updateClipboardMenuState() {
+  const hasSelection = state.selectedItems.length > 0;
+  const clipboardHasData = await hasClipboard();
+
+  let allLocked = true;
+  for (const name of state.selectedItems) {
+    const item = state.items[name];
+    if (item && !item.is_locked) {
+      allLocked = false;
+      break;
+    }
+  }
+  const isLocked = hasSelection && allLocked;
+
+  window.vpxEditor.updateClipboardState({
+    hasSelection,
+    hasClipboard: clipboardHasData,
+    isLocked,
+  });
+}

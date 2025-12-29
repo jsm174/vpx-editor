@@ -1,9 +1,11 @@
 import { state, elements, undoManager } from './state.js';
-import { findItemsAtPoint } from './utils.js';
+import { findItemsAtPoint, getItemNameFromFileName } from './utils.js';
 import { saveItemToFile, updateGameitemsJson } from './table-loader.js';
 import { updateItemsList } from './items-panel.js';
 import { updateLayersList, getSelectedPartGroup } from './layers-panel.js';
 import { updatePropertiesPanel, showRenameModal } from './properties-panel.js';
+import { render } from './canvas-renderer.js';
+import { updateClipboardMenuState } from './clipboard.js';
 
 export function toggleItemLock(itemName) {
   const item = state.items[itemName];
@@ -33,8 +35,8 @@ export function toggleItemLock(itemName) {
   updateItemsList();
   updateLayersList();
   updatePropertiesPanel();
-  state.updateClipboardMenuState();
-  state.renderCallback();
+  updateClipboardMenuState();
+  render();
 }
 
 export function renameItem(itemName) {
@@ -57,7 +59,7 @@ export async function assignItemToGroup(itemName, groupName) {
   undoManager.endUndo();
   updateLayersList();
   updateItemsList();
-  state.renderCallback();
+  render();
   elements.statusBar.textContent = groupName
     ? `Assigned "${itemName}" to group "${groupName}"`
     : `Removed "${itemName}" from group`;
@@ -79,7 +81,7 @@ export async function drawItemInFront(itemName) {
   undoManager.beginUndo('Draw In Front');
   undoManager.markGameitemsListForUndo();
 
-  const idx = state.gameitems.findIndex(gi => gi.name === itemName);
+  const idx = state.gameitems.findIndex(gi => getItemNameFromFileName(gi.file_name) === itemName);
   if (idx >= 0) {
     const [entry] = state.gameitems.splice(idx, 1);
     state.gameitems.push(entry);
@@ -88,7 +90,7 @@ export async function drawItemInFront(itemName) {
   }
 
   undoManager.endUndo();
-  state.renderCallback();
+  render();
   elements.statusBar.textContent = `Moved "${itemName}" to front`;
 }
 
@@ -99,7 +101,7 @@ export async function drawItemInBack(itemName) {
   undoManager.beginUndo('Draw In Back');
   undoManager.markGameitemsListForUndo();
 
-  const idx = state.gameitems.findIndex(gi => gi.name === itemName);
+  const idx = state.gameitems.findIndex(gi => getItemNameFromFileName(gi.file_name) === itemName);
   if (idx >= 0) {
     const [entry] = state.gameitems.splice(idx, 1);
     state.gameitems.unshift(entry);
@@ -108,12 +110,12 @@ export async function drawItemInBack(itemName) {
   }
 
   undoManager.endUndo();
-  state.renderCallback();
+  render();
   elements.statusBar.textContent = `Moved "${itemName}" to back`;
 }
 
 function getDrawingOrderIndex(name) {
-  const idx = state.gameitems.findIndex(gi => gi.name === name);
+  const idx = state.gameitems.findIndex(gi => getItemNameFromFileName(gi.file_name) === name);
   return idx >= 0 ? idx : Infinity;
 }
 
@@ -202,9 +204,8 @@ export async function renamePartGroup(oldName, newName) {
     }
   }
 
-  const giIndex = state.gameitems.findIndex(gi => gi.name === oldName);
+  const giIndex = state.gameitems.findIndex(gi => getItemNameFromFileName(gi.file_name) === oldName);
   if (giIndex >= 0) {
-    state.gameitems[giIndex].name = newName;
     state.gameitems[giIndex].file_name = `PartGroup.${newName}.json`;
     await window.vpxEditor.writeFile(`${state.extractedDir}/gameitems.json`, JSON.stringify(state.gameitems, null, 2));
   }
@@ -236,7 +237,7 @@ export async function showDeletePartGroupModal(groupName) {
   state.selectedPartGroup = null;
   updateLayersList();
   updatePropertiesPanel();
-  state.renderCallback();
+  render();
   elements.statusBar.textContent = `Deleted group "${groupName}"`;
 }
 
