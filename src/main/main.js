@@ -4566,10 +4566,25 @@ function openScriptEditorWindow(ctx) {
     const scriptTitle = ctx.tableName ? `Script Editor - [${ctx.tableName}.vpx]` : 'Script Editor';
     ctx.scriptEditorWindow.setTitle(scriptTitle);
     const script = await getScriptContent(ctx);
+    let gameitems = [];
+    try {
+      const gameitemsContent = await fs.promises.readFile(`${ctx.extractedDir}/gameitems.json`, 'utf-8');
+      const gameitemsData = JSON.parse(gameitemsContent);
+      gameitems = gameitemsData
+        .map(gi => {
+          const fileName = gi.file_name || '';
+          const type = fileName.split('.')[0] || 'Unknown';
+          const name = fileName.replace(/^\w+\./, '').replace(/\.json$/, '');
+          return { name, type };
+        })
+        .filter(gi => gi.name);
+    } catch (e) {}
     ctx.scriptEditorWindow.webContents.send('init', {
       script: script || '',
       extractedDir: ctx.extractedDir,
       theme: settings.theme,
+      gameitems,
+      tableName: ctx.tableName,
     });
   });
 }

@@ -107,12 +107,25 @@ input, textarea {
   padding: 4px 8px;
   background: var(--bg-dark);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: 3px;
   color: var(--text-primary);
+  font-family: inherit;
   font-size: 12px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url('./icons/dropdown-arrow.svg');
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 24px;
 }
 
 .win-select:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+.win-select option {
+  background: var(--bg-panel);
+  color: var(--text-primary);
 }

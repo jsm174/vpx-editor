@@ -3,206 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <title>Script Editor</title>
+  <link rel="stylesheet" href="script-editor.css">
   <script>
     var theme = new URLSearchParams(window.location.search).get('theme');
     if (theme) document.documentElement.setAttribute('data-theme', theme);
   </script>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    :root {
-      --bg-dark: #1e1e1e;
-      --bg-panel: #252526;
-      --bg-toolbar: #333333;
-      --border-color: #3c3c3c;
-      --text-primary: #cccccc;
-      --text-secondary: #888888;
-      --accent: #0078d4;
-    }
-
-    [data-theme="light"] {
-      --bg-dark: #f3f3f3;
-      --bg-panel: #ffffff;
-      --bg-toolbar: #e8e8e8;
-      --border-color: #d4d4d4;
-      --text-primary: #333333;
-      --text-secondary: #666666;
-    }
-
-    ::-webkit-scrollbar { width: 10px; height: 10px; }
-    ::-webkit-scrollbar-track { background: var(--bg-dark); }
-    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 5px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
-    ::-webkit-scrollbar-corner { background: var(--bg-dark); }
-
-    html, body {
-      height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 13px;
-      color: var(--text-primary);
-      background: var(--bg-dark);
-      overflow: hidden;
-    }
-
-    #app {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      background: var(--bg-toolbar);
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .toolbar-title {
-      font-weight: 500;
-    }
-
-    .toolbar-spacer {
-      flex: 1;
-    }
-
-    .toolbar-btn {
-      padding: 6px 12px;
-      background: var(--bg-dark);
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      color: var(--text-primary);
-      cursor: pointer;
-      font-size: 12px;
-    }
-
-    .toolbar-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .toolbar-btn.primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: white;
-    }
-
-    .toolbar-btn.primary:hover:not(:disabled) {
-      background: #1084d8;
-    }
-
-    .toolbar-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    #editor-container {
-      flex: 1;
-      overflow: hidden;
-    }
-
-    #status-bar {
-      padding: 4px 12px;
-      background: var(--bg-toolbar);
-      border-top: 1px solid var(--border-color);
-      font-size: 11px;
-      color: var(--text-secondary);
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .modified-indicator {
-      color: #e8ab53;
-    }
-
-    .info-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 3000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .info-modal.hidden {
-      display: none;
-    }
-
-    .info-modal-backdrop {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-    }
-
-    .info-modal-content {
-      position: relative;
-      background: var(--bg-panel);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 20px;
-      min-width: 320px;
-      max-width: 450px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    }
-
-    .info-modal-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 12px;
-    }
-
-    .info-modal-message {
-      font-size: 13px;
-      color: var(--text-primary);
-      margin-bottom: 20px;
-    }
-
-    .info-modal-buttons {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-
-    .info-modal-btn {
-      padding: 6px 20px;
-      background: var(--bg-dark);
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      color: var(--text-primary);
-      cursor: pointer;
-      font-size: 12px;
-    }
-
-    .info-modal-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .info-modal-btn.primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: white;
-    }
-
-    .info-modal-btn.primary:hover {
-      background: #1084d8;
-    }
-  </style>
 </head>
 <body>
   <div id="app">
     <div class="toolbar">
-      <span class="toolbar-title" id="title">script.vbs</span>
+      <label>Item:</label>
+      <select id="item-list">
+        <option value="">(All Items)</option>
+      </select>
+      <label>Event:</label>
+      <select id="event-list">
+        <option value="">(Select Event)</option>
+      </select>
+      <label>Function:</label>
+      <select id="function-list">
+        <option value="">(Select Function)</option>
+      </select>
       <div class="toolbar-spacer"></div>
       <button id="btn-save" class="toolbar-btn primary" disabled>Save</button>
     </div>
@@ -223,11 +44,128 @@
     let originalContent = '';
     let modified = false;
     let extractedDir = null;
+    let tableItems = [];
+    let parsedFunctions = [];
+
+    const ITEM_EVENTS = {
+      Primitive: ['Init', 'Timer'],
+      Wall: ['Init', 'Hit', 'Timer', 'Slingshot'],
+      Surface: ['Init', 'Hit', 'Timer', 'Slingshot'],
+      Flipper: ['Init', 'Timer', 'Collide', 'LimitBOS', 'LimitEOS'],
+      Bumper: ['Hit', 'Timer', 'UnHit'],
+      Trigger: ['Hit', 'Timer', 'Unhit'],
+      Light: ['Init', 'Timer'],
+      Kicker: ['Hit', 'Timer', 'UnHit'],
+      Gate: ['Init', 'Timer', 'Open', 'Close'],
+      Spinner: ['Init', 'Timer', 'Spin'],
+      Ramp: ['Init', 'Timer'],
+      Rubber: ['Init', 'Timer', 'Hit'],
+      HitTarget: ['Init', 'Timer', 'Hit', 'Dropped', 'Raised'],
+      DropTarget: ['Init', 'Timer', 'Hit', 'Dropped', 'Raised'],
+      Plunger: ['Init', 'Timer', 'LimitBOS', 'LimitEOS'],
+      TextBox: ['Init', 'Timer'],
+      Timer: ['Timer'],
+      Decal: ['Init'],
+      Flasher: ['Init', 'Timer'],
+      LightSequencer: ['Init', 'Timer'],
+      Reel: ['Init', 'Timer'],
+      Ball: ['Init'],
+    };
+
+    const VPINBALL_API = [
+      'PlaySound', 'StopSound', 'PlayMusic', 'MusicVolume',
+      'GetBalls', 'CreateBall', 'DestroyBall', 'ActiveBall',
+      'GameTime', 'SystemTime', 'GetPlayerHWnd',
+      'UserDirectory', 'TablesDirectory',
+      'NudgeGetCalibration', 'NudgeSetCalibration', 'Nudge',
+      'GetCustomParam', 'FireKnocker', 'QuitPlayer',
+      'AddObject', 'Version', 'VPBuildVersion', 'VersionMajor', 'VersionMinor', 'VersionRevision',
+    ];
+
+    function parseScriptFunctions(code) {
+      const functions = [];
+      const lines = code.split('\n');
+      const regex = /^\s*(sub|function|class|property\s+(get|let|set))\s+(\w+)/i;
+      for (let i = 0; i < lines.length; i++) {
+        const match = lines[i].match(regex);
+        if (match) {
+          const type = match[1].toLowerCase();
+          const name = match[3] || match[2];
+          functions.push({ name, type, line: i + 1 });
+        }
+      }
+      return functions.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    function updateFunctionList() {
+      if (!editor) return;
+      const code = editor.getValue();
+      parsedFunctions = parseScriptFunctions(code);
+      const select = document.getElementById('function-list');
+      select.innerHTML = '<option value="">(Select Function)</option>';
+      for (const fn of parsedFunctions) {
+        const opt = document.createElement('option');
+        opt.value = fn.line;
+        opt.textContent = fn.name;
+        select.appendChild(opt);
+      }
+    }
+
+    function populateItemList(items) {
+      tableItems = items || [];
+      const select = document.getElementById('item-list');
+      select.innerHTML = '<option value="">(All Items)</option>';
+      const sortedItems = [...tableItems].sort((a, b) => a.name.localeCompare(b.name));
+      for (const item of sortedItems) {
+        const opt = document.createElement('option');
+        opt.value = item.name;
+        opt.dataset.type = item.type;
+        opt.textContent = item.name;
+        select.appendChild(opt);
+      }
+    }
+
+    function updateEventList(itemType) {
+      const select = document.getElementById('event-list');
+      select.innerHTML = '<option value="">(Select Event)</option>';
+      const events = ITEM_EVENTS[itemType] || [];
+      for (const event of events) {
+        const opt = document.createElement('option');
+        opt.value = event;
+        opt.textContent = '_' + event;
+        select.appendChild(opt);
+      }
+    }
+
+    function goToOrCreateEventHandler(itemName, eventName) {
+      if (!editor || !itemName || !eventName) return;
+      const subName = `${itemName}_${eventName}`;
+      const code = editor.getValue();
+      const regex = new RegExp(`^\\s*sub\\s+${subName}\\s*\\(?`, 'im');
+      const lines = code.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        if (regex.test(lines[i])) {
+          editor.revealLineInCenter(i + 1);
+          editor.setPosition({ lineNumber: i + 1, column: 1 });
+          editor.focus();
+          return;
+        }
+      }
+      const newSub = `\nSub ${subName}()\n\t\nEnd Sub\n`;
+      const model = editor.getModel();
+      const lastLine = model.getLineCount();
+      model.applyEdits([{ range: new monaco.Range(lastLine, model.getLineMaxColumn(lastLine), lastLine, model.getLineMaxColumn(lastLine)), text: newSub }]);
+      editor.revealLineInCenter(lastLine + 2);
+      editor.setPosition({ lineNumber: lastLine + 2, column: 2 });
+      editor.focus();
+    }
 
     require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
 
+    let baseTitle = 'Script Editor';
+
     function updateTitle() {
-      document.getElementById('title').textContent = `script.vbs${modified ? ' *' : ''}`;
+      document.title = modified ? `${baseTitle} *` : baseTitle;
     }
 
     function setStatus(msg) {
@@ -253,10 +191,47 @@
     }
 
     require(['vs/editor/editor.main'], function () {
+      monaco.languages.registerCompletionItemProvider('vb', {
+        provideCompletionItems: (model, position) => {
+          const suggestions = [];
+          for (const item of tableItems) {
+            suggestions.push({
+              label: item.name,
+              kind: monaco.languages.CompletionItemKind.Variable,
+              insertText: item.name,
+              detail: item.type
+            });
+          }
+          for (const api of VPINBALL_API) {
+            suggestions.push({
+              label: api,
+              kind: monaco.languages.CompletionItemKind.Function,
+              insertText: api,
+              detail: 'VPinball API'
+            });
+          }
+          for (const fn of parsedFunctions) {
+            suggestions.push({
+              label: fn.name,
+              kind: fn.type === 'sub' ? monaco.languages.CompletionItemKind.Method : monaco.languages.CompletionItemKind.Function,
+              insertText: fn.name,
+              detail: fn.type
+            });
+          }
+          return { suggestions };
+        }
+      });
+
       window.scriptEditor.onInit((data) => {
         console.log('Script Editor received init');
         extractedDir = data.extractedDir;
         originalContent = data.script || '';
+        baseTitle = data.tableName ? `Script Editor - [${data.tableName}.vpx]` : 'Script Editor';
+        document.title = baseTitle;
+
+        if (data.gameitems) {
+          populateItemList(data.gameitems);
+        }
 
         if (data.theme) {
           document.documentElement.setAttribute('data-theme', data.theme);
@@ -282,6 +257,7 @@
           bracketPairColorization: { enabled: true },
         });
 
+        let updateTimeout = null;
         editor.onDidChangeModelContent(() => {
           const isModified = editor.getValue() !== originalContent;
           if (modified !== isModified) {
@@ -289,6 +265,8 @@
             updateTitle();
             document.getElementById('btn-save').disabled = !modified;
           }
+          if (updateTimeout) clearTimeout(updateTimeout);
+          updateTimeout = setTimeout(updateFunctionList, 500);
         });
 
         editor.onDidChangeCursorPosition((e) => {
@@ -302,6 +280,7 @@
         modified = false;
         document.getElementById('btn-save').disabled = true;
         setStatus('Ready');
+        updateFunctionList();
       });
 
       window.scriptEditor.onThemeChanged((theme) => {
@@ -328,6 +307,30 @@
     });
 
     document.getElementById('btn-save').addEventListener('click', saveScript);
+
+    document.getElementById('item-list').addEventListener('change', (e) => {
+      const selectedOption = e.target.selectedOptions[0];
+      const itemType = selectedOption?.dataset?.type || '';
+      updateEventList(itemType);
+    });
+
+    document.getElementById('event-list').addEventListener('change', (e) => {
+      const itemName = document.getElementById('item-list').value;
+      const eventName = e.target.value;
+      if (itemName && eventName) {
+        goToOrCreateEventHandler(itemName, eventName);
+        e.target.value = '';
+      }
+    });
+
+    document.getElementById('function-list').addEventListener('change', (e) => {
+      const line = parseInt(e.target.value, 10);
+      if (editor && line) {
+        editor.revealLineInCenter(line);
+        editor.setPosition({ lineNumber: line, column: 1 });
+        editor.focus();
+      }
+    });
 
     window.addEventListener('beforeunload', (e) => {
       if (modified) {
