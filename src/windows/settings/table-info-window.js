@@ -1,4 +1,9 @@
-import { setupThemeListener, setupKeyboardShortcuts, setupInputKeyboard } from '../../shared/window-utils.js';
+import {
+  setupThemeListener,
+  setupKeyboardShortcuts,
+  setupInputKeyboard,
+  escapeHtml,
+} from '../../shared/window-utils.js';
 
 let info = {};
 let gamedata = {};
@@ -11,12 +16,6 @@ let sortDirection = 'asc';
 let editingKey = null;
 
 setupThemeListener();
-
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
 
 function populateForm() {
   document.getElementById('table-info-name').value = info.table_name || '';

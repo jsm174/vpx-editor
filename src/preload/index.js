@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('vpxEditor', {
   onTableLoaded: callback => ipcRenderer.on('table-loaded', (event, data) => callback(data)),

@@ -518,7 +518,7 @@ elements.canvas.addEventListener('mousemove', e => {
   }
 });
 
-export { renderCurrentView };
+export { renderCurrentView, setCanvasCursor };
 
 function getItemsInRect(rect) {
   const minX = Math.min(rect.startX, rect.endX);

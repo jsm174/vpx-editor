@@ -66,6 +66,12 @@ function distance(a, b) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+export function normalize(x, y) {
+  const len = Math.sqrt(x * x + y * y);
+  if (len < 0.0001) return { x: 0, y: 0 };
+  return { x: x / len, y: y / len };
+}
+
 function initCubicSplineCoeffs(x0, x1, t0, t1) {
   return {
     c0: x0,

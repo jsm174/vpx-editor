@@ -196,7 +196,6 @@ function getAboutIconPath() {
   return path.join(process.cwd(), 'resources', 'about-icon.png');
 }
 
-const MAX_RECENT_FILES = 10;
 let clipboardState = { hasSelection: false, hasClipboard: false, isLocked: false };
 let undoState = { canUndo: false, canRedo: false };
 let sharedClipboardData = null;

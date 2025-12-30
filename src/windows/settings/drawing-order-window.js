@@ -1,4 +1,4 @@
-import { setupThemeListener, setupKeyboardShortcuts } from '../../shared/window-utils.js';
+import { setupThemeListener, setupKeyboardShortcuts, escapeHtml } from '../../shared/window-utils.js';
 
 let items = [];
 let selectedIndex = -1;
@@ -6,12 +6,6 @@ let mode = 'select';
 let draggedIndex = null;
 
 setupThemeListener();
-
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
 
 function getHeightValue(item) {
   const type = item._type;

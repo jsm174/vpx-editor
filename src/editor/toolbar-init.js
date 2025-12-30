@@ -5,6 +5,7 @@ import { updateItemsList, selectItem } from './items-panel.js';
 import { updateLayersList } from './layers-panel.js';
 import { render } from './canvas-renderer.js';
 import { is3DInitialized, get3DRenderer } from './canvas-renderer-3d.js';
+import { setCanvasCursor } from './renderer.js';
 
 function is3DMode() {
   return state.viewMode === VIEW_MODE_3D && is3DInitialized();
@@ -83,13 +84,6 @@ let isCreatingObject = false;
 
 export function getCreationModeSetTime() {
   return creationModeSetTime;
-}
-
-function setCanvasCursor(cursor) {
-  elements.canvas.style.cursor = cursor;
-  if (is3DInitialized()) {
-    get3DRenderer().domElement.style.cursor = cursor;
-  }
 }
 
 export function setUIEnabled(enabled) {

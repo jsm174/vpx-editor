@@ -7,6 +7,7 @@ import {
   getLineWidth,
   getFillColorWithAlpha,
   pointInPolygon,
+  normalize,
 } from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
@@ -48,12 +49,6 @@ export function createRubber3DMesh(item) {
   }
 
   return mesh;
-}
-
-function normalize(x, y) {
-  const len = Math.sqrt(x * x + y * y);
-  if (len < 0.0001) return { x: 0, y: 0 };
-  return { x: x / len, y: y / len };
 }
 
 function generateRubberShape(centerline, thickness, loop = false) {

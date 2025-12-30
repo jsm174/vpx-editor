@@ -1,47 +1,35 @@
 import { state } from '../editor/state.js';
 
-export function materialOptions(currentValue) {
+function buildOptions(names, currentValue) {
   let html = `<option value=""${!currentValue ? ' selected' : ''}></option>`;
-  for (const name of state.materialNames) {
+  for (const name of names) {
     const selected = name === currentValue ? ' selected' : '';
     html += `<option value="${name}"${selected}>${name}</option>`;
   }
   return html;
+}
+
+export function materialOptions(currentValue) {
+  return buildOptions(state.materialNames, currentValue);
 }
 
 export function imageOptions(currentValue) {
-  let html = `<option value=""${!currentValue ? ' selected' : ''}></option>`;
-  for (const name of state.imageNames) {
-    const selected = name === currentValue ? ' selected' : '';
-    html += `<option value="${name}"${selected}>${name}</option>`;
-  }
-  return html;
+  return buildOptions(state.imageNames, currentValue);
+}
+
+function getItemNamesByType(...types) {
+  return Object.entries(state.items)
+    .filter(([_, item]) => types.includes(item._type))
+    .map(([name]) => name)
+    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 }
 
 export function surfaceOptions(currentValue) {
-  let html = `<option value=""${!currentValue ? ' selected' : ''}></option>`;
-  const surfaces = Object.entries(state.items)
-    .filter(([_, item]) => item._type === 'Wall' || item._type === 'Surface')
-    .map(([name]) => name)
-    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-  for (const name of surfaces) {
-    const selected = name === currentValue ? ' selected' : '';
-    html += `<option value="${name}"${selected}>${name}</option>`;
-  }
-  return html;
+  return buildOptions(getItemNamesByType('Wall', 'Surface'), currentValue);
 }
 
 export function lightOptions(currentValue) {
-  let html = `<option value=""${!currentValue ? ' selected' : ''}></option>`;
-  const lights = Object.entries(state.items)
-    .filter(([_, item]) => item._type === 'Light')
-    .map(([name]) => name)
-    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-  for (const name of lights) {
-    const selected = name === currentValue ? ' selected' : '';
-    html += `<option value="${name}"${selected}>${name}</option>`;
-  }
-  return html;
+  return buildOptions(getItemNamesByType('Light'), currentValue);
 }
 
 export function layerOptions(currentLayer) {
@@ -75,19 +63,9 @@ export function collectionOptions(currentValue) {
 }
 
 export function soundOptions(currentValue) {
-  let html = `<option value=""${!currentValue ? ' selected' : ''}></option>`;
-  for (const name of state.soundNames) {
-    const selected = name === currentValue ? ' selected' : '';
-    html += `<option value="${name}"${selected}>${name}</option>`;
-  }
-  return html;
+  return buildOptions(state.soundNames, currentValue);
 }
 
 export function renderProbeOptions(currentValue) {
-  let html = `<option value=""${!currentValue ? ' selected' : ''}></option>`;
-  for (const name of state.renderProbeNames) {
-    const selected = name === currentValue ? ' selected' : '';
-    html += `<option value="${name}"${selected}>${name}</option>`;
-  }
-  return html;
+  return buildOptions(state.renderProbeNames, currentValue);
 }

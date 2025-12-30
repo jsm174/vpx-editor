@@ -1,4 +1,4 @@
-import { setupKeyboardShortcuts } from '../../shared/window-utils.js';
+import { setupKeyboardShortcuts, escapeHtml } from '../../shared/window-utils.js';
 
 const DEFAULT_GLASS_BOTTOM = 3.0;
 const DEFAULT_GLASS_TOP = 8.5;
@@ -272,13 +272,6 @@ function inchesToVp(inches) {
 function formatNum(n, decimals = 2) {
   if (n === null || n === undefined || isNaN(n)) return '';
   return n.toFixed(decimals);
-}
-
-function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
 }
 
 let gamedata = {};
