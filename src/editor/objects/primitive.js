@@ -189,7 +189,11 @@ export function renderPrimitive(item, isSelected) {
       loadMeshForCache(item);
     }
 
-    const size = item.size || { x: PRIMITIVE_DEFAULTS.sizeX, y: PRIMITIVE_DEFAULTS.sizeY, z: PRIMITIVE_DEFAULTS.sizeZ };
+    const size = item.size || {
+      x: PRIMITIVE_DEFAULTS.size_x,
+      y: PRIMITIVE_DEFAULTS.size_y,
+      z: PRIMITIVE_DEFAULTS.size_z,
+    };
     const halfX = size.x * 0.5;
     const halfY = size.y * 0.5;
 
@@ -473,7 +477,11 @@ function parseOBJSimple(objText) {
 
 export function primitiveProperties(item) {
   const pos = item.position || { x: 0, y: 0, z: 0 };
-  const size = item.size || { x: PRIMITIVE_DEFAULTS.sizeX, y: PRIMITIVE_DEFAULTS.sizeY, z: PRIMITIVE_DEFAULTS.sizeZ };
+  const size = item.size || {
+    x: PRIMITIVE_DEFAULTS.size_x,
+    y: PRIMITIVE_DEFAULTS.size_y,
+    z: PRIMITIVE_DEFAULTS.size_z,
+  };
   const rot = item.rot_and_tra || [0, 0, 0, 0, 0, 0, 0, 0, 0];
   return `
     <div class="prop-tabs">
@@ -564,7 +572,7 @@ export function primitiveProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Editor</label>
-          <input type="number" class="prop-input" data-prop="edge_factor_ui" value="${(item.edge_factor_ui ?? PRIMITIVE_DEFAULTS.edgeFactorUI).toFixed(2)}" step="0.05">
+          <input type="number" class="prop-input" data-prop="edge_factor_ui" value="${(item.edge_factor_ui ?? PRIMITIVE_DEFAULTS.edge_factor_ui).toFixed(2)}" step="0.05">
         </div>
         <div class="prop-button-row">
           <button class="prop-button" id="btn-import-mesh" data-filename="${item._fileName || ''}">Import Mesh</button>
@@ -599,7 +607,7 @@ export function primitiveProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Depth Bias</label>
-          <input type="number" class="prop-input" data-prop="depth_bias" value="${(item.depth_bias ?? PRIMITIVE_DEFAULTS.depthBias).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="depth_bias" value="${(item.depth_bias ?? PRIMITIVE_DEFAULTS.depth_bias).toFixed(2)}" step="0.1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Lightmap</label>
@@ -630,11 +638,11 @@ export function primitiveProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Disable Spot Lights (0..1)</label>
-          <input type="number" class="prop-input" data-prop="disable_lighting_top_old" value="${(item.disable_lighting_top_old ?? PRIMITIVE_DEFAULTS.disableLightingTop).toFixed(2)}" step="0.1" min="0" max="1">
+          <input type="number" class="prop-input" data-prop="disable_lighting_top_old" value="${(item.disable_lighting_top_old ?? PRIMITIVE_DEFAULTS.disable_lighting_top).toFixed(2)}" step="0.1" min="0" max="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Translucency (0..1)</label>
-          <input type="number" class="prop-input" data-prop="disable_lighting_below" value="${(item.disable_lighting_below ?? PRIMITIVE_DEFAULTS.disableLightingBelow).toFixed(2)}" step="0.1" min="0" max="1">
+          <input type="number" class="prop-input" data-prop="disable_lighting_below" value="${(item.disable_lighting_below ?? PRIMITIVE_DEFAULTS.disable_lighting_below).toFixed(2)}" step="0.1" min="0" max="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Modulate Opacity</label>
@@ -653,7 +661,7 @@ export function primitiveProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Strength</label>
-          <input type="number" class="prop-input" data-prop="reflection_strength" value="${(item.reflection_strength ?? PRIMITIVE_DEFAULTS.reflectionStrength).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="reflection_strength" value="${(item.reflection_strength ?? PRIMITIVE_DEFAULTS.reflection_strength).toFixed(2)}" step="0.1">
         </div>
       </div>
       <div class="prop-group">
@@ -664,7 +672,7 @@ export function primitiveProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Thickness</label>
-          <input type="number" class="prop-input" data-prop="refraction_thickness" value="${(item.refraction_thickness ?? PRIMITIVE_DEFAULTS.refractionThickness).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="refraction_thickness" value="${(item.refraction_thickness ?? PRIMITIVE_DEFAULTS.refraction_thickness).toFixed(1)}" step="1">
         </div>
       </div>
     </div>
@@ -713,7 +721,7 @@ export function primitiveProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Reduce Polygons (0..1)</label>
-          <input type="number" class="prop-input" data-prop="collision_reduction_factor" value="${(item.collision_reduction_factor ?? PRIMITIVE_DEFAULTS.collisionReductionFactor).toFixed(2)}" step="0.1" min="0" max="1">
+          <input type="number" class="prop-input" data-prop="collision_reduction_factor" value="${(item.collision_reduction_factor ?? PRIMITIVE_DEFAULTS.collision_reduction_factor).toFixed(2)}" step="0.1" min="0" max="1">
         </div>
       </div>
     </div>

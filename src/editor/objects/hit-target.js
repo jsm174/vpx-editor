@@ -20,8 +20,12 @@ export function createHitTarget3DMesh(item) {
   const pos = item.vPosition || item.position;
   if (!pos) return null;
 
-  const size = item.size || { x: HITTARGET_DEFAULTS.sizeX, y: HITTARGET_DEFAULTS.sizeY, z: HITTARGET_DEFAULTS.sizeZ };
-  const rotZ = ((item.rot_z ?? HITTARGET_DEFAULTS.rotZ) * Math.PI) / 180;
+  const size = item.size || {
+    x: HITTARGET_DEFAULTS.size_x,
+    y: HITTARGET_DEFAULTS.size_y,
+    z: HITTARGET_DEFAULTS.size_z,
+  };
+  const rotZ = ((item.rot_z ?? HITTARGET_DEFAULTS.rot_z) * Math.PI) / 180;
   const targetType = (item.target_type || 'drop_target_simple').toLowerCase();
 
   let meshData;
@@ -146,8 +150,12 @@ export function renderHitTarget(item, isSelected) {
   if (!pos) return;
 
   const { x: px, y: py } = toScreen(pos.x, pos.y);
-  const size = item.size || { x: HITTARGET_DEFAULTS.sizeX, y: HITTARGET_DEFAULTS.sizeY, z: HITTARGET_DEFAULTS.sizeZ };
-  const rotZ = ((item.rot_z ?? HITTARGET_DEFAULTS.rotZ) * Math.PI) / 180;
+  const size = item.size || {
+    x: HITTARGET_DEFAULTS.size_x,
+    y: HITTARGET_DEFAULTS.size_y,
+    z: HITTARGET_DEFAULTS.size_z,
+  };
+  const rotZ = ((item.rot_z ?? HITTARGET_DEFAULTS.rot_z) * Math.PI) / 180;
   const targetType = (item.target_type || 'drop_target_simple').toLowerCase();
 
   elements.ctx.strokeStyle = getStrokeStyle(item, isSelected);
@@ -157,7 +165,7 @@ export function renderHitTarget(item, isSelected) {
   renderHitTargetMesh(meshData, pos.x, pos.y, size, rotZ);
 
   if (isSelected && !item.is_locked) {
-    const radangle = ((item.rot_z ?? HITTARGET_DEFAULTS.rotZ) * Math.PI) / 180 - Math.PI;
+    const radangle = ((item.rot_z ?? HITTARGET_DEFAULTS.rot_z) * Math.PI) / 180 - Math.PI;
 
     const sn = Math.sin(radangle);
     const cs = Math.cos(radangle);
@@ -188,9 +196,9 @@ export function hitTargetProperties(item) {
   const pos = { x: rawPos.x ?? 0, y: rawPos.y ?? 0, z: rawPos.z ?? 0 };
   const rawSize = item.size || {};
   const size = {
-    x: rawSize.x ?? HITTARGET_DEFAULTS.sizeX,
-    y: rawSize.y ?? HITTARGET_DEFAULTS.sizeY,
-    z: rawSize.z ?? HITTARGET_DEFAULTS.sizeZ,
+    x: rawSize.x ?? HITTARGET_DEFAULTS.size_x,
+    y: rawSize.y ?? HITTARGET_DEFAULTS.size_y,
+    z: rawSize.z ?? HITTARGET_DEFAULTS.size_z,
   };
   return `
     <div class="prop-tabs">
@@ -225,23 +233,23 @@ export function hitTargetProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Drop Speed</label>
-          <input type="number" class="prop-input" data-prop="drop_speed" value="${(item.drop_speed ?? HITTARGET_DEFAULTS.dropSpeed).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="drop_speed" value="${(item.drop_speed ?? HITTARGET_DEFAULTS.drop_speed).toFixed(2)}" step="0.1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Raise Delay (ms)</label>
-          <input type="number" class="prop-input" data-prop="raise_delay" value="${item.raise_delay ?? HITTARGET_DEFAULTS.raiseDelay}" step="10">
+          <input type="number" class="prop-input" data-prop="raise_delay" value="${item.raise_delay ?? HITTARGET_DEFAULTS.raise_delay}" step="10">
         </div>
         <div class="prop-row">
           <label class="prop-label">Depth Bias</label>
-          <input type="number" class="prop-input" data-prop="depth_bias" value="${(item.depth_bias ?? HITTARGET_DEFAULTS.depthBias).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="depth_bias" value="${(item.depth_bias ?? HITTARGET_DEFAULTS.depth_bias).toFixed(2)}" step="0.1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Disable Spot Lights (0..1)</label>
-          <input type="number" class="prop-input" data-prop="disable_lighting_top_old" value="${(item.disable_lighting_top_old ?? HITTARGET_DEFAULTS.disableLightingTop).toFixed(2)}" step="0.1" min="0" max="1">
+          <input type="number" class="prop-input" data-prop="disable_lighting_top_old" value="${(item.disable_lighting_top_old ?? HITTARGET_DEFAULTS.disable_lighting_top).toFixed(2)}" step="0.1" min="0" max="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Translucency (0..1)</label>
-          <input type="number" class="prop-input" data-prop="disable_lighting_below" value="${(item.disable_lighting_below ?? HITTARGET_DEFAULTS.disableLightingBelow).toFixed(2)}" step="0.1" min="0" max="1">
+          <input type="number" class="prop-input" data-prop="disable_lighting_below" value="${(item.disable_lighting_below ?? HITTARGET_DEFAULTS.disable_lighting_below).toFixed(2)}" step="0.1" min="0" max="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Visible</label>
@@ -280,7 +288,7 @@ export function hitTargetProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Orientation</label>
-          <input type="number" class="prop-input" data-prop="rot_z" value="${(item.rot_z ?? HITTARGET_DEFAULTS.rotZ).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="rot_z" value="${(item.rot_z ?? HITTARGET_DEFAULTS.rot_z).toFixed(1)}" step="5">
         </div>
       </div>
     </div>

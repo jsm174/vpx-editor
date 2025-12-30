@@ -6,10 +6,10 @@ import { REEL_DEFAULTS } from '../../shared/object-defaults.js';
 export function renderReel(item, isSelected) {
   const v1 = item.ver1 || { x: 0, y: 0 };
 
-  const reelCount = Math.min(item.reel_count ?? REEL_DEFAULTS.reelCount, 32);
+  const reelCount = Math.min(item.reel_count ?? REEL_DEFAULTS.reel_count, 32);
   const reelWidth = item.width ?? REEL_DEFAULTS.width;
   const reelHeight = item.height ?? REEL_DEFAULTS.height;
-  const spacing = item.reel_spacing ?? REEL_DEFAULTS.reelSpacing;
+  const spacing = item.reel_spacing ?? REEL_DEFAULTS.reel_spacing;
 
   const boxWidth = reelCount * (reelWidth + spacing) + spacing;
   const boxHeight = reelHeight + spacing * 2;
@@ -18,7 +18,7 @@ export function renderReel(item, isSelected) {
   const screenBoxW = boxWidth * state.zoom;
   const screenBoxH = boxHeight * state.zoom;
 
-  elements.ctx.fillStyle = item.back_color || REEL_DEFAULTS.backColor;
+  elements.ctx.fillStyle = item.back_color || REEL_DEFAULTS.back_color;
   elements.ctx.fillRect(x1, y1, screenBoxW, screenBoxH);
 
   elements.ctx.fillStyle = 'rgb(0, 0, 255)';
@@ -47,10 +47,10 @@ export function renderReel(item, isSelected) {
 
 export function hitTestReel(item, worldX, worldY) {
   const v1 = item.ver1 || { x: 0, y: 0 };
-  const reelCount = Math.min(item.reel_count ?? REEL_DEFAULTS.reelCount, 32);
+  const reelCount = Math.min(item.reel_count ?? REEL_DEFAULTS.reel_count, 32);
   const reelWidth = item.width ?? REEL_DEFAULTS.width;
   const reelHeight = item.height ?? REEL_DEFAULTS.height;
-  const spacing = item.reel_spacing ?? REEL_DEFAULTS.reelSpacing;
+  const spacing = item.reel_spacing ?? REEL_DEFAULTS.reel_spacing;
   const boxW = reelCount * (reelWidth + spacing) + spacing;
   const boxH = reelHeight + spacing * 2;
   return worldX >= v1.x && worldX <= v1.x + boxW && worldY >= v1.y && worldY <= v1.y + boxH;
@@ -77,11 +77,11 @@ export function reelProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Background Color</label>
-          <input type="color" class="prop-input" data-prop="back_color" value="${item.back_color || REEL_DEFAULTS.backColor}">
+          <input type="color" class="prop-input" data-prop="back_color" value="${item.back_color || REEL_DEFAULTS.back_color}">
         </div>
         <div class="prop-row">
           <label class="prop-label">Single Digit Range (0 -></label>
-          <input type="number" class="prop-input" data-prop="digit_range" value="${item.digit_range ?? REEL_DEFAULTS.digitRange}" step="1" min="0">
+          <input type="number" class="prop-input" data-prop="digit_range" value="${item.digit_range ?? REEL_DEFAULTS.digit_range}" step="1" min="0">
         </div>
         <div class="prop-row">
           <label class="prop-label">Image</label>
@@ -96,7 +96,7 @@ export function reelProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Images Per Row</label>
-          <input type="number" class="prop-input" data-prop="images_per_grid_row" value="${item.images_per_grid_row ?? REEL_DEFAULTS.imagesPerGridRow}" step="1" min="1">
+          <input type="number" class="prop-input" data-prop="images_per_grid_row" value="${item.images_per_grid_row ?? REEL_DEFAULTS.images_per_grid_row}" step="1" min="1">
         </div>
       </div>
       <div class="prop-group">
@@ -111,7 +111,7 @@ export function reelProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Reels (Max 32)</label>
-          <input type="number" class="prop-input" data-prop="reel_count" value="${item.reel_count ?? REEL_DEFAULTS.reelCount}" step="1" min="1" max="32">
+          <input type="number" class="prop-input" data-prop="reel_count" value="${item.reel_count ?? REEL_DEFAULTS.reel_count}" step="1" min="1" max="32">
         </div>
         <div class="prop-row">
           <label class="prop-label">Reel Width</label>
@@ -123,7 +123,7 @@ export function reelProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Reel Spacing</label>
-          <input type="number" class="prop-input" data-prop="reel_spacing" value="${(item.reel_spacing ?? REEL_DEFAULTS.reelSpacing).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="reel_spacing" value="${(item.reel_spacing ?? REEL_DEFAULTS.reel_spacing).toFixed(1)}" step="1">
         </div>
       </div>
     </div>
@@ -132,11 +132,11 @@ export function reelProperties(item) {
       <div class="prop-group">
         <div class="prop-row">
           <label class="prop-label">Motor Steps</label>
-          <input type="number" class="prop-input" data-prop="motor_steps" value="${item.motor_steps ?? REEL_DEFAULTS.motorSteps}" step="1" min="1">
+          <input type="number" class="prop-input" data-prop="motor_steps" value="${item.motor_steps ?? REEL_DEFAULTS.motor_steps}" step="1" min="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Update Interval</label>
-          <input type="number" class="prop-input" data-prop="update_interval" value="${item.update_interval ?? REEL_DEFAULTS.updateInterval}" step="10" min="1">
+          <input type="number" class="prop-input" data-prop="update_interval" value="${item.update_interval ?? REEL_DEFAULTS.update_interval}" step="10" min="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Sound</label>

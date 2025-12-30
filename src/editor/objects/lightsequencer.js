@@ -44,8 +44,8 @@ export function renderLightSequencer(item, isSelected) {
   elements.ctx.arc(cx, cy, mainR, 0, Math.PI * 2);
   elements.ctx.stroke();
 
-  const tableX = item.pos_x ?? LIGHTSEQUENCER_DEFAULTS.posX;
-  const tableY = item.pos_y ?? LIGHTSEQUENCER_DEFAULTS.posY;
+  const tableX = item.pos_x ?? LIGHTSEQUENCER_DEFAULTS.pos_x;
+  const tableY = item.pos_y ?? LIGHTSEQUENCER_DEFAULTS.pos_y;
   const { x: tcx, y: tcy } = toScreen(tableX, tableY);
 
   elements.ctx.strokeStyle = '#000000';
@@ -93,11 +93,11 @@ export function lightSequencerProperties(item) {
       <div class="prop-group">
         <div class="prop-row">
           <label class="prop-label">Table X Center</label>
-          <input type="number" class="prop-input" data-prop="pos_x" value="${(item.pos_x ?? LIGHTSEQUENCER_DEFAULTS.posX).toFixed(1)}" step="10">
+          <input type="number" class="prop-input" data-prop="pos_x" value="${(item.pos_x ?? LIGHTSEQUENCER_DEFAULTS.pos_x).toFixed(1)}" step="10">
         </div>
         <div class="prop-row">
           <label class="prop-label">Table Y Center</label>
-          <input type="number" class="prop-input" data-prop="pos_y" value="${(item.pos_y ?? LIGHTSEQUENCER_DEFAULTS.posY).toFixed(1)}" step="10">
+          <input type="number" class="prop-input" data-prop="pos_y" value="${(item.pos_y ?? LIGHTSEQUENCER_DEFAULTS.pos_y).toFixed(1)}" step="10">
         </div>
         <div class="prop-row">
           <label class="prop-label">Collection</label>
@@ -105,7 +105,7 @@ export function lightSequencerProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Update Interval (ms)</label>
-          <input type="number" class="prop-input" data-prop="update_interval" value="${item.update_interval ?? LIGHTSEQUENCER_DEFAULTS.updateInterval}" step="5" min="1">
+          <input type="number" class="prop-input" data-prop="update_interval" value="${item.update_interval ?? LIGHTSEQUENCER_DEFAULTS.update_interval}" step="5" min="1">
         </div>
       </div>
     </div>

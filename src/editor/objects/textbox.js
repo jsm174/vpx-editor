@@ -41,15 +41,15 @@ export function textBoxProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Back Color</label>
-          <input type="color" class="prop-input" data-prop="back_color" value="${item.back_color || TEXTBOX_DEFAULTS.backColor}">
+          <input type="color" class="prop-input" data-prop="back_color" value="${item.back_color || TEXTBOX_DEFAULTS.back_color}">
         </div>
         <div class="prop-row">
           <label class="prop-label">Text Color</label>
-          <input type="color" class="prop-input" data-prop="font_color" value="${item.font_color || TEXTBOX_DEFAULTS.fontColor}">
+          <input type="color" class="prop-input" data-prop="font_color" value="${item.font_color || TEXTBOX_DEFAULTS.font_color}">
         </div>
         <div class="prop-row">
           <label class="prop-label">Intensity</label>
-          <input type="number" class="prop-input" data-prop="intensity_scale" value="${(item.intensity_scale ?? TEXTBOX_DEFAULTS.intensityScale).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="intensity_scale" value="${(item.intensity_scale ?? TEXTBOX_DEFAULTS.intensity_scale).toFixed(2)}" step="0.1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Font</label>

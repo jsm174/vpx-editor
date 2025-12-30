@@ -96,8 +96,8 @@ export function spinnerProperties(item) {
         ${numberInput('Length', 'length', item.length ?? SPINNER_DEFAULTS.length, 5)}
         ${numberInput('Height', 'height', item.height ?? SPINNER_DEFAULTS.height, 5)}
         ${numberInput('Rotation', 'rotation', item.rotation ?? SPINNER_DEFAULTS.rotation, 5)}
-        ${numberInput('Angle Max', 'angle_max', item.angle_max ?? SPINNER_DEFAULTS.angleMax, 5)}
-        ${numberInput('Angle Min', 'angle_min', item.angle_min ?? SPINNER_DEFAULTS.angleMin, 5)}
+        ${numberInput('Angle Max', 'angle_max', item.angle_max ?? SPINNER_DEFAULTS.angle_max, 5)}
+        ${numberInput('Angle Min', 'angle_min', item.angle_min ?? SPINNER_DEFAULTS.angle_min, 5)}
         ${select('Surface', 'surface', surfaceOptions(item.surface))}
       `,
         'Position'

@@ -220,7 +220,7 @@ export function flasherProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Depth Bias</label>
-          <input type="number" class="prop-input" data-prop="depth_bias" value="${(item.depth_bias ?? FLASHER_DEFAULTS.depthBias).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="depth_bias" value="${(item.depth_bias ?? FLASHER_DEFAULTS.depth_bias).toFixed(2)}" step="0.1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Visible</label>
@@ -286,7 +286,7 @@ export function flasherProperties(item) {
         </div>
         <div class="prop-row" style="${isFlasher ? '' : 'display:none'}">
           <label class="prop-label">Mix Factor</label>
-          <input type="number" class="prop-input" data-prop="filter_amount" value="${item.filter_amount ?? FLASHER_DEFAULTS.filterAmount}" step="10" min="0" max="100">
+          <input type="number" class="prop-input" data-prop="filter_amount" value="${item.filter_amount ?? FLASHER_DEFAULTS.filter_amount}" step="10" min="0" max="100">
         </div>
         <div class="prop-row" style="${isFlasher ? '' : 'display:none'}">
           <label class="prop-label">Show in Editor</label>
@@ -309,7 +309,7 @@ export function flasherProperties(item) {
         </div>
         <div class="prop-row" style="${isAlphaSeg ? 'display:none' : ''}">
           <label class="prop-label">Modulate (0..1)</label>
-          <input type="number" class="prop-input" data-prop="modulate_vs_add" value="${(item.modulate_vs_add ?? FLASHER_DEFAULTS.modulateVsAdd).toFixed(2)}" step="0.05" min="0" max="1">
+          <input type="number" class="prop-input" data-prop="modulate_vs_add" value="${(item.modulate_vs_add ?? FLASHER_DEFAULTS.modulate_vs_add).toFixed(2)}" step="0.05" min="0" max="1">
         </div>
       </div>
       <div class="prop-group">

@@ -25,8 +25,8 @@ export function createTrigger3DMesh(item) {
 
   const shape = (item.shape || 'wire_a').toLowerCase();
   const radius = item.radius ?? TRIGGER_DEFAULTS.radius;
-  const scaleX = item.scale_x ?? TRIGGER_DEFAULTS.scaleX;
-  const scaleY = item.scale_y ?? TRIGGER_DEFAULTS.scaleY;
+  const scaleX = item.scale_x ?? TRIGGER_DEFAULTS.scale_x;
+  const scaleY = item.scale_y ?? TRIGGER_DEFAULTS.scale_y;
   const rotation = ((item.rotation ?? TRIGGER_DEFAULTS.rotation) * Math.PI) / 180;
 
   let meshData;
@@ -168,8 +168,8 @@ export function renderTrigger(item, isSelected) {
       }
 
       if (meshData.indices && meshData.indices.length > 0) {
-        const scaleX = item.scale_x ?? TRIGGER_DEFAULTS.scaleX;
-        const scaleY = item.scale_y ?? TRIGGER_DEFAULTS.scaleY;
+        const scaleX = item.scale_x ?? TRIGGER_DEFAULTS.scale_x;
+        const scaleY = item.scale_y ?? TRIGGER_DEFAULTS.scale_y;
         const cos = Math.cos(rotation);
         const sin = Math.sin(rotation);
 
@@ -250,7 +250,7 @@ export function triggerProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Wire Thickness</label>
-          <input type="number" class="prop-input" data-prop="wire_thickness" value="${(item.wire_thickness ?? TRIGGER_DEFAULTS.wireThickness).toFixed(2)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="wire_thickness" value="${(item.wire_thickness ?? TRIGGER_DEFAULTS.wire_thickness).toFixed(2)}" step="0.5">
         </div>
         <div class="prop-row">
           <label class="prop-label">Star Radius</label>
@@ -262,7 +262,7 @@ export function triggerProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Animation Speed</label>
-          <input type="number" class="prop-input" data-prop="anim_speed" value="${(item.anim_speed ?? TRIGGER_DEFAULTS.animSpeed).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="anim_speed" value="${(item.anim_speed ?? TRIGGER_DEFAULTS.anim_speed).toFixed(2)}" step="0.1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Material</label>
@@ -294,7 +294,7 @@ export function triggerProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Hit Height</label>
-          <input type="number" class="prop-input" data-prop="hit_height" value="${(item.hit_height ?? TRIGGER_DEFAULTS.hitHeight).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="hit_height" value="${(item.hit_height ?? TRIGGER_DEFAULTS.hit_height).toFixed(1)}" step="5">
         </div>
       </div>
     </div>

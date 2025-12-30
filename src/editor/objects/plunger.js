@@ -21,7 +21,7 @@ export function renderPlunger(item, isSelected) {
   elements.ctx.lineWidth = getLineWidth(isSelected);
   elements.ctx.strokeRect(left, top, right - left, bottom - top);
 
-  const parkPosition = item.park_position ?? PLUNGER_DEFAULTS.parkPosition;
+  const parkPosition = item.park_position ?? PLUNGER_DEFAULTS.park_position;
   if (parkPosition > 0 && parkPosition < 1) {
     const parkY = cy - s + parkPosition * s;
     elements.ctx.strokeStyle = '#808080';
@@ -63,7 +63,7 @@ export function plungerProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Flat Frames</label>
-          <input type="number" class="prop-input" data-prop="anim_frames" value="${item.anim_frames ?? PLUNGER_DEFAULTS.animFrames}" step="1" min="1">
+          <input type="number" class="prop-input" data-prop="anim_frames" value="${item.anim_frames ?? PLUNGER_DEFAULTS.anim_frames}" step="1" min="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Width</label>
@@ -71,7 +71,7 @@ export function plungerProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Z Adjustment</label>
-          <input type="number" class="prop-input" data-prop="z_adjust" value="${(item.z_adjust ?? PLUNGER_DEFAULTS.zAdjust).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="z_adjust" value="${(item.z_adjust ?? PLUNGER_DEFAULTS.z_adjust).toFixed(1)}" step="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Reflection Enabled</label>
@@ -82,7 +82,7 @@ export function plungerProperties(item) {
         <div class="prop-group-title">Custom Settings</div>
         <div class="prop-row">
           <label class="prop-label">Rod Diameter</label>
-          <input type="number" class="prop-input" data-prop="rod_diam" value="${(item.rod_diam ?? PLUNGER_DEFAULTS.rodDiam).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="rod_diam" value="${(item.rod_diam ?? PLUNGER_DEFAULTS.rod_diam).toFixed(2)}" step="0.1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Tip Shape</label>
@@ -90,31 +90,31 @@ export function plungerProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Ring Gap</label>
-          <input type="number" class="prop-input" data-prop="ring_gap" value="${(item.ring_gap ?? PLUNGER_DEFAULTS.ringGap).toFixed(2)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="ring_gap" value="${(item.ring_gap ?? PLUNGER_DEFAULTS.ring_gap).toFixed(2)}" step="0.5">
         </div>
         <div class="prop-row">
           <label class="prop-label">Ring Diam</label>
-          <input type="number" class="prop-input" data-prop="ring_diam" value="${(item.ring_diam ?? PLUNGER_DEFAULTS.ringDiam).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="ring_diam" value="${(item.ring_diam ?? PLUNGER_DEFAULTS.ring_diam).toFixed(2)}" step="0.1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Ring Width</label>
-          <input type="number" class="prop-input" data-prop="ring_width" value="${(item.ring_width ?? PLUNGER_DEFAULTS.ringWidth).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="ring_width" value="${(item.ring_width ?? PLUNGER_DEFAULTS.ring_width).toFixed(2)}" step="0.1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Spring Diam</label>
-          <input type="number" class="prop-input" data-prop="spring_diam" value="${(item.spring_diam ?? PLUNGER_DEFAULTS.springDiam).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="spring_diam" value="${(item.spring_diam ?? PLUNGER_DEFAULTS.spring_diam).toFixed(2)}" step="0.1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Spring Gauge</label>
-          <input type="number" class="prop-input" data-prop="spring_gauge" value="${(item.spring_gauge ?? PLUNGER_DEFAULTS.springGauge).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="spring_gauge" value="${(item.spring_gauge ?? PLUNGER_DEFAULTS.spring_gauge).toFixed(2)}" step="0.1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Spring Loops</label>
-          <input type="number" class="prop-input" data-prop="spring_loops" value="${(item.spring_loops ?? PLUNGER_DEFAULTS.springLoops).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="spring_loops" value="${(item.spring_loops ?? PLUNGER_DEFAULTS.spring_loops).toFixed(1)}" step="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">End Loops</label>
-          <input type="number" class="prop-input" data-prop="spring_end_loops" value="${(item.spring_end_loops ?? PLUNGER_DEFAULTS.springEndLoops).toFixed(1)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="spring_end_loops" value="${(item.spring_end_loops ?? PLUNGER_DEFAULTS.spring_end_loops).toFixed(1)}" step="0.5">
         </div>
       </div>
       <div class="prop-group">
@@ -138,11 +138,11 @@ export function plungerProperties(item) {
       <div class="prop-group">
         <div class="prop-row">
           <label class="prop-label">Pull Speed</label>
-          <input type="number" class="prop-input" data-prop="speed_pull" value="${(item.speed_pull ?? PLUNGER_DEFAULTS.speedPull).toFixed(3)}" step="0.05">
+          <input type="number" class="prop-input" data-prop="speed_pull" value="${(item.speed_pull ?? PLUNGER_DEFAULTS.speed_pull).toFixed(3)}" step="0.05">
         </div>
         <div class="prop-row">
           <label class="prop-label">Release Speed</label>
-          <input type="number" class="prop-input" data-prop="speed_fire" value="${(item.speed_fire ?? PLUNGER_DEFAULTS.speedFire).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="speed_fire" value="${(item.speed_fire ?? PLUNGER_DEFAULTS.speed_fire).toFixed(1)}" step="5">
         </div>
         <div class="prop-row">
           <label class="prop-label">Stroke Length</label>
@@ -150,7 +150,7 @@ export function plungerProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Scatter Velocity</label>
-          <input type="number" class="prop-input" data-prop="scatter_velocity" value="${(item.scatter_velocity ?? PLUNGER_DEFAULTS.scatterVelocity).toFixed(2)}" step="1">
+          <input type="number" class="prop-input" data-prop="scatter_velocity" value="${(item.scatter_velocity ?? PLUNGER_DEFAULTS.scatter_velocity).toFixed(2)}" step="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Enable Mechanical Plunger</label>
@@ -166,15 +166,15 @@ export function plungerProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Mech Strength</label>
-          <input type="number" class="prop-input" data-prop="mech_strength" value="${(item.mech_strength ?? PLUNGER_DEFAULTS.mechStrength).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="mech_strength" value="${(item.mech_strength ?? PLUNGER_DEFAULTS.mech_strength).toFixed(1)}" step="5">
         </div>
         <div class="prop-row">
           <label class="prop-label">Momentum Xfer</label>
-          <input type="number" class="prop-input" data-prop="momentum_xfer" value="${(item.momentum_xfer ?? PLUNGER_DEFAULTS.momentumXfer).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="momentum_xfer" value="${(item.momentum_xfer ?? PLUNGER_DEFAULTS.momentum_xfer).toFixed(2)}" step="0.1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Park Position (0..1)</label>
-          <input type="number" class="prop-input" data-prop="park_position" value="${(item.park_position ?? PLUNGER_DEFAULTS.parkPosition).toFixed(4)}" step="0.01" min="0" max="1">
+          <input type="number" class="prop-input" data-prop="park_position" value="${(item.park_position ?? PLUNGER_DEFAULTS.park_position).toFixed(4)}" step="0.01" min="0" max="1">
         </div>
       </div>
     </div>

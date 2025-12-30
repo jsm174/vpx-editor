@@ -70,16 +70,16 @@ export function createRamp3DMesh(item) {
   const rampType = (item.ramp_type || 'flat').toLowerCase();
   const isWireRamp = rampType.includes('wire');
 
-  const widthBottom = item.width_bottom ?? RAMP_DEFAULTS.widthBottom;
-  const widthTop = item.width_top ?? RAMP_DEFAULTS.widthTop;
+  const widthBottom = item.width_bottom ?? RAMP_DEFAULTS.width_bottom;
+  const widthTop = item.width_top ?? RAMP_DEFAULTS.width_top;
   const heightBottom =
-    (item.height_bottom ?? RAMP_DEFAULTS.heightBottom) < 1 ? 0.5 : (item.height_bottom ?? RAMP_DEFAULTS.heightBottom);
-  const heightTop = item.height_top ?? RAMP_DEFAULTS.heightTop;
+    (item.height_bottom ?? RAMP_DEFAULTS.height_bottom) < 1 ? 0.5 : (item.height_bottom ?? RAMP_DEFAULTS.height_bottom);
+  const heightTop = item.height_top ?? RAMP_DEFAULTS.height_top;
 
   if (isWireRamp) {
-    const wireDistanceX = item.wire_distance_x ?? RAMP_DEFAULTS.wireDistanceX;
-    const wireDistanceY = item.wire_distance_y ?? RAMP_DEFAULTS.wireDistanceY;
-    const wireDiameter = item.wire_diameter ?? RAMP_DEFAULTS.wireDiameter;
+    const wireDistanceX = item.wire_distance_x ?? RAMP_DEFAULTS.wire_distance_x;
+    const wireDistanceY = item.wire_distance_y ?? RAMP_DEFAULTS.wire_distance_y;
+    const wireDiameter = item.wire_diameter ?? RAMP_DEFAULTS.wire_diameter;
 
     const group = new THREE.Group();
     const wireMat = createMaterial(item.material, null);
@@ -291,8 +291,8 @@ export function renderRamp(item, isSelected) {
   const points = item.drag_points;
   if (!points || points.length < 2) return;
 
-  const widthBottom = item.width_bottom ?? RAMP_DEFAULTS.widthBottom;
-  const widthTop = item.width_top ?? RAMP_DEFAULTS.widthTop;
+  const widthBottom = item.width_bottom ?? RAMP_DEFAULTS.width_bottom;
+  const widthTop = item.width_top ?? RAMP_DEFAULTS.width_top;
   const rampType = item.ramp_type;
 
   const rampTypeLower = (rampType || '').toLowerCase();
@@ -309,8 +309,8 @@ export function renderRamp(item, isSelected) {
   if (centerline.length < 2) return;
 
   if (isWireRamp) {
-    const wireDistanceX = item.wire_distance_x ?? RAMP_DEFAULTS.wireDistanceX;
-    const wireDiameter = item.wire_diameter ?? RAMP_DEFAULTS.wireDiameter;
+    const wireDistanceX = item.wire_distance_x ?? RAMP_DEFAULTS.wire_distance_x;
+    const wireDiameter = item.wire_diameter ?? RAMP_DEFAULTS.wire_diameter;
     const isOneWire = rampTypeLower === 'one_wire';
     const isFourWire = rampTypeLower === 'four_wire';
     const isThreeWireRight = rampTypeLower === 'three_wire_right';
@@ -410,8 +410,8 @@ export function renderRamp(item, isSelected) {
 
 export function hitTestRamp(item, worldX, worldY) {
   if (!item.drag_points || item.drag_points.length < 2) return false;
-  const widthBottom = item.width_bottom ?? RAMP_DEFAULTS.widthBottom;
-  const widthTop = item.width_top ?? RAMP_DEFAULTS.widthTop;
+  const widthBottom = item.width_bottom ?? RAMP_DEFAULTS.width_bottom;
+  const widthTop = item.width_top ?? RAMP_DEFAULTS.width_top;
   const pts = item.drag_points.map(p => {
     const v = p.vertex || p;
     return { x: v.x, y: v.y };
@@ -469,7 +469,7 @@ export function rampProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Depth Bias</label>
-          <input type="number" class="prop-input" data-prop="depth_bias" value="${(item.depth_bias ?? RAMP_DEFAULTS.depthBias).toFixed(1)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="depth_bias" value="${(item.depth_bias ?? RAMP_DEFAULTS.depth_bias).toFixed(1)}" step="0.1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Reflection Enabled</label>
@@ -480,45 +480,45 @@ export function rampProperties(item) {
         <div class="prop-group-title">Position</div>
         <div class="prop-row">
           <label class="prop-label">Top Height</label>
-          <input type="number" class="prop-input" data-prop="height_top" value="${(item.height_top ?? RAMP_DEFAULTS.heightTop).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="height_top" value="${(item.height_top ?? RAMP_DEFAULTS.height_top).toFixed(1)}" step="5">
         </div>
         <div class="prop-row">
           <label class="prop-label">Bottom Height</label>
-          <input type="number" class="prop-input" data-prop="height_bottom" value="${(item.height_bottom ?? RAMP_DEFAULTS.heightBottom).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="height_bottom" value="${(item.height_bottom ?? RAMP_DEFAULTS.height_bottom).toFixed(1)}" step="5">
         </div>
         <div class="prop-row">
           <label class="prop-label">Top Width</label>
-          <input type="number" class="prop-input" data-prop="width_top" value="${(item.width_top ?? RAMP_DEFAULTS.widthTop).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="width_top" value="${(item.width_top ?? RAMP_DEFAULTS.width_top).toFixed(1)}" step="5">
         </div>
         <div class="prop-row">
           <label class="prop-label">Bottom Width</label>
-          <input type="number" class="prop-input" data-prop="width_bottom" value="${(item.width_bottom ?? RAMP_DEFAULTS.widthBottom).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="width_bottom" value="${(item.width_bottom ?? RAMP_DEFAULTS.width_bottom).toFixed(1)}" step="5">
         </div>
       </div>
       <div class="prop-group">
         <div class="prop-group-title">Visible Wall</div>
         <div class="prop-row">
           <label class="prop-label">Left Wall</label>
-          <input type="number" class="prop-input" data-prop="left_wall_height_visible" value="${(item.left_wall_height_visible ?? RAMP_DEFAULTS.leftWallHeight_VISIBLE).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="left_wall_height_visible" value="${(item.left_wall_height_visible ?? RAMP_DEFAULTS.left_wall_height_VISIBLE).toFixed(1)}" step="5">
         </div>
         <div class="prop-row">
           <label class="prop-label">Right Wall</label>
-          <input type="number" class="prop-input" data-prop="right_wall_height_visible" value="${(item.right_wall_height_visible ?? RAMP_DEFAULTS.rightWallHeight_VISIBLE).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="right_wall_height_visible" value="${(item.right_wall_height_visible ?? RAMP_DEFAULTS.right_wall_height_VISIBLE).toFixed(1)}" step="5">
         </div>
       </div>
       <div class="prop-group">
         <div class="prop-group-title">Wire Ramp</div>
         <div class="prop-row">
           <label class="prop-label">Diameter</label>
-          <input type="number" class="prop-input" data-prop="wire_diameter" value="${(item.wire_diameter ?? RAMP_DEFAULTS.wireDiameter).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="wire_diameter" value="${(item.wire_diameter ?? RAMP_DEFAULTS.wire_diameter).toFixed(1)}" step="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">DistanceX</label>
-          <input type="number" class="prop-input" data-prop="wire_distance_x" value="${(item.wire_distance_x ?? RAMP_DEFAULTS.wireDistanceX).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="wire_distance_x" value="${(item.wire_distance_x ?? RAMP_DEFAULTS.wire_distance_x).toFixed(1)}" step="5">
         </div>
         <div class="prop-row">
           <label class="prop-label">DistanceY</label>
-          <input type="number" class="prop-input" data-prop="wire_distance_y" value="${(item.wire_distance_y ?? RAMP_DEFAULTS.wireDistanceY).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="wire_distance_y" value="${(item.wire_distance_y ?? RAMP_DEFAULTS.wire_distance_y).toFixed(1)}" step="5">
         </div>
       </div>
     </div>
@@ -538,11 +538,11 @@ export function rampProperties(item) {
         <div class="prop-group-title">Physical Wall</div>
         <div class="prop-row">
           <label class="prop-label">Left Wall</label>
-          <input type="number" class="prop-input" data-prop="left_wall_height" value="${(item.left_wall_height ?? RAMP_DEFAULTS.leftWallHeight).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="left_wall_height" value="${(item.left_wall_height ?? RAMP_DEFAULTS.left_wall_height).toFixed(1)}" step="5">
         </div>
         <div class="prop-row">
           <label class="prop-label">Right Wall</label>
-          <input type="number" class="prop-input" data-prop="right_wall_height" value="${(item.right_wall_height ?? RAMP_DEFAULTS.rightWallHeight).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="right_wall_height" value="${(item.right_wall_height ?? RAMP_DEFAULTS.right_wall_height).toFixed(1)}" step="5">
         </div>
       </div>
       <div class="prop-group">
@@ -562,7 +562,7 @@ export function rampProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Elasticity Falloff</label>
-          <input type="number" class="prop-input" data-prop="elasticity_falloff" value="${(item.elasticity_falloff ?? RAMP_DEFAULTS.elasticityFalloff).toFixed(3)}" step="0.01">
+          <input type="number" class="prop-input" data-prop="elasticity_falloff" value="${(item.elasticity_falloff ?? RAMP_DEFAULTS.elasticity_falloff).toFixed(3)}" step="0.01">
         </div>
         <div class="prop-row">
           <label class="prop-label">Friction</label>

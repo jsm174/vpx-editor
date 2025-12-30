@@ -189,7 +189,7 @@ export function gateProperties(item) {
         ${numberInput('Elasticity', 'elasticity', item.elasticity ?? GATE_DEFAULTS.elasticity, 0.05)}
         ${numberInput('Friction', 'friction', item.friction ?? GATE_DEFAULTS.friction, 0.05)}
         ${numberInput('Damping', 'damping', item.damping ?? GATE_DEFAULTS.damping, 0.005)}
-        ${numberInput('Gravity Factor', 'gravity_factor', item.gravity_factor ?? GATE_DEFAULTS.gravityFactor, 0.05)}
+        ${numberInput('Gravity Factor', 'gravity_factor', item.gravity_factor ?? GATE_DEFAULTS.gravity_factor, 0.05)}
       `)}
       ${propGroup(`
         ${checkbox('Collidable', 'is_collidable', item.is_collidable !== false)}

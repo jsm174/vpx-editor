@@ -18,9 +18,9 @@ export function createRubber3DMesh(item) {
 
   const thickness = item.thickness ?? RUBBER_DEFAULTS.thickness;
   const height = item.height ?? RUBBER_DEFAULTS.height;
-  const rotX = ((item.rot_x ?? RUBBER_DEFAULTS.rotX) * Math.PI) / 180;
-  const rotY = ((item.rot_y ?? RUBBER_DEFAULTS.rotY) * Math.PI) / 180;
-  const rotZ = ((item.rot_z ?? RUBBER_DEFAULTS.rotZ) * Math.PI) / 180;
+  const rotX = ((item.rot_x ?? RUBBER_DEFAULTS.rot_x) * Math.PI) / 180;
+  const rotY = ((item.rot_y ?? RUBBER_DEFAULTS.rot_y) * Math.PI) / 180;
+  const rotZ = ((item.rot_z ?? RUBBER_DEFAULTS.rot_z) * Math.PI) / 180;
 
   const smoothed = generateSmoothedPath(points, true);
   if (smoothed.length < 2) return null;
@@ -231,15 +231,15 @@ export function rubberProperties(item) {
         <div class="prop-group-title">Orientation</div>
         <div class="prop-row">
           <label class="prop-label">RotX</label>
-          <input type="number" class="prop-input" data-prop="rot_x" value="${(item.rot_x ?? RUBBER_DEFAULTS.rotX).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="rot_x" value="${(item.rot_x ?? RUBBER_DEFAULTS.rot_x).toFixed(1)}" step="5">
         </div>
         <div class="prop-row">
           <label class="prop-label">RotY</label>
-          <input type="number" class="prop-input" data-prop="rot_y" value="${(item.rot_y ?? RUBBER_DEFAULTS.rotY).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="rot_y" value="${(item.rot_y ?? RUBBER_DEFAULTS.rot_y).toFixed(1)}" step="5">
         </div>
         <div class="prop-row">
           <label class="prop-label">RotZ</label>
-          <input type="number" class="prop-input" data-prop="rot_z" value="${(item.rot_z ?? RUBBER_DEFAULTS.rotZ).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="rot_z" value="${(item.rot_z ?? RUBBER_DEFAULTS.rot_z).toFixed(1)}" step="5">
         </div>
         <div class="prop-row">
           <label class="prop-label">Show in Editor</label>
@@ -276,7 +276,7 @@ export function rubberProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Hit Height</label>
-          <input type="number" class="prop-input" data-prop="hit_height" value="${(item.hit_height ?? RUBBER_DEFAULTS.hitHeight).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="hit_height" value="${(item.hit_height ?? RUBBER_DEFAULTS.hit_height).toFixed(1)}" step="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Collidable</label>

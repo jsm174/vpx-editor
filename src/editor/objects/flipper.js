@@ -62,15 +62,15 @@ export function createFlipper3DMesh(item) {
   const center = item.center;
   if (!center) return null;
 
-  const baseRadius = item.base_radius ?? FLIPPER_DEFAULTS.baseRadius;
-  const endRadius = item.end_radius ?? FLIPPER_DEFAULTS.endRadius;
-  const flipperRadius = item.flipper_radius_max ?? FLIPPER_DEFAULTS.flipperRadiusMax;
+  const baseRadius = item.base_radius ?? FLIPPER_DEFAULTS.base_radius;
+  const endRadius = item.end_radius ?? FLIPPER_DEFAULTS.end_radius;
+  const flipperRadius = item.flipper_radius_max ?? FLIPPER_DEFAULTS.flipper_radius_max;
   const height = item.height ?? FLIPPER_DEFAULTS.height;
-  const startAngle = ((item.start_angle ?? FLIPPER_DEFAULTS.startAngle) * Math.PI) / 180;
+  const startAngle = ((item.start_angle ?? FLIPPER_DEFAULTS.start_angle) * Math.PI) / 180;
 
-  const rubberThickness = item.rubber_thickness ?? FLIPPER_DEFAULTS.rubberThickness;
-  const rubberHeight = item.rubber_height ?? FLIPPER_DEFAULTS.rubberHeight;
-  const rubberWidth = item.rubber_width ?? FLIPPER_DEFAULTS.rubberWidth;
+  const rubberThickness = item.rubber_thickness ?? FLIPPER_DEFAULTS.rubber_thickness;
+  const rubberHeight = item.rubber_height ?? FLIPPER_DEFAULTS.rubber_height;
+  const rubberWidth = item.rubber_width ?? FLIPPER_DEFAULTS.rubber_width;
 
   const group = new THREE.Group();
 
@@ -134,14 +134,14 @@ function arcFromPoints(ctx, cx, cy, radius, x1, y1, x2, y2) {
 
 export function renderFlipper(item, isSelected) {
   const { center, rubber_thickness } = item;
-  const startAngleVal = item.start_angle ?? FLIPPER_DEFAULTS.startAngle;
-  const endAngleVal = item.end_angle ?? FLIPPER_DEFAULTS.endAngle;
+  const startAngleVal = item.start_angle ?? FLIPPER_DEFAULTS.start_angle;
+  const endAngleVal = item.end_angle ?? FLIPPER_DEFAULTS.end_angle;
   const angleRad = (startAngleVal * Math.PI) / 180;
   const angleRad2 = (endAngleVal * Math.PI) / 180;
 
-  const baseRadius = item.base_radius ?? FLIPPER_DEFAULTS.baseRadius;
-  const endRadius = item.end_radius ?? FLIPPER_DEFAULTS.endRadius;
-  const flipperRadius = item.flipper_radius_max ?? FLIPPER_DEFAULTS.flipperRadiusMax;
+  const baseRadius = item.base_radius ?? FLIPPER_DEFAULTS.base_radius;
+  const endRadius = item.end_radius ?? FLIPPER_DEFAULTS.end_radius;
+  const flipperRadius = item.flipper_radius_max ?? FLIPPER_DEFAULTS.flipper_radius_max;
 
   const { x: cx, y: cy } = toScreen(center.x, center.y);
   const br = baseRadius * state.zoom;
@@ -169,7 +169,7 @@ export function renderFlipper(item, isSelected) {
     elements.ctx.fill();
   }
 
-  const rubThick = (rubber_thickness ?? FLIPPER_DEFAULTS.rubberThickness) * state.zoom;
+  const rubThick = (rubber_thickness ?? FLIPPER_DEFAULTS.rubber_thickness) * state.zoom;
   const rubBr = br - rubThick;
   const rubEr = er - rubThick;
 
@@ -248,10 +248,10 @@ export function renderFlipper(item, isSelected) {
 }
 
 export function hitTestFlipper(item, worldX, worldY, center, distFromCenter) {
-  const baseRadius = item.base_radius ?? FLIPPER_DEFAULTS.baseRadius;
-  const endRadius = item.end_radius ?? FLIPPER_DEFAULTS.endRadius;
-  const flipperRadius = item.flipper_radius_max ?? FLIPPER_DEFAULTS.flipperRadiusMax;
-  const angle = ((item.start_angle ?? FLIPPER_DEFAULTS.startAngle) * Math.PI) / 180;
+  const baseRadius = item.base_radius ?? FLIPPER_DEFAULTS.base_radius;
+  const endRadius = item.end_radius ?? FLIPPER_DEFAULTS.end_radius;
+  const flipperRadius = item.flipper_radius_max ?? FLIPPER_DEFAULTS.flipper_radius_max;
+  const angle = ((item.start_angle ?? FLIPPER_DEFAULTS.start_angle) * Math.PI) / 180;
 
   if (distFromCenter < baseRadius) return true;
 
@@ -290,15 +290,15 @@ export function flipperProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Rubber Thickness</label>
-          <input type="number" class="prop-input" data-prop="rubber_thickness" value="${(item.rubber_thickness ?? FLIPPER_DEFAULTS.rubberThickness).toFixed(2)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="rubber_thickness" value="${(item.rubber_thickness ?? FLIPPER_DEFAULTS.rubber_thickness).toFixed(2)}" step="0.5">
         </div>
         <div class="prop-row">
           <label class="prop-label">Rubber Offset Height</label>
-          <input type="number" class="prop-input" data-prop="rubber_height" value="${(item.rubber_height ?? FLIPPER_DEFAULTS.rubberHeight).toFixed(2)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="rubber_height" value="${(item.rubber_height ?? FLIPPER_DEFAULTS.rubber_height).toFixed(2)}" step="0.5">
         </div>
         <div class="prop-row">
           <label class="prop-label">Rubber Width</label>
-          <input type="number" class="prop-input" data-prop="rubber_width" value="${(item.rubber_width ?? FLIPPER_DEFAULTS.rubberWidth).toFixed(2)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="rubber_width" value="${(item.rubber_width ?? FLIPPER_DEFAULTS.rubber_width).toFixed(2)}" step="0.5">
         </div>
         <div class="prop-row">
           <label class="prop-label">Visible</label>
@@ -325,23 +325,23 @@ export function flipperProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Base Radius</label>
-          <input type="number" class="prop-input" data-prop="base_radius" value="${(item.base_radius ?? FLIPPER_DEFAULTS.baseRadius).toFixed(2)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="base_radius" value="${(item.base_radius ?? FLIPPER_DEFAULTS.base_radius).toFixed(2)}" step="0.5">
         </div>
         <div class="prop-row">
           <label class="prop-label">End Radius</label>
-          <input type="number" class="prop-input" data-prop="end_radius" value="${(item.end_radius ?? FLIPPER_DEFAULTS.endRadius).toFixed(2)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="end_radius" value="${(item.end_radius ?? FLIPPER_DEFAULTS.end_radius).toFixed(2)}" step="0.5">
         </div>
         <div class="prop-row">
           <label class="prop-label">Length</label>
-          <input type="number" class="prop-input" data-prop="flipper_radius_max" value="${(item.flipper_radius_max ?? FLIPPER_DEFAULTS.flipperRadiusMax).toFixed(2)}" step="1">
+          <input type="number" class="prop-input" data-prop="flipper_radius_max" value="${(item.flipper_radius_max ?? FLIPPER_DEFAULTS.flipper_radius_max).toFixed(2)}" step="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Start Angle</label>
-          <input type="number" class="prop-input" data-prop="start_angle" value="${(item.start_angle ?? FLIPPER_DEFAULTS.startAngle).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="start_angle" value="${(item.start_angle ?? FLIPPER_DEFAULTS.start_angle).toFixed(1)}" step="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">End Angle</label>
-          <input type="number" class="prop-input" data-prop="end_angle" value="${(item.end_angle ?? FLIPPER_DEFAULTS.endAngle).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="end_angle" value="${(item.end_angle ?? FLIPPER_DEFAULTS.end_angle).toFixed(1)}" step="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Height</label>
@@ -349,7 +349,7 @@ export function flipperProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Max.Difficulty Length</label>
-          <input type="number" class="prop-input" data-prop="flipper_radius_min" value="${(item.flipper_radius_min ?? FLIPPER_DEFAULTS.flipperRadiusMin).toFixed(2)}" step="1">
+          <input type="number" class="prop-input" data-prop="flipper_radius_min" value="${(item.flipper_radius_min ?? FLIPPER_DEFAULTS.flipper_radius_min).toFixed(2)}" step="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Surface</label>
@@ -374,7 +374,7 @@ export function flipperProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Elasticity Falloff</label>
-          <input type="number" class="prop-input" data-prop="elasticity_falloff" value="${(item.elasticity_falloff ?? FLIPPER_DEFAULTS.elasticityFalloff).toFixed(4)}" step="0.01">
+          <input type="number" class="prop-input" data-prop="elasticity_falloff" value="${(item.elasticity_falloff ?? FLIPPER_DEFAULTS.elasticity_falloff).toFixed(4)}" step="0.01">
         </div>
         <div class="prop-row">
           <label class="prop-label">Friction</label>
@@ -386,7 +386,7 @@ export function flipperProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Coil Ramp Up</label>
-          <input type="number" class="prop-input" data-prop="ramp_up" value="${(item.ramp_up ?? FLIPPER_DEFAULTS.rampUp).toFixed(2)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="ramp_up" value="${(item.ramp_up ?? FLIPPER_DEFAULTS.ramp_up).toFixed(2)}" step="0.5">
         </div>
         <div class="prop-row">
           <label class="prop-label">Scatter Angle</label>
@@ -394,11 +394,11 @@ export function flipperProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">EOS Torque</label>
-          <input type="number" class="prop-input" data-prop="torque_damping" value="${(item.torque_damping ?? FLIPPER_DEFAULTS.torqueDamping).toFixed(3)}" step="0.05">
+          <input type="number" class="prop-input" data-prop="torque_damping" value="${(item.torque_damping ?? FLIPPER_DEFAULTS.torque_damping).toFixed(3)}" step="0.05">
         </div>
         <div class="prop-row">
           <label class="prop-label">EOS Torque Angle</label>
-          <input type="number" class="prop-input" data-prop="torque_damping_angle" value="${(item.torque_damping_angle ?? FLIPPER_DEFAULTS.torqueDampingAngle).toFixed(1)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="torque_damping_angle" value="${(item.torque_damping_angle ?? FLIPPER_DEFAULTS.torque_dampingAngle).toFixed(1)}" step="0.5">
         </div>
         <div class="prop-row">
           <label class="prop-label">Overwrite Physics</label>

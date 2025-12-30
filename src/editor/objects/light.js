@@ -60,7 +60,7 @@ export function createLight3DMesh(item) {
     return mesh;
   }
 
-  const meshRadius = item.mesh_radius ?? LIGHT_DEFAULTS.meshRadius;
+  const meshRadius = item.mesh_radius ?? LIGHT_DEFAULTS.mesh_radius;
 
   const group = new THREE.Group();
 
@@ -138,7 +138,7 @@ export function renderLight(item, isSelected) {
   }
 
   if (item.is_bulb_light) {
-    const meshRadius = (item.mesh_radius ?? LIGHT_DEFAULTS.meshRadius) * 0.5 * state.zoom;
+    const meshRadius = (item.mesh_radius ?? LIGHT_DEFAULTS.mesh_radius) * 0.5 * state.zoom;
     elements.ctx.strokeStyle = '#007fff';
     elements.ctx.lineWidth = 1;
     elements.ctx.beginPath();
@@ -195,11 +195,11 @@ export function lightProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Fade Up (ms)</label>
-          <input type="number" class="prop-input" data-prop="fade_speed_up" value="${(item.fade_speed_up ?? LIGHT_DEFAULTS.fadeSpeedUp).toFixed(2)}" step="0.05">
+          <input type="number" class="prop-input" data-prop="fade_speed_up" value="${(item.fade_speed_up ?? LIGHT_DEFAULTS.fade_speed_up).toFixed(2)}" step="0.05">
         </div>
         <div class="prop-row">
           <label class="prop-label">Fade Down (ms)</label>
-          <input type="number" class="prop-input" data-prop="fade_speed_down" value="${(item.fade_speed_down ?? LIGHT_DEFAULTS.fadeSpeedDown).toFixed(2)}" step="0.05">
+          <input type="number" class="prop-input" data-prop="fade_speed_down" value="${(item.fade_speed_down ?? LIGHT_DEFAULTS.fade_speed_down).toFixed(2)}" step="0.05">
         </div>
         <div class="prop-row">
           <label class="prop-label">Light Color</label>
@@ -215,7 +215,7 @@ export function lightProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Falloff Power</label>
-          <input type="number" class="prop-input" data-prop="falloff_power" value="${(item.falloff_power ?? LIGHT_DEFAULTS.falloffPower).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="falloff_power" value="${(item.falloff_power ?? LIGHT_DEFAULTS.falloff_power).toFixed(2)}" step="0.1">
         </div>
       </div>
       <div class="prop-group">
@@ -234,19 +234,19 @@ export function lightProperties(item) {
         </div>
         <div class="prop-row render-mode-field classic-halo"${isHidden ? ' style="display:none"' : ''}>
           <label class="prop-label">Depth Bias</label>
-          <input type="number" class="prop-input" data-prop="depth_bias" value="${(item.depth_bias ?? LIGHT_DEFAULTS.depthBias).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="depth_bias" value="${(item.depth_bias ?? LIGHT_DEFAULTS.depth_bias).toFixed(2)}" step="0.1">
         </div>
         <div class="prop-row render-mode-field halo-only"${!isHalo ? ' style="display:none"' : ''}>
           <label class="prop-label">Halo Height</label>
-          <input type="number" class="prop-input" data-prop="bulb_halo_height" value="${(item.bulb_halo_height ?? LIGHT_DEFAULTS.bulbHaloHeight).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="bulb_halo_height" value="${(item.bulb_halo_height ?? LIGHT_DEFAULTS.bulb_halo_height).toFixed(1)}" step="1">
         </div>
         <div class="prop-row render-mode-field halo-only"${!isHalo ? ' style="display:none"' : ''}>
           <label class="prop-label">Modulate (0..1)</label>
-          <input type="number" class="prop-input" data-prop="bulb_modulate_vs_add" value="${(item.bulb_modulate_vs_add ?? LIGHT_DEFAULTS.bulbModulateVsAdd).toFixed(2)}" step="0.05" min="0" max="1">
+          <input type="number" class="prop-input" data-prop="bulb_modulate_vs_add" value="${(item.bulb_modulate_vs_add ?? LIGHT_DEFAULTS.bulb_modulate_vs_add).toFixed(2)}" step="0.05" min="0" max="1">
         </div>
         <div class="prop-row render-mode-field halo-only"${!isHalo ? ' style="display:none"' : ''}>
           <label class="prop-label">Transmit (0..1)</label>
-          <input type="number" class="prop-input" data-prop="transmission_scale" value="${(item.transmission_scale ?? LIGHT_DEFAULTS.transmissionScale).toFixed(2)}" step="0.05" min="0" max="1">
+          <input type="number" class="prop-input" data-prop="transmission_scale" value="${(item.transmission_scale ?? LIGHT_DEFAULTS.transmission_scale).toFixed(2)}" step="0.05" min="0" max="1">
         </div>
         <div class="prop-row render-mode-field classic-only"${!isClassic ? ' style="display:none"' : ''}>
           <label class="prop-label">Image</label>
@@ -269,7 +269,7 @@ export function lightProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Bulb Size</label>
-          <input type="number" class="prop-input" data-prop="mesh_radius" value="${(item.mesh_radius ?? LIGHT_DEFAULTS.meshRadius).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="mesh_radius" value="${(item.mesh_radius ?? LIGHT_DEFAULTS.mesh_radius).toFixed(1)}" step="1">
         </div>
       </div>
       <div class="prop-group">
@@ -316,11 +316,11 @@ export function lightProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Blink Pattern</label>
-          <input type="text" class="prop-input" data-prop="blink_pattern" value="${item.blink_pattern || LIGHT_DEFAULTS.blinkPattern}">
+          <input type="text" class="prop-input" data-prop="blink_pattern" value="${item.blink_pattern || LIGHT_DEFAULTS.blink_pattern}">
         </div>
         <div class="prop-row">
           <label class="prop-label">Blink Interval</label>
-          <input type="number" class="prop-input" data-prop="blink_interval" value="${item.blink_interval ?? LIGHT_DEFAULTS.blinkInterval}" step="25">
+          <input type="number" class="prop-input" data-prop="blink_interval" value="${item.blink_interval ?? LIGHT_DEFAULTS.blink_interval}" step="25">
         </div>
       </div>
     </div>

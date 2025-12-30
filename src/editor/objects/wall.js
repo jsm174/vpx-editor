@@ -48,8 +48,8 @@ export function createWall3DMesh(item) {
 
   if (!sideVisible && !topVisible) return null;
 
-  const heightBottom = item.height_bottom ?? WALL_DEFAULTS.heightBottom;
-  const heightTop = item.height_top ?? WALL_DEFAULTS.heightTop;
+  const heightBottom = item.height_bottom ?? WALL_DEFAULTS.height_bottom;
+  const heightTop = item.height_top ?? WALL_DEFAULTS.height_top;
   const height = heightTop - heightBottom;
 
   if (Math.abs(height) < 0.1 && !topVisible) return null;
@@ -214,11 +214,11 @@ export function wallProperties(item) {
       <div class="prop-group">
         <div class="prop-row">
           <label class="prop-label">Disable Lighting (0..1)</label>
-          <input type="number" class="prop-input" data-prop="disable_lighting_top_old" value="${(item.disable_lighting_top_old ?? WALL_DEFAULTS.disableLightingTop).toFixed(2)}" step="0.1" min="0" max="1">
+          <input type="number" class="prop-input" data-prop="disable_lighting_top_old" value="${(item.disable_lighting_top_old ?? WALL_DEFAULTS.disable_lighting_top).toFixed(2)}" step="0.1" min="0" max="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Translucency (0..1)</label>
-          <input type="number" class="prop-input" data-prop="disable_lighting_below" value="${(item.disable_lighting_below ?? WALL_DEFAULTS.disableLightingBelow).toFixed(2)}" step="0.1" min="0" max="1">
+          <input type="number" class="prop-input" data-prop="disable_lighting_below" value="${(item.disable_lighting_below ?? WALL_DEFAULTS.disable_lighting_below).toFixed(2)}" step="0.1" min="0" max="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Reflection Enabled</label>
@@ -228,11 +228,11 @@ export function wallProperties(item) {
       <div class="prop-group">
         <div class="prop-row">
           <label class="prop-label">Top Height</label>
-          <input type="number" class="prop-input" data-prop="height_top" value="${(item.height_top ?? WALL_DEFAULTS.heightTop).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="height_top" value="${(item.height_top ?? WALL_DEFAULTS.height_top).toFixed(1)}" step="5">
         </div>
         <div class="prop-row">
           <label class="prop-label">Bottom Height</label>
-          <input type="number" class="prop-input" data-prop="height_bottom" value="${(item.height_bottom ?? WALL_DEFAULTS.heightBottom).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="height_bottom" value="${(item.height_bottom ?? WALL_DEFAULTS.height_bottom).toFixed(1)}" step="5">
         </div>
       </div>
     </div>
@@ -249,11 +249,11 @@ export function wallProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Slingshot Force</label>
-          <input type="number" class="prop-input" data-prop="slingshot_force" value="${(item.slingshot_force ?? WALL_DEFAULTS.slingshotForce).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="slingshot_force" value="${(item.slingshot_force ?? WALL_DEFAULTS.slingshot_force).toFixed(1)}" step="5">
         </div>
         <div class="prop-row">
           <label class="prop-label">Slingshot Threshold</label>
-          <input type="number" class="prop-input" data-prop="slingshot_threshold" value="${(item.slingshot_threshold ?? WALL_DEFAULTS.slingshotThreshold).toFixed(2)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="slingshot_threshold" value="${(item.slingshot_threshold ?? WALL_DEFAULTS.slingshot_threshold).toFixed(2)}" step="0.5">
         </div>
       </div>
       <div class="prop-group">
@@ -273,7 +273,7 @@ export function wallProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Elasticity Falloff</label>
-          <input type="number" class="prop-input" data-prop="elasticity_falloff" value="${(item.elasticity_falloff ?? WALL_DEFAULTS.elasticityFalloff).toFixed(3)}" step="0.05">
+          <input type="number" class="prop-input" data-prop="elasticity_falloff" value="${(item.elasticity_falloff ?? WALL_DEFAULTS.elasticity_falloff).toFixed(3)}" step="0.05">
         </div>
         <div class="prop-row">
           <label class="prop-label">Friction</label>

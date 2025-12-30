@@ -188,11 +188,11 @@ export function kickerProperties(item) {
         </div>
         <div class="prop-row">
           <label class="prop-label">Hit Accuracy (0..1)</label>
-          <input type="number" class="prop-input" data-prop="hit_accuracy" value="${(item.hit_accuracy ?? KICKER_DEFAULTS.hitAccuracy).toFixed(2)}" step="0.05" min="0" max="1">
+          <input type="number" class="prop-input" data-prop="hit_accuracy" value="${(item.hit_accuracy ?? KICKER_DEFAULTS.hit_accuracy).toFixed(2)}" step="0.05" min="0" max="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Hit Height</label>
-          <input type="number" class="prop-input" data-prop="hit_height" value="${(item.hit_height ?? KICKER_DEFAULTS.hitHeight).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="hit_height" value="${(item.hit_height ?? KICKER_DEFAULTS.hit_height).toFixed(1)}" step="5">
         </div>
       </div>
     </div>

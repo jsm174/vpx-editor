@@ -31,7 +31,7 @@ export function createBumper3DMesh(item) {
   if (!center) return null;
 
   const radius = item.radius ?? BUMPER_DEFAULTS.radius;
-  const heightScale = item.height_scale ?? BUMPER_DEFAULTS.heightScale;
+  const heightScale = item.height_scale ?? BUMPER_DEFAULTS.height_scale;
   const orientation = ((item.orientation ?? BUMPER_DEFAULTS.orientation) * Math.PI) / 180;
   const baseHeight = 0;
 
@@ -171,10 +171,10 @@ export function bumperProperties(item) {
         ${select('Skirt Material', 'socket_material', materialOptions(item.socket_material))}
         ${select('Ring Material', 'ring_material', materialOptions(item.ring_material))}
         ${numberInput('Radius', 'radius', item.radius ?? BUMPER_DEFAULTS.radius, 1)}
-        ${numberInput('Height Scale', 'height_scale', item.height_scale ?? BUMPER_DEFAULTS.heightScale, 5)}
+        ${numberInput('Height Scale', 'height_scale', item.height_scale ?? BUMPER_DEFAULTS.height_scale, 5)}
         ${numberInput('Orientation', 'orientation', item.orientation ?? BUMPER_DEFAULTS.orientation, 5)}
-        ${numberInput('Ring Speed', 'ring_speed', item.ring_speed ?? BUMPER_DEFAULTS.ringSpeed, 0.1)}
-        ${numberInput('Ring Drop Offset', 'ring_drop_offset', item.ring_drop_offset ?? BUMPER_DEFAULTS.ringDropOffset, 1)}
+        ${numberInput('Ring Speed', 'ring_speed', item.ring_speed ?? BUMPER_DEFAULTS.ring_speed, 0.1)}
+        ${numberInput('Ring Drop Offset', 'ring_drop_offset', item.ring_drop_offset ?? BUMPER_DEFAULTS.ring_drop_offset, 1)}
         ${checkbox('Reflection Enabled', 'is_reflection_enabled', item.is_reflection_enabled !== false)}
         ${checkbox('Cap Visible', 'is_cap_visible', item.is_cap_visible !== false)}
         ${checkbox('Base Visible', 'is_base_visible', item.is_base_visible !== false)}
