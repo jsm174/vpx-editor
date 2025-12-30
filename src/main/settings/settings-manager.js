@@ -1,5 +1,5 @@
 import { app } from 'electron';
-import fs from 'node:fs';
+import fs from 'fs-extra';
 import path from 'node:path';
 import {
   DEFAULT_THEME,

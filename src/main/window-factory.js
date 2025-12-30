@@ -1,6 +1,6 @@
 import { app, BrowserWindow, dialog, Menu } from 'electron';
 import path from 'node:path';
-import fs from 'node:fs';
+import fs from 'fs-extra';
 
 let settingsWindow = null;
 let transformWindow = null;

@@ -1,7 +1,7 @@
 import { app, BrowserWindow, Menu, dialog, ipcMain, shell, nativeTheme } from 'electron';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import fs from 'node:fs';
+import fs from 'fs-extra';
 import os from 'node:os';
 import started from 'electron-squirrel-startup';
 import versionInfo from '../shared/version.json';
@@ -1156,20 +1156,6 @@ async function readTableLockState(ctx) {
   }
 }
 
-async function copyDirRecursive(src, dest) {
-  await fs.promises.mkdir(dest, { recursive: true });
-  const entries = await fs.promises.readdir(src, { withFileTypes: true });
-  for (const entry of entries) {
-    const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
-    if (entry.isDirectory()) {
-      await copyDirRecursive(srcPath, destPath);
-    } else {
-      await fs.promises.copyFile(srcPath, destPath);
-    }
-  }
-}
-
 function sendConsoleOutput(ctx, type, text) {
   if (ctx?.window && !ctx.window.isDestroyed()) {
     ctx.window.webContents.send('console-output', { type, text });
@@ -1318,7 +1304,7 @@ async function extractVPX(vpxPath, options = {}) {
     vpxtool.on('close', async code => {
       if (code === 0) {
         const tempExtracted = path.join(tempDir, ctx.tableName);
-        await fs.promises.rename(tempExtracted, workDir);
+        await fs.move(tempExtracted, workDir);
         await fs.promises.rm(tempDir, { recursive: true, force: true });
 
         sendConsoleOutput(ctx, 'success', 'Extraction complete');
@@ -1777,7 +1763,7 @@ async function playTable() {
   const pinmameDir = path.join(vpxDir, 'pinmame');
   if (await fileExists(pinmameDir)) {
     const destPinmame = path.join(playDir, 'pinmame');
-    await copyDirRecursive(pinmameDir, destPinmame);
+    await fs.copy(pinmameDir, destPinmame);
     sendConsoleOutput(ctx, 'info', 'Copied pinmame folder');
   }
 
@@ -2201,7 +2187,7 @@ ipcMain.handle('get-sound-info', async (event, soundPath) => {
 
 ipcMain.handle('rename-file', async (event, oldPath, newPath) => {
   try {
-    await fs.promises.rename(oldPath, newPath);
+    await fs.move(oldPath, newPath);
     return { success: true };
   } catch (err) {
     return { success: false, error: err.message };

@@ -1,7 +1,7 @@
 import { app, dialog } from 'electron';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import fs from 'node:fs';
+import fs from 'fs-extra';
 import os from 'node:os';
 import { getLastFolder, setLastFolder } from '../settings/settings-manager.js';
 
@@ -40,20 +40,6 @@ async function fileExists(filePath) {
 function sendConsoleOutput(ctx, type, text) {
   if (ctx?.window && !ctx.window.isDestroyed()) {
     ctx.window.webContents.send('console-output', { type, text });
-  }
-}
-
-async function copyDirRecursive(src, dest) {
-  await fs.promises.mkdir(dest, { recursive: true });
-  const entries = await fs.promises.readdir(src, { withFileTypes: true });
-  for (const entry of entries) {
-    const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
-    if (entry.isDirectory()) {
-      await copyDirRecursive(srcPath, destPath);
-    } else {
-      await fs.promises.copyFile(srcPath, destPath);
-    }
   }
 }
 
@@ -238,7 +224,7 @@ export async function extractVPX(vpxPath, options = {}, deps) {
     vpxtool.on('close', async code => {
       if (code === 0) {
         const tempExtracted = path.join(tempDir, ctx.tableName);
-        await fs.promises.rename(tempExtracted, workDir);
+        await fs.move(tempExtracted, workDir);
         await fs.promises.rm(tempDir, { recursive: true, force: true });
 
         sendConsoleOutput(ctx, 'success', 'Extraction complete');
@@ -653,7 +639,7 @@ export async function playTable(deps) {
   const pinmameDir = path.join(vpxDir, 'pinmame');
   if (await fileExists(pinmameDir)) {
     const destPinmame = path.join(playDir, 'pinmame');
-    await copyDirRecursive(pinmameDir, destPinmame);
+    await fs.copy(pinmameDir, destPinmame);
     sendConsoleOutput(ctx, 'info', 'Copied pinmame folder');
   }
 
@@ -763,4 +749,4 @@ export function getPlayingContext() {
   return playingContext;
 }
 
-export { copyDirRecursive, sendConsoleOutput };
+export { sendConsoleOutput };
