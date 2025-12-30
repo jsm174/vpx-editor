@@ -77,6 +77,7 @@ module.exports = {
             '--device=dri',
             // "--talk-name=org.freedesktop.Notifications",
             // "--talk-name=org.freedesktop.secrets",
+            '--talk-name=org.freedesktop.Flatpak',
             '--filesystem=home',
           ],
           modules: [
