@@ -7,6 +7,10 @@ import { getLastFolder, setLastFolder } from '../settings/settings-manager.js';
 
 const MAX_RECENT_FILES = 10;
 
+function isRunningInFlatpak() {
+  return !!process.env.FLATPAK_ID;
+}
+
 let vpinballProcess = null;
 let playingContext = null;
 
@@ -688,13 +692,23 @@ function runAssembleThenPlay(ctx, vpxPath, settings) {
 }
 
 export function launchVPinball(ctx, vpxPath, settings) {
-  const playCmd = `${settings.vpinballPath} -Minimized -play "${vpxPath}"`;
+  const vpinballArgs = ['-Minimized', '-play', vpxPath];
+  let spawnCmd, spawnArgs;
 
+  if (isRunningInFlatpak()) {
+    spawnCmd = 'flatpak-spawn';
+    spawnArgs = ['--host', settings.vpinballPath, ...vpinballArgs];
+  } else {
+    spawnCmd = settings.vpinballPath;
+    spawnArgs = vpinballArgs;
+  }
+
+  const playCmd = `${spawnCmd} ${spawnArgs.join(' ')}`;
   sendConsoleOutput(ctx, 'command', `$ ${playCmd}`);
   sendConsoleOutput(ctx, 'stdout', '');
   ctx.window.webContents.send('status', 'Playing...');
 
-  vpinballProcess = spawn(settings.vpinballPath, ['-Minimized', '-play', vpxPath], {
+  vpinballProcess = spawn(spawnCmd, spawnArgs, {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 
@@ -749,4 +763,4 @@ export function getPlayingContext() {
   return playingContext;
 }
 
-export { sendConsoleOutput };
+export { sendConsoleOutput, fileExists };
