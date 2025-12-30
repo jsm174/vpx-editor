@@ -111,6 +111,20 @@ Creates distributable packages for the current platform:
 | Linux | DEB, RPM, Flatpak, ZIP | x64 |
 | Windows | Squirrel Installer | x64 |
 
+#### Flatpak issues
+
+If you have issues building the flatpak try this first:
+
+```bash
+flatpak --user remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+```
+
+To get more output during the flatpak build:
+
+```bash
+DEBUG=electron-installer-flatpak,@malept/flatpak-bundler npm run make
+```
+
 ### Code Formatting
 
 ```bash
