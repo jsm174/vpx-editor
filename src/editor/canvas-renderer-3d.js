@@ -22,6 +22,7 @@ import { createSpinner3DMesh } from './objects/spinner.js';
 import { createPrimitive3DMesh } from './objects/primitive.js';
 import { createHitTarget3DMesh } from './objects/hit-target.js';
 import { createFlasher3DMesh } from './objects/flasher.js';
+import { createBall3DMesh } from './objects/ball.js';
 
 let scene, camera, renderer, controls;
 let sceneContainer;
@@ -778,6 +779,8 @@ function createItemMesh(item) {
       return createHitTarget3DMesh(item);
     case 'Flasher':
       return createFlasher3DMesh(item);
+    case 'Ball':
+      return createBall3DMesh(item);
     default:
       return null;
   }

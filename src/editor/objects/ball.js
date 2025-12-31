@@ -1,7 +1,9 @@
+import * as THREE from 'three';
 import { state, elements } from '../state.js';
 import { toScreen, getStrokeStyle, getLineWidth } from '../utils.js';
 import { imageOptions } from '../../shared/options-generators.js';
 import { BALL_DEFAULTS } from '../../shared/object-defaults.js';
+import { loadTexture } from '../texture-loader.js';
 
 export function renderBall(item, isSelected) {
   const pos = item.pos || { x: 0, y: 0 };
@@ -14,6 +16,39 @@ export function renderBall(item, isSelected) {
   elements.ctx.beginPath();
   elements.ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   elements.ctx.stroke();
+}
+
+export function createBall3DMesh(item) {
+  const pos = item.pos || { x: 0, y: 0, z: BALL_DEFAULTS.radius };
+  const radius = item.radius ?? BALL_DEFAULTS.radius;
+
+  const geometry = new THREE.SphereGeometry(radius, 32, 24);
+
+  let color = 0xffffff;
+  if (item.color && typeof item.color === 'string') {
+    color = parseInt(item.color.replace('#', ''), 16);
+  }
+
+  const material = new THREE.MeshStandardMaterial({
+    color,
+    metalness: 0.7,
+    roughness: 0.3,
+    envMapIntensity: 1.0,
+  });
+
+  if (item.image) {
+    loadTexture(item.image).then(texture => {
+      if (texture) {
+        material.map = texture;
+        material.needsUpdate = true;
+      }
+    });
+  }
+
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.set(pos.x, pos.y, pos.z ?? radius);
+
+  return mesh;
 }
 
 export function ballProperties(item) {
