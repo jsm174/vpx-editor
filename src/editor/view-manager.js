@@ -170,6 +170,7 @@ export function switchViewMode(mode) {
 
   if (mode === VIEW_MODE_2D) {
     updateElementToolbarForBackglassView();
+    updateToolboxForTableLock();
     state.tool = savedToolState;
     const btnMap = { select: selectBtn, pan: panBtn, magnify: magnifyBtn };
     const savedBtn = btnMap[savedToolState];

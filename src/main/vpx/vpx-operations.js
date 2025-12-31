@@ -14,8 +14,12 @@ function isRunningInFlatpak() {
 let vpinballProcess = null;
 let playingContext = null;
 
+function isUsingCustomVpxtool(settings) {
+  return !settings.useEmbeddedVpxtool && settings.vpxtoolPath;
+}
+
 function getVpxtoolPath(settings) {
-  if (!settings.useEmbeddedVpxtool && settings.vpxtoolPath) {
+  if (isUsingCustomVpxtool(settings)) {
     return settings.vpxtoolPath;
   }
   const binary = process.platform === 'win32' ? 'vpxtool.exe' : 'vpxtool';
@@ -23,6 +27,98 @@ function getVpxtoolPath(settings) {
     return path.join(process.resourcesPath, 'vpxtool', binary);
   }
   return path.join(process.cwd(), 'resources', 'vpxtool', binary);
+}
+
+function spawnVpxtool(settings, args, options) {
+  const vpxtoolPath = getVpxtoolPath(settings);
+  if (isRunningInFlatpak() && isUsingCustomVpxtool(settings)) {
+    return spawn('flatpak-spawn', ['--host', vpxtoolPath, ...args], options);
+  }
+  return spawn(vpxtoolPath, args, options);
+}
+
+function runVpxtoolAssemble(ctx, outputPath, settings, infoMessage, onSuccess, onError) {
+  ctx.window.webContents.send('console-open');
+
+  const vpxtoolPath = getVpxtoolPath(settings);
+  const command = `${vpxtoolPath} assemble -f "${ctx.extractedDir}" "${outputPath}"`;
+
+  sendConsoleOutput(ctx, 'info', infoMessage);
+  sendConsoleOutput(ctx, 'command', `$ ${command}`);
+
+  const proc = spawnVpxtool(settings, ['assemble', '-f', ctx.extractedDir, outputPath], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  proc.stdout.on('data', data => {
+    sendConsoleOutput(ctx, 'stdout', data.toString());
+  });
+
+  proc.stderr.on('data', data => {
+    sendConsoleOutput(ctx, 'stderr', data.toString());
+  });
+
+  proc.on('close', async code => {
+    if (code === 0) {
+      try {
+        await onSuccess();
+      } catch (err) {
+        onError(err);
+      }
+    } else {
+      sendConsoleOutput(ctx, 'error', `Failed with code ${code}`);
+      onError(new Error(`vpxtool exited with code ${code}`));
+    }
+  });
+
+  proc.on('error', err => {
+    sendConsoleOutput(ctx, 'error', `Error: ${err.message}`);
+    onError(err);
+  });
+}
+
+function runVpxtoolExtract(ctx, vpxPath, settings, infoMessage, onSuccess, onError) {
+  ctx.window.webContents.send('console-open');
+
+  const vpxtoolPath = getVpxtoolPath(settings);
+  const command = `${vpxtoolPath} extract -f "${vpxPath}"`;
+
+  sendConsoleOutput(ctx, 'info', infoMessage);
+  sendConsoleOutput(ctx, 'command', `$ ${command}`);
+
+  const proc = spawnVpxtool(settings, ['extract', '-f', vpxPath], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  let stderr = '';
+
+  proc.stdout.on('data', data => {
+    sendConsoleOutput(ctx, 'stdout', data.toString());
+  });
+
+  proc.stderr.on('data', data => {
+    const msg = data.toString();
+    stderr += msg;
+    sendConsoleOutput(ctx, 'stderr', msg);
+  });
+
+  proc.on('close', async code => {
+    if (code === 0) {
+      try {
+        await onSuccess();
+      } catch (err) {
+        onError(err);
+      }
+    } else {
+      sendConsoleOutput(ctx, 'error', `Failed with code ${code}`);
+      onError(new Error(stderr || `vpxtool exited with code ${code}`));
+    }
+  });
+
+  proc.on('error', err => {
+    sendConsoleOutput(ctx, 'error', `Error: ${err.message}`);
+    onError(err);
+  });
 }
 
 function getTemplatePath(templateName) {
@@ -56,7 +152,7 @@ async function readTableLockState(ctx) {
     const gamedataPath = path.join(ctx.extractedDir, 'gamedata.json');
     const gamedataContent = await fs.promises.readFile(gamedataPath, 'utf-8');
     const gamedata = JSON.parse(gamedataContent);
-    ctx.isTableLocked = gamedata.locked > 0;
+    ctx.isTableLocked = (gamedata.locked & 1) !== 0;
   } catch (e) {
     ctx.isTableLocked = false;
   }
@@ -97,6 +193,7 @@ export async function extractVPX(vpxPath, options = {}, deps) {
 
   if (!ctx || ctx.hasTable()) {
     ctx = createEditorWindow();
+    await new Promise(resolve => ctx.window.webContents.once('did-finish-load', resolve));
   }
 
   ctx.closeChildWindows();
@@ -197,7 +294,6 @@ export async function extractVPX(vpxPath, options = {}, deps) {
 
   const tempVpxPath = path.join(tempDir, path.basename(vpxPath));
   await fs.promises.copyFile(vpxPath, tempVpxPath);
-  sendConsoleOutput(ctx, 'info', `Extracting to work folder...`);
 
   ctx.extractedDir = workDir;
   ctx.backglassViewEnabled = false;
@@ -205,28 +301,13 @@ export async function extractVPX(vpxPath, options = {}, deps) {
 
   ctx.window.webContents.send('status', `Extracting ${ctx.tableName}...`);
 
-  const vpxtoolPath = getVpxtoolPath(settings);
-  const extractCmd = `${vpxtoolPath} extract -f "${tempVpxPath}"`;
-  sendConsoleOutput(ctx, 'command', `$ ${extractCmd}`);
-
   return new Promise((resolve, reject) => {
-    const vpxtool = spawn(vpxtoolPath, ['extract', '-f', tempVpxPath], {
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-
-    vpxtool.stdout.on('data', data => {
-      sendConsoleOutput(ctx, 'stdout', data.toString());
-    });
-
-    let stderr = '';
-    vpxtool.stderr.on('data', data => {
-      const msg = data.toString();
-      stderr += msg;
-      sendConsoleOutput(ctx, 'stderr', msg);
-    });
-
-    vpxtool.on('close', async code => {
-      if (code === 0) {
+    runVpxtoolExtract(
+      ctx,
+      tempVpxPath,
+      settings,
+      'Extracting to work folder...',
+      async () => {
         const tempExtracted = path.join(tempDir, ctx.tableName);
         await fs.move(tempExtracted, workDir);
         await fs.promises.rm(tempDir, { recursive: true, force: true });
@@ -248,7 +329,7 @@ export async function extractVPX(vpxPath, options = {}, deps) {
           tableName: ctx.tableName,
           isTableLocked: ctx.isTableLocked,
         });
-        ctx.window.webContents.send('status', `Loaded`);
+        ctx.window.webContents.send('status', 'Loaded');
         ctx.window.webContents.send('loading', { show: false });
         createMenu();
         if (upgraded) {
@@ -259,23 +340,13 @@ export async function extractVPX(vpxPath, options = {}, deps) {
           });
         }
         resolve();
-      } else {
-        sendConsoleOutput(ctx, 'error', `Extraction failed with code ${code}`);
+      },
+      err => {
         ctx.window.webContents.send('loading', { show: false });
-        dialog.showErrorBox('Extraction Failed', stderr || `vpxtool exited with code ${code}`);
-        reject(new Error(stderr));
+        dialog.showErrorBox('Extraction Failed', err.message);
+        reject(err);
       }
-    });
-
-    vpxtool.on('error', err => {
-      sendConsoleOutput(ctx, 'error', `Error: ${err.message}`);
-      ctx.window.webContents.send('loading', { show: false });
-      dialog.showErrorBox(
-        'vpxtool Error',
-        `Failed to run vpxtool: ${err.message}\n\nMake sure vpxtool is installed and in your PATH.`
-      );
-      reject(err);
-    });
+    );
   });
 }
 
@@ -362,20 +433,13 @@ export async function createNewTable(templateName, displayName, deps) {
   const workDir = path.join(tempDir, tableName);
   ctx.extractedDir = workDir;
 
-  const vpxtoolPath = getVpxtoolPath(settings);
-  sendConsoleOutput(ctx, 'info', `Creating new table: ${tableName}`);
-  sendConsoleOutput(ctx, 'command', `$ ${vpxtoolPath} extract -f "${tempVpxPath}"`);
-
   return new Promise((resolve, reject) => {
-    const vpxtool = spawn(vpxtoolPath, ['extract', '-f', tempVpxPath]);
-
-    let stderr = '';
-    vpxtool.stderr.on('data', data => {
-      stderr += data.toString();
-    });
-
-    vpxtool.on('close', async code => {
-      if (code === 0) {
+    runVpxtoolExtract(
+      ctx,
+      tempVpxPath,
+      settings,
+      `Creating new table: ${tableName}`,
+      async () => {
         await fs.promises.unlink(tempVpxPath);
 
         sendConsoleOutput(ctx, 'info', `Created temp work folder: ${workDir}`);
@@ -395,18 +459,13 @@ export async function createNewTable(templateName, displayName, deps) {
         ctx.window.webContents.send('loading', { show: false });
         createMenu();
         resolve();
-      } else {
+      },
+      err => {
         ctx.window.webContents.send('loading', { show: false });
-        dialog.showErrorBox('Extraction Failed', stderr || `vpxtool exited with code ${code}`);
-        reject(new Error(stderr));
+        dialog.showErrorBox('Extraction Failed', err.message);
+        reject(err);
       }
-    });
-
-    vpxtool.on('error', err => {
-      ctx.window.webContents.send('loading', { show: false });
-      dialog.showErrorBox('vpxtool Error', `Failed to run vpxtool: ${err.message}`);
-      reject(err);
-    });
+    );
   });
 }
 
@@ -422,11 +481,11 @@ export async function saveVPX(deps) {
     return saveVPXAs(deps);
   }
 
-  await assembleVPX(ctx.currentTablePath, true, deps);
+  await assembleVPX(ctx.currentTablePath, deps);
 }
 
 export async function saveVPXAs(deps) {
-  const { windowRegistry, createMenu } = deps;
+  const { windowRegistry, createMenu, settings, saveSettings } = deps;
   const ctx = windowRegistry.getFocused();
   if (!ctx || !ctx.extractedDir) {
     dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
@@ -464,6 +523,19 @@ export async function saveVPXAs(deps) {
 
   if (needsMove) {
     if (await fileExists(newWorkDir)) {
+      const overwriteResult = await dialog.showMessageBox(ctx.window, {
+        type: 'warning',
+        buttons: ['Replace', 'Cancel'],
+        defaultId: 1,
+        title: 'Work Folder Exists',
+        message: `A work folder "${newTableName}_work" already exists.`,
+        detail: 'Replacing it will delete any unsaved changes in that folder. Continue?',
+      });
+
+      if (overwriteResult.response !== 0) {
+        return;
+      }
+
       await fs.promises.rm(newWorkDir, { recursive: true, force: true });
     }
 
@@ -474,6 +546,8 @@ export async function saveVPXAs(deps) {
       await fs.promises.cp(ctx.extractedDir, newWorkDir, { recursive: true });
       const oldExtractedDir = ctx.extractedDir;
       ctx.extractedDir = newWorkDir;
+
+      ctx.window.webContents.send('extracted-dir-changed', newWorkDir);
 
       if (isInTemp) {
         const tempParent = path.dirname(oldExtractedDir);
@@ -490,10 +564,11 @@ export async function saveVPXAs(deps) {
   ctx.tableName = newTableName;
   ctx.updateWindowTitle();
 
-  await assembleVPX(newVpxPath, true, deps);
+  await assembleVPX(newVpxPath, deps);
+  addToRecentFiles(newVpxPath, { settings, saveSettings, createMenu });
 }
 
-export async function assembleVPX(outputPath, showConsole = false, deps) {
+export async function assembleVPX(outputPath, deps) {
   const { windowRegistry, settings } = deps;
   const ctx = windowRegistry.getFocused();
   if (!ctx) return;
@@ -513,87 +588,26 @@ export async function assembleVPX(outputPath, showConsole = false, deps) {
     }
   }
 
-  if (showConsole) {
-    return assembleVPXWithConsole(ctx, outputPath, settings);
-  }
-
   return new Promise((resolve, reject) => {
-    const vpxtool = spawn(getVpxtoolPath(settings), ['assemble', '-f', ctx.extractedDir, outputPath], {
-      stdio: ['ignore', 'ignore', 'pipe'],
-    });
-
-    let stderr = '';
-    vpxtool.stderr.on('data', data => {
-      const msg = data.toString();
-      if (!msg.toLowerCase().includes('warn')) {
-        stderr += msg;
-      }
-    });
-
-    vpxtool.on('close', code => {
-      ctx.window.webContents.send('loading', { show: false });
-      if (code === 0) {
-        ctx.markClean();
-        ctx.window.webContents.send('mark-save-point');
-        ctx.window.webContents.send('status', `Saved to ${path.basename(outputPath)}`);
-        resolve();
-      } else {
-        dialog.showErrorBox('Save Failed', stderr || `vpxtool exited with code ${code}`);
-        reject(new Error(stderr));
-      }
-    });
-
-    vpxtool.on('error', err => {
-      ctx.window.webContents.send('loading', { show: false });
-      dialog.showErrorBox('vpxtool Error', `Failed to run vpxtool: ${err.message}`);
-      reject(err);
-    });
-  });
-}
-
-export function assembleVPXWithConsole(ctx, outputPath, settings) {
-  return new Promise((resolve, reject) => {
-    ctx.window.webContents.send('console-open');
-
-    const vpxtoolPath = getVpxtoolPath(settings);
-    const command = `${vpxtoolPath} assemble -f "${ctx.extractedDir}" "${outputPath}"`;
-
-    sendConsoleOutput(ctx, 'info', 'Saving table...');
-    sendConsoleOutput(ctx, 'command', `$ ${command}`);
-
-    const vpxtoolProcess = spawn(vpxtoolPath, ['assemble', '-f', ctx.extractedDir, outputPath], {
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-
-    vpxtoolProcess.stdout.on('data', data => {
-      sendConsoleOutput(ctx, 'stdout', data.toString());
-    });
-
-    vpxtoolProcess.stderr.on('data', data => {
-      sendConsoleOutput(ctx, 'stderr', data.toString());
-    });
-
-    vpxtoolProcess.on('close', code => {
-      ctx.window.webContents.send('loading', { show: false });
-      if (code === 0) {
+    runVpxtoolAssemble(
+      ctx,
+      outputPath,
+      settings,
+      'Saving table...',
+      () => {
+        ctx.window.webContents.send('loading', { show: false });
         ctx.markClean();
         ctx.window.webContents.send('mark-save-point');
         sendConsoleOutput(ctx, 'success', `Saved to ${path.basename(outputPath)}`);
         ctx.window.webContents.send('status', `Saved to ${path.basename(outputPath)}`);
         resolve();
-      } else {
-        sendConsoleOutput(ctx, 'error', `Save failed with code ${code}`);
+      },
+      err => {
+        ctx.window.webContents.send('loading', { show: false });
         ctx.window.webContents.send('status', 'Save failed');
-        reject(new Error(`vpxtool exited with code ${code}`));
+        reject(err);
       }
-    });
-
-    vpxtoolProcess.on('error', err => {
-      ctx.window.webContents.send('loading', { show: false });
-      sendConsoleOutput(ctx, 'error', `Error: ${err.message}`);
-      ctx.window.webContents.send('status', 'Save failed');
-      reject(err);
-    });
+    );
   });
 }
 
@@ -615,7 +629,21 @@ export async function playTable(deps) {
   }
 
   if (!ctx.currentTablePath) {
-    dialog.showErrorBox('Table Not Saved', 'Please save the table before playing.');
+    const result = await dialog.showMessageBox(ctx.window, {
+      type: 'warning',
+      buttons: ['Save', 'Cancel'],
+      defaultId: 0,
+      title: 'Table Not Saved',
+      message: 'The table must be saved before playing.',
+      detail: 'Would you like to save it now?',
+    });
+
+    if (result.response === 0) {
+      await saveVPXAs(deps);
+      if (ctx.currentTablePath) {
+        return playTable(deps);
+      }
+    }
     return;
   }
 
@@ -652,43 +680,21 @@ export async function playTable(deps) {
 
 function runAssembleThenPlay(ctx, vpxPath, settings) {
   playingContext = ctx;
-  const vpxtoolPath = getVpxtoolPath(settings);
-  const assembleCmd = `${vpxtoolPath} assemble -f "${ctx.extractedDir}" "${vpxPath}"`;
-
-  sendConsoleOutput(ctx, 'info', 'Assembling table...');
-  sendConsoleOutput(ctx, 'command', `$ ${assembleCmd}`);
-
-  const vpxtoolProcess = spawn(vpxtoolPath, ['assemble', '-f', ctx.extractedDir, vpxPath], {
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-
-  vpxtoolProcess.stdout.on('data', data => {
-    sendConsoleOutput(ctx, 'stdout', data.toString());
-  });
-
-  vpxtoolProcess.stderr.on('data', data => {
-    sendConsoleOutput(ctx, 'stderr', data.toString());
-  });
-
-  vpxtoolProcess.on('close', code => {
-    if (code === 0) {
+  runVpxtoolAssemble(
+    ctx,
+    vpxPath,
+    settings,
+    'Assembling table...',
+    () => {
       sendConsoleOutput(ctx, 'success', 'Assembly complete.');
-      sendConsoleOutput(ctx, 'stdout', '');
       launchVPinball(ctx, vpxPath, settings);
-    } else {
-      sendConsoleOutput(ctx, 'error', `Assembly failed with code ${code}`);
+    },
+    () => {
       ctx.window.webContents.send('play-stopped');
       ctx.window.webContents.send('status', 'Play failed');
       playingContext = null;
     }
-  });
-
-  vpxtoolProcess.on('error', err => {
-    sendConsoleOutput(ctx, 'error', `Error: ${err.message}`);
-    ctx.window.webContents.send('play-stopped');
-    ctx.window.webContents.send('status', 'Play failed');
-    playingContext = null;
-  });
+  );
 }
 
 export function launchVPinball(ctx, vpxPath, settings) {

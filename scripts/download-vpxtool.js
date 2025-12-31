@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const VERSION = 'v0.24.8';
+const VERSION = 'v0.24.9';
 const BASE_URL = `https://github.com/francisdb/vpxtool/releases/download/${VERSION}`;
 
 const PLATFORM_MAP = {

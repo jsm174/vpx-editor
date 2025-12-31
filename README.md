@@ -27,9 +27,6 @@ This project was initially created with the assistance of Claude AI.
 > [!NOTE]
 > This editor converts tables to use **Part Groups** instead of Layers, a new feature introduced in VPX 10.8.1. Tables saved with this editor require **VPinball 10.8.1 or later** to run.
 
-> [!NOTE]
-> The new **Ball** element (introduced in 10.8.1) is not yet supported by vpxtool.
-
 ## Features
 
 ### 2D Editor

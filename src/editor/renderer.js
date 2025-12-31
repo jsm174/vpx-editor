@@ -236,9 +236,6 @@ const resizeObserver = new ResizeObserver(() => {
 resizeObserver.observe(elements.container);
 
 window.vpxEditor.onTableLoaded(async data => {
-  console.log('=== TABLE LOADED ===');
-  console.log('VPX Path:', data.vpxPath);
-  console.log('Extracted Dir:', data.extractedDir);
   state.extractedDir = data.extractedDir;
   state.tableName = data.tableName || null;
   state.isTableLocked = data.isTableLocked || false;
@@ -252,7 +249,6 @@ window.vpxEditor.onTableLoaded(async data => {
 });
 
 window.vpxEditor.onTableClosed?.(() => {
-  console.log('=== TABLE CLOSED ===');
   state.extractedDir = null;
   state.tableName = null;
   state.isTableLocked = false;

@@ -1092,37 +1092,27 @@ async function toggleTableLock() {
   const ctx = windowRegistry.getFocused();
   if (!ctx || !ctx.extractedDir) return;
 
-  if (ctx.isTableLocked) {
-    const result = await dialog.showMessageBox(ctx.window, {
-      type: 'warning',
-      buttons: ['Unlock', 'Cancel'],
-      defaultId: 1,
-      title: 'Table Unlocking',
-      message: 'This table is locked to avoid modification.',
-      detail:
-        'You do not need to unlock it to adjust settings like the camera or rendering options.\n\nAre you sure you want to unlock the table?',
-    });
-    if (result.response !== 0) return;
+  const action = ctx.isTableLocked ? 'Unlock' : 'Lock';
+  const message = ctx.isTableLocked ? 'This table is locked to avoid modification.' : 'Lock this table?';
+  const detail = ctx.isTableLocked
+    ? 'You do not need to unlock it to adjust settings like the camera or rendering options.\n\nAre you sure you want to unlock the table?'
+    : 'This will lock the table to prevent unexpected modifications.';
 
-    ctx.isTableLocked = false;
-  } else {
-    const result = await dialog.showMessageBox(ctx.window, {
-      type: 'warning',
-      buttons: ['Lock', 'Cancel'],
-      defaultId: 1,
-      title: 'Table Locking',
-      message: 'Lock this table?',
-      detail: 'This will lock the table to prevent unexpected modifications.',
-    });
-    if (result.response !== 0) return;
-
-    ctx.isTableLocked = true;
-  }
+  const result = await dialog.showMessageBox(ctx.window, {
+    type: 'warning',
+    buttons: [action, 'Cancel'],
+    defaultId: 1,
+    title: `Table ${action}ing`,
+    message,
+    detail,
+  });
+  if (result.response !== 0) return;
 
   const gamedataPath = path.join(ctx.extractedDir, 'gamedata.json');
   const gamedataContent = await fs.promises.readFile(gamedataPath, 'utf-8');
   const gamedata = JSON.parse(gamedataContent);
-  gamedata.locked = ctx.isTableLocked ? 1 : 0;
+  gamedata.locked = (gamedata.locked || 0) + 1;
+  ctx.isTableLocked = (gamedata.locked & 1) !== 0;
   await fs.promises.writeFile(gamedataPath, JSON.stringify(gamedata, null, 2));
 
   ctx.window.webContents.send('table-lock-changed', ctx.isTableLocked);
