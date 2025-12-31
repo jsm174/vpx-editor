@@ -6,6 +6,7 @@ let selectedItems = [];
 let selectedManagerCollection = null;
 let draggedIndex = null;
 let creatingCollection = false;
+let editorOpen = false;
 
 setupThemeListener();
 
@@ -42,6 +43,29 @@ window.vpxEditor.onSetDisabled?.(disabled => {
     selectedItems = [];
     selectedManagerCollection = null;
     document.getElementById('collection-manager-list').innerHTML = '';
+  }
+});
+
+window.vpxEditor.onSetEditorOpen?.(isOpen => {
+  editorOpen = isOpen;
+  const buttons = document.querySelector('.collection-manager-buttons');
+  const footer = document.querySelector('.collection-manager-footer');
+  const list = document.getElementById('collection-manager-list');
+  if (buttons) {
+    buttons.querySelectorAll('button').forEach(btn => {
+      btn.disabled = isOpen;
+      btn.style.opacity = isOpen ? '0.5' : '';
+    });
+  }
+  if (footer) {
+    footer.querySelectorAll('button').forEach(btn => {
+      btn.disabled = isOpen;
+      btn.style.opacity = isOpen ? '0.5' : '';
+    });
+  }
+  if (list) {
+    list.style.pointerEvents = isOpen ? 'none' : '';
+    list.style.opacity = isOpen ? '0.7' : '';
   }
 });
 

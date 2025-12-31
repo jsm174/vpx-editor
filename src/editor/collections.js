@@ -269,3 +269,15 @@ export function removeItemFromAllCollections(itemName) {
   }
   return modified;
 }
+
+export function renameItemInAllCollections(oldName, newName) {
+  let modified = false;
+  for (const collection of state.collections) {
+    const index = collection.items.indexOf(oldName);
+    if (index !== -1) {
+      collection.items[index] = newName;
+      modified = true;
+    }
+  }
+  return modified;
+}

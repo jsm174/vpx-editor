@@ -10,7 +10,7 @@ import {
   getUnitSuffix,
   getItemBounds,
 } from './utils.js';
-import { updateItemsList, selectItem, updateItemStatusInfo } from './items-panel.js';
+import { updateItemsList, selectItem, updateItemStatusInfo, updateSelectionStatus } from './items-panel.js';
 import { updatePropertiesPanel, renameObject, renameTable } from './properties-panel.js';
 import { render, fitToView } from './canvas-renderer.js';
 import { initPanelTabs, updateLayersList, updateCollectionsList, onCanvasSelectionChanged } from './layers-panel.js';
@@ -1162,6 +1162,7 @@ window.vpxEditor.onSelectItem?.(itemName => {
 window.vpxEditor.onSelectItems?.(itemNames => {
   if (itemNames && itemNames.length > 0) {
     setSelection(itemNames, itemNames[0]);
+    updateSelectionStatus();
     updatePropertiesPanel();
     render();
     onCanvasSelectionChanged();
@@ -1380,6 +1381,11 @@ window.vpxEditor.onUndoBegin?.(description => {
 
 window.vpxEditor.onUndoEnd?.(() => {
   undoManager.endUndo();
+});
+
+window.vpxEditor.onCollectionsUpdated?.(collections => {
+  state.collections = collections;
+  updateCollectionsList();
 });
 
 window.vpxEditor.onUndoCancel?.(() => {

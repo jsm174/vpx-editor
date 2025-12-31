@@ -3,6 +3,7 @@ import { setupThemeListener, setupKeyboardShortcuts } from '../../shared/window-
 let collectionName = '';
 let editorIncludedItems = [];
 let editorAvailableItems = [];
+let existingNames = [];
 let selectedAvailable = null;
 let selectedIncluded = null;
 let draggedIncludedIndex = null;
@@ -15,6 +16,7 @@ window.vpxEditor.onInitCollectionEditor?.(data => {
   collectionName = data.collectionName;
   editorIncludedItems = [...data.includedItems];
   editorAvailableItems = [...data.availableItems];
+  existingNames = data.existingNames || [];
 
   document.getElementById('collection-editor-name').value = data.collectionName;
   document.getElementById('collection-editor-fire-events').checked = data.fireEvents ?? false;
@@ -29,6 +31,34 @@ window.vpxEditor.onInitCollectionEditor?.(data => {
   document.getElementById('collection-editor-included-filter').value = '';
 
   renderEditorLists();
+  validateName();
+});
+
+window.vpxEditor.onUpdateCollectionEditorItems?.(data => {
+  const allItems = data.allItems || [];
+  existingNames = data.existingNames || [];
+
+  const newIncluded = editorIncludedItems.filter(name => allItems.includes(name));
+  const newAvailable = allItems.filter(name => !newIncluded.includes(name));
+
+  const addedItems = allItems.filter(
+    name => !editorIncludedItems.includes(name) && !editorAvailableItems.includes(name)
+  );
+  const renamedInIncluded = editorIncludedItems.filter(name => !allItems.includes(name));
+
+  if (renamedInIncluded.length > 0 && addedItems.length > 0) {
+    for (let i = 0; i < editorIncludedItems.length; i++) {
+      if (!allItems.includes(editorIncludedItems[i]) && addedItems.length > 0) {
+        editorIncludedItems[i] = addedItems.shift();
+      }
+    }
+  }
+
+  editorIncludedItems = editorIncludedItems.filter(name => allItems.includes(name));
+  editorAvailableItems = allItems.filter(name => !editorIncludedItems.includes(name));
+
+  renderEditorLists();
+  validateName();
 });
 
 function renderEditorLists() {
@@ -201,11 +231,35 @@ document.getElementById('collection-editor-down').addEventListener('click', () =
   }
 });
 
+function validateName() {
+  const input = document.getElementById('collection-editor-name');
+  const okBtn = document.getElementById('collection-editor-ok');
+  const newName = input.value.trim();
+
+  if (!newName) {
+    okBtn.disabled = true;
+    return false;
+  }
+
+  const nameExists = existingNames.some(n => n === newName && n !== collectionName);
+  if (nameExists) {
+    okBtn.disabled = true;
+    return false;
+  }
+
+  okBtn.disabled = false;
+  return true;
+}
+
+document.getElementById('collection-editor-name').addEventListener('input', validateName);
+
 document.getElementById('collection-editor-cancel').addEventListener('click', () => {
   window.vpxEditor.collectionEditorCancel();
 });
 
 document.getElementById('collection-editor-ok').addEventListener('click', () => {
+  if (!validateName()) return;
+
   const newName = document.getElementById('collection-editor-name').value.trim();
   const fireEvents = document.getElementById('collection-editor-fire-events').checked;
   const stopSingle = document.getElementById('collection-editor-stop-single').checked;

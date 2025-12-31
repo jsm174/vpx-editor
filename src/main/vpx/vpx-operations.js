@@ -179,6 +179,7 @@ export async function extractVPX(vpxPath, options = {}, deps) {
     upgradePlayfieldMeshVisibility,
     upgradeLayersToPartGroups,
     upgradePartGroupIsLocked,
+    cleanupCollectionItems,
     settings,
     saveSettings,
   } = deps;
@@ -313,6 +314,7 @@ export async function extractVPX(vpxPath, options = {}, deps) {
         await fs.promises.rm(tempDir, { recursive: true, force: true });
 
         sendConsoleOutput(ctx, 'success', 'Extraction complete');
+        sendConsoleOutput(ctx, 'info', `Work folder: ${workDir}`);
         const upgraded = await upgradeOldMaterialsFormat(ctx.extractedDir);
         if (upgraded) {
           sendConsoleOutput(ctx, 'info', 'Upgraded old materials format to new format');
@@ -320,6 +322,7 @@ export async function extractVPX(vpxPath, options = {}, deps) {
         await upgradePlayfieldMeshVisibility(ctx.extractedDir, (type, text) => sendConsoleOutput(ctx, type, text));
         await upgradeLayersToPartGroups(ctx.extractedDir, (type, text) => sendConsoleOutput(ctx, type, text));
         await upgradePartGroupIsLocked(ctx.extractedDir, (type, text) => sendConsoleOutput(ctx, type, text));
+        await cleanupCollectionItems(ctx.extractedDir, (type, text) => sendConsoleOutput(ctx, type, text));
         await readTableLockState(ctx);
         addToRecentFiles(vpxPath, { settings, saveSettings, createMenu });
         ctx.updateWindowTitle();
@@ -396,6 +399,7 @@ export async function createNewTable(templateName, displayName, deps) {
     upgradePlayfieldMeshVisibility,
     upgradeLayersToPartGroups,
     upgradePartGroupIsLocked,
+    cleanupCollectionItems,
     settings,
   } = deps;
 
@@ -447,6 +451,7 @@ export async function createNewTable(templateName, displayName, deps) {
         await upgradePlayfieldMeshVisibility(ctx.extractedDir);
         await upgradeLayersToPartGroups(ctx.extractedDir);
         await upgradePartGroupIsLocked(ctx.extractedDir);
+        await cleanupCollectionItems(ctx.extractedDir);
         ctx.isTableLocked = false;
         ctx.updateWindowTitle();
         ctx.window.webContents.send('table-loaded', {

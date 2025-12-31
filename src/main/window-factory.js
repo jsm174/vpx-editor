@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, Menu } from 'electron';
 import path from 'node:path';
 import fs from 'fs-extra';
+import { getItemNameFromFileName } from '../shared/gameitem-utils.js';
 
 let settingsWindow = null;
 let transformWindow = null;
@@ -31,6 +32,10 @@ export function createWindowFactory(deps) {
     createMenu,
     MAIN_WINDOW_VITE_DEV_SERVER_URL,
     MAIN_WINDOW_VITE_NAME,
+    isCollectionEditorOpen,
+    focusCollectionEditor,
+    isCollectionPromptOpen,
+    focusCollectionPrompt,
   } = deps;
 
   function setupDialogEditMenu(browserWindow) {
@@ -268,8 +273,8 @@ export function createWindowFactory(deps) {
             const itemPath = path.join(gameitemsDir, file);
             const itemContent = await fs.promises.readFile(itemPath, 'utf-8');
             const item = JSON.parse(itemContent);
-            const name = file.replace('.json', '');
-            items[name] = { _type: item._type };
+            const itemType = Object.keys(item)[0];
+            items[getItemNameFromFileName(file)] = { _type: itemType };
           }
         }
       }
@@ -761,6 +766,19 @@ export function createWindowFactory(deps) {
         { query: themeQuery }
       );
     }
+
+    ctx.collectionManagerWindow.on('close', e => {
+      if (isCollectionEditorOpen?.()) {
+        e.preventDefault();
+        focusCollectionEditor?.();
+        return;
+      }
+      if (isCollectionPromptOpen?.()) {
+        e.preventDefault();
+        focusCollectionPrompt?.();
+        return;
+      }
+    });
 
     ctx.collectionManagerWindow.on('closed', () => {
       ctx.collectionManagerWindow = null;

@@ -10,6 +10,7 @@ import {
   upgradePlayfieldMeshVisibility,
   upgradeLayersToPartGroups,
   upgradePartGroupIsLocked,
+  cleanupCollectionItems,
 } from './table-upgrades.js';
 import { WindowContext, WindowRegistry } from './window-context.js';
 import {
@@ -50,6 +51,7 @@ function getVpxOpsDeps() {
     upgradePlayfieldMeshVisibility,
     upgradeLayersToPartGroups,
     upgradePartGroupIsLocked,
+    cleanupCollectionItems,
     settings,
     saveSettings,
   };
@@ -457,7 +459,7 @@ function createMenu() {
   const infoOpen = !!infoWindow;
   const confirmOpen = !!confirmWindow;
   const workFolderOpen = !!workFolderWindow;
-  const collectionDialogOpen = !!collectionPromptWindow || !!collectionEditorWindow;
+  const collectionDialogOpen = !!collectionPromptWindow;
   const meshImportOpen = !!meshImportWindow;
   const drawingOrderOpen = !!drawingOrderWindow;
   const dialogOpen =
@@ -1167,8 +1169,13 @@ ipcMain.handle('write-file', async (event, filePath, content) => {
     await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
     await fs.promises.writeFile(filePath, content, 'utf-8');
     const ctx = windowRegistry.getContextFromEvent(event);
-    if (ctx?.searchSelectWindow && (filePath.includes('/gameitems/') || filePath.endsWith('/gameitems.json'))) {
-      updateSearchSelectWindow(ctx);
+    if (filePath.includes('/gameitems/') || filePath.endsWith('/gameitems.json')) {
+      if (ctx?.searchSelectWindow) {
+        updateSearchSelectWindow(ctx);
+      }
+      if (ctx) {
+        updateCollectionEditorWindow(ctx);
+      }
     }
     return { success: true };
   } catch (err) {
@@ -2044,12 +2051,23 @@ ipcMain.on('open-collection-editor', async (event, collectionName) => {
   const collection = collections.find(c => c.name === collectionName);
   if (!collection) return;
 
-  const allItems = Object.keys(ctx.items || {})
-    .filter(name => {
-      const item = ctx.items[name];
-      return item && item._type !== 'Decal';
-    })
-    .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+  const gameitemsDir = `${ctx.extractedDir}/gameitems`;
+  const allItems = [];
+  if (fs.existsSync(gameitemsDir)) {
+    const files = await fs.promises.readdir(gameitemsDir);
+    for (const file of files) {
+      if (file.endsWith('.json')) {
+        const itemPath = path.join(gameitemsDir, file);
+        const itemContent = await fs.promises.readFile(itemPath, 'utf-8');
+        const item = JSON.parse(itemContent);
+        const itemType = Object.keys(item)[0];
+        if (itemType !== 'Decal') {
+          allItems.push(getItemNameFromFileName(file));
+        }
+      }
+    }
+  }
+  allItems.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
 
   const includedItems = [...collection.items];
   const availableItems = allItems.filter(name => !includedItems.includes(name));
@@ -2072,9 +2090,12 @@ ipcMain.on('open-collection-editor', async (event, collectionName) => {
     },
   });
 
-  windowRegistry.forEach(c => {
-    c.window.webContents.send('set-input-disabled', true);
-  });
+  collectionEditorContext = ctx;
+
+  if (ctx.collectionManagerWindow && !ctx.collectionManagerWindow.isDestroyed()) {
+    ctx.collectionManagerWindow.webContents.send('set-editor-open', true);
+  }
+
   createMenu();
   setupDialogEditMenu(collectionEditorWindow);
 
@@ -2090,10 +2111,14 @@ ipcMain.on('open-collection-editor', async (event, collectionName) => {
   }
 
   collectionEditorWindow.on('closed', () => {
-    windowRegistry.forEach(c => {
-      c.window.webContents.send('set-input-disabled', false);
-    });
+    if (
+      collectionEditorContext?.collectionManagerWindow &&
+      !collectionEditorContext.collectionManagerWindow.isDestroyed()
+    ) {
+      collectionEditorContext.collectionManagerWindow.webContents.send('set-editor-open', false);
+    }
     collectionEditorWindow = null;
+    collectionEditorContext = null;
     createMenu();
   });
 
@@ -2102,6 +2127,7 @@ ipcMain.on('open-collection-editor', async (event, collectionName) => {
       collectionName: collection.name,
       includedItems,
       availableItems,
+      existingNames: collections.map(c => c.name),
       fireEvents: collection.fire_events ?? false,
       stopSingle: collection.stop_single_events ?? false,
       groupElements: collection.group_elements ?? false,
@@ -2117,7 +2143,7 @@ ipcMain.on('collection-editor-cancel', () => {
 });
 
 ipcMain.on('collection-editor-save', async (event, data) => {
-  const ctx = getContextForManagerEvent(event);
+  const ctx = collectionEditorContext;
   if (!ctx?.extractedDir) return;
 
   ctx.window.webContents.send('undo-begin', `Edit collection ${data.originalName}`);
@@ -2133,6 +2159,12 @@ ipcMain.on('collection-editor-save', async (event, data) => {
   const collection = collections.find(c => c.name === data.originalName);
   if (collection) {
     if (data.newName && data.newName !== data.originalName) {
+      const nameExists = collections.some(c => c.name === data.newName);
+      if (nameExists) {
+        ctx.window.webContents.send('undo-cancel');
+        collectionEditorWindow?.close();
+        return;
+      }
       collection.name = data.newName;
     }
     collection.items = data.items;
@@ -2146,6 +2178,7 @@ ipcMain.on('collection-editor-save', async (event, data) => {
   }
 
   ctx.window.webContents.send('undo-end');
+  ctx.window.webContents.send('collections-updated', collections);
 
   if (ctx.collectionManagerWindow) {
     ctx.collectionManagerWindow.webContents.send('collections-changed', { collections });
@@ -2211,9 +2244,13 @@ ipcMain.on('open-collection-prompt', async (event, mode, currentName) => {
     },
   });
 
-  windowRegistry.forEach(c => {
-    c.window.webContents.send('set-input-disabled', true);
-  });
+  if (
+    collectionPromptContext?.collectionManagerWindow &&
+    !collectionPromptContext.collectionManagerWindow.isDestroyed()
+  ) {
+    collectionPromptContext.collectionManagerWindow.webContents.send('set-editor-open', true);
+  }
+
   createMenu();
   setupDialogEditMenu(collectionPromptWindow);
 
@@ -2229,9 +2266,14 @@ ipcMain.on('open-collection-prompt', async (event, mode, currentName) => {
   }
 
   collectionPromptWindow.on('closed', () => {
-    windowRegistry.forEach(c => {
-      c.window.webContents.send('set-input-disabled', false);
-    });
+    const editorStillOpen = collectionEditorWindow && !collectionEditorWindow.isDestroyed();
+    if (
+      collectionPromptContext?.collectionManagerWindow &&
+      !collectionPromptContext.collectionManagerWindow.isDestroyed() &&
+      !editorStillOpen
+    ) {
+      collectionPromptContext.collectionManagerWindow.webContents.send('set-editor-open', false);
+    }
     collectionPromptWindow = null;
     collectionPromptContext = null;
     collectionPromptMode = null;
@@ -2284,6 +2326,7 @@ ipcMain.on('collection-prompt-submit', async (event, name) => {
     ctx.markDirty();
 
     ctx.window.webContents.send('undo-end');
+    ctx.window.webContents.send('collections-updated', collections);
 
     if (ctx.collectionManagerWindow) {
       ctx.collectionManagerWindow.webContents.send('collections-changed', { collections });
@@ -2308,6 +2351,7 @@ ipcMain.on('collection-prompt-submit', async (event, name) => {
     }
 
     ctx.window.webContents.send('undo-end');
+    ctx.window.webContents.send('collections-updated', collections);
 
     if (ctx.collectionManagerWindow) {
       ctx.collectionManagerWindow.webContents.send('collections-changed', { collections });
@@ -3120,6 +3164,49 @@ function updateSearchSelectWindow(ctx) {
   );
 }
 
+let collectionEditorUpdateTimer = null;
+function updateCollectionEditorWindow(ctx) {
+  if (!collectionEditorWindow || collectionEditorWindow.isDestroyed()) return;
+  if (collectionEditorUpdateTimer) {
+    clearTimeout(collectionEditorUpdateTimer);
+  }
+  collectionEditorUpdateTimer = setTimeout(async () => {
+    collectionEditorUpdateTimer = null;
+    if (!collectionEditorWindow || collectionEditorWindow.isDestroyed()) return;
+    if (!ctx?.extractedDir) return;
+
+    const gameitemsDir = `${ctx.extractedDir}/gameitems`;
+    const allItems = [];
+    if (fs.existsSync(gameitemsDir)) {
+      const files = await fs.promises.readdir(gameitemsDir);
+      for (const file of files) {
+        if (file.endsWith('.json')) {
+          const itemPath = path.join(gameitemsDir, file);
+          const itemContent = await fs.promises.readFile(itemPath, 'utf-8');
+          const item = JSON.parse(itemContent);
+          const itemType = Object.keys(item)[0];
+          if (itemType !== 'Decal') {
+            allItems.push(getItemNameFromFileName(file));
+          }
+        }
+      }
+    }
+    allItems.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+
+    const collectionsPath = `${ctx.extractedDir}/collections.json`;
+    let collections = [];
+    if (fs.existsSync(collectionsPath)) {
+      const content = await fs.promises.readFile(collectionsPath, 'utf-8');
+      collections = JSON.parse(content);
+    }
+
+    collectionEditorWindow.webContents.send('update-items', {
+      allItems,
+      existingNames: collections.map(c => c.name),
+    });
+  }, 100);
+}
+
 function showDrawingOrder(mode) {
   const ctx = windowRegistry.getFocused();
   if (!ctx?.extractedDir) return;
@@ -3611,6 +3698,19 @@ function openCollectionManagerWindow() {
     );
   }
 
+  ctx.collectionManagerWindow.on('close', e => {
+    if (collectionEditorWindow && !collectionEditorWindow.isDestroyed()) {
+      e.preventDefault();
+      collectionEditorWindow.focus();
+      return;
+    }
+    if (collectionPromptWindow && !collectionPromptWindow.isDestroyed()) {
+      e.preventDefault();
+      collectionPromptWindow.focus();
+      return;
+    }
+  });
+
   ctx.collectionManagerWindow.on('closed', () => {
     ctx.collectionManagerWindow = null;
   });
@@ -3643,8 +3743,8 @@ async function getCollectionManagerData(ctx) {
           const itemPath = path.join(gameitemsDir, file);
           const itemContent = await fs.promises.readFile(itemPath, 'utf-8');
           const item = JSON.parse(itemContent);
-          const name = file.replace('.json', '');
-          items[name] = { _type: item._type };
+          const itemType = Object.keys(item)[0];
+          items[getItemNameFromFileName(file)] = { _type: itemType };
         }
       }
     }
@@ -3873,6 +3973,7 @@ let aboutWindow = null;
 let tableInfoWindow = null;
 let tableInfoWindowContext = null;
 let collectionEditorWindow = null;
+let collectionEditorContext = null;
 let collectionPromptWindow = null;
 let collectionPromptContext = null;
 let collectionPromptMode = null;

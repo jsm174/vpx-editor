@@ -6,6 +6,7 @@ import { updateLayersList, getSelectedPartGroup } from './layers-panel.js';
 import { updatePropertiesPanel, showRenameModal } from './properties-panel.js';
 import { render } from './canvas-renderer.js';
 import { updateClipboardMenuState } from './clipboard.js';
+import { renameItemInAllCollections, saveCollections } from './collections.js';
 
 export function toggleItemLock(itemName) {
   const item = state.items[itemName];
@@ -208,6 +209,11 @@ export async function renamePartGroup(oldName, newName) {
   if (giIndex >= 0) {
     state.gameitems[giIndex].file_name = `PartGroup.${newName}.json`;
     await window.vpxEditor.writeFile(`${state.extractedDir}/gameitems.json`, JSON.stringify(state.gameitems, null, 2));
+  }
+
+  if (renameItemInAllCollections(oldName, newName)) {
+    undoManager.markCollectionsForUndo();
+    await saveCollections();
   }
 
   undoManager.endUndo();

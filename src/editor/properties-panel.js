@@ -1,7 +1,7 @@
 import { state, elements, undoManager, isItemSelected } from './state.js';
 import { getItemNameFromFileName } from '../shared/gameitem-utils.js';
 import { VIEW_MODE_3D } from '../shared/constants.js';
-import { getCollectionNameForItem } from './collections.js';
+import { getCollectionNameForItem, renameItemInAllCollections, saveCollections } from './collections.js';
 import { render } from './canvas-renderer.js';
 import { refresh3DScene, render3D, is3DInitialized, invalidateItem } from './canvas-renderer-3d.js';
 import { loadBackdropImage } from './table-loader.js';
@@ -1555,6 +1555,11 @@ export async function renameObject(oldName, newName) {
       await window.vpxEditor.writeFile(gameitemsPath, JSON.stringify(gameitems, null, 2));
       state.gameitems = gameitems;
     }
+  }
+
+  if (renameItemInAllCollections(oldName, newName)) {
+    undoManager.markCollectionsForUndo();
+    await saveCollections();
   }
 
   undoManager.endUndo();

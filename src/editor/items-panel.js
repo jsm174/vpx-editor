@@ -64,6 +64,34 @@ export function updateItemStatusInfo(item) {
   }
 }
 
+export function updateSelectionStatus() {
+  const item = state.items[state.primarySelectedItem];
+  const pos = item ? getItemCenter(item) : null;
+
+  if (elements.statusElement) {
+    if (state.selectedItems.length > 1) {
+      elements.statusElement.textContent = `${state.selectedItems.length} items`;
+    } else if (state.primarySelectedItem && item) {
+      const layer = item.part_group_name || item._layerName || '';
+      elements.statusElement.textContent = layer ? `${layer}/${state.primarySelectedItem}` : state.primarySelectedItem;
+    } else {
+      elements.statusElement.textContent = state.gamedata?.name || '';
+    }
+  }
+
+  if (elements.statusOrigin && state.gamedata) {
+    if (pos) {
+      elements.statusOrigin.textContent = `${pos.x.toFixed(4)}, ${pos.y.toFixed(4)}`;
+    } else {
+      elements.statusOrigin.textContent = '';
+    }
+  }
+
+  if (elements.statusInfo) {
+    elements.statusInfo.textContent = item ? getItemStatusInfo(item) : '';
+  }
+}
+
 registerCallback('focusItemIn3D');
 registerCallback('focusBoundsIn3D');
 registerCallback('selectionChangeCallback');
@@ -129,28 +157,7 @@ export function selectItem(name, skipFocus = false, resetTab = false) {
   const item = state.items[state.primarySelectedItem];
   const pos = item ? getItemCenter(item) : null;
 
-  if (elements.statusElement) {
-    if (state.selectedItems.length > 1) {
-      elements.statusElement.textContent = `${state.selectedItems.length} items`;
-    } else if (state.primarySelectedItem && item) {
-      const layer = item.part_group_name || item._layerName || '';
-      elements.statusElement.textContent = layer ? `${layer}/${state.primarySelectedItem}` : state.primarySelectedItem;
-    } else {
-      elements.statusElement.textContent = state.gamedata?.name || '';
-    }
-  }
-
-  if (elements.statusOrigin && state.gamedata) {
-    if (pos) {
-      elements.statusOrigin.textContent = `${pos.x.toFixed(4)}, ${pos.y.toFixed(4)}`;
-    } else {
-      elements.statusOrigin.textContent = '';
-    }
-  }
-
-  if (elements.statusInfo) {
-    elements.statusInfo.textContent = item ? getItemStatusInfo(item) : '';
-  }
+  updateSelectionStatus();
 
   if (state.tool === 'pan') {
     state.tool = 'select';

@@ -47,6 +47,8 @@ contextBridge.exposeInMainWorld('vpxEditor', {
   onSelectAll: callback => ipcRenderer.on('select-all', () => callback()),
   onUndoBegin: callback => ipcRenderer.on('undo-begin', (event, description) => callback(description)),
   onUndoEnd: callback => ipcRenderer.on('undo-end', () => callback()),
+  onCollectionsUpdated: callback =>
+    ipcRenderer.on('collections-updated', (event, collections) => callback(collections)),
   onUndoCancel: callback => ipcRenderer.on('undo-cancel', () => callback()),
   onUndoMarkImages: callback => ipcRenderer.on('undo-mark-images', () => callback()),
   onUndoMarkImageCreate: callback =>
@@ -162,6 +164,7 @@ contextBridge.exposeInMainWorld('vpxEditor', {
   cancelTransform: () => ipcRenderer.send('cancel-transform'),
   onInitCollectionManager: callback => ipcRenderer.on('init-collection-manager', (event, data) => callback(data)),
   onCollectionsChanged: callback => ipcRenderer.on('collections-changed', (event, data) => callback(data)),
+  onSetEditorOpen: callback => ipcRenderer.on('set-editor-open', (event, isOpen) => callback(isOpen)),
   onSetDisabled: callback => ipcRenderer.on('set-disabled', (event, disabled) => callback(disabled)),
   collectionCreate: name => ipcRenderer.send('collection-create', name),
   collectionCreateFromSelection: () => ipcRenderer.send('collection-create-from-selection'),
@@ -176,6 +179,7 @@ contextBridge.exposeInMainWorld('vpxEditor', {
   openCollectionEditor: collectionName => ipcRenderer.send('open-collection-editor', collectionName),
   openCollectionPrompt: (mode, currentName) => ipcRenderer.send('open-collection-prompt', mode, currentName),
   onInitCollectionEditor: callback => ipcRenderer.on('init-collection-editor', (event, data) => callback(data)),
+  onUpdateCollectionEditorItems: callback => ipcRenderer.on('update-items', (event, data) => callback(data)),
   collectionEditorCancel: () => ipcRenderer.send('collection-editor-cancel'),
   collectionEditorSave: data => ipcRenderer.send('collection-editor-save', data),
   onInitCollectionPrompt: callback => ipcRenderer.on('init-collection-prompt', (event, data) => callback(data)),

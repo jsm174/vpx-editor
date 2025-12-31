@@ -257,3 +257,51 @@ export async function upgradePartGroupIsLocked(dir, sendConsoleOutput) {
 
   return upgraded > 0;
 }
+
+export async function cleanupCollectionItems(dir, sendConsoleOutput) {
+  const collectionsPath = path.join(dir, 'collections.json');
+  const gameitemsPath = path.join(dir, 'gameitems.json');
+
+  if (!(await fileExists(collectionsPath)) || !(await fileExists(gameitemsPath))) {
+    return false;
+  }
+
+  const collections = JSON.parse(await fs.promises.readFile(collectionsPath, 'utf-8'));
+  const gameitems = JSON.parse(await fs.promises.readFile(gameitemsPath, 'utf-8'));
+
+  const validItemNames = new Set();
+  for (const item of gameitems) {
+    const name = item.file_name.replace(/^[^.]+\./, '').replace(/\.json$/, '');
+    validItemNames.add(name);
+  }
+
+  let modified = false;
+  const removedItems = [];
+
+  for (const collection of collections) {
+    const originalCount = collection.items.length;
+    const validItems = collection.items.filter(itemName => {
+      if (validItemNames.has(itemName)) {
+        return true;
+      }
+      removedItems.push({ collection: collection.name, item: itemName });
+      return false;
+    });
+
+    if (validItems.length !== originalCount) {
+      collection.items = validItems;
+      modified = true;
+    }
+  }
+
+  if (modified) {
+    await fs.promises.writeFile(collectionsPath, JSON.stringify(collections, null, 2));
+    if (sendConsoleOutput) {
+      for (const { collection, item } of removedItems) {
+        sendConsoleOutput('warn', `Removed missing item "${item}" from collection "${collection}"`);
+      }
+    }
+  }
+
+  return modified;
+}
