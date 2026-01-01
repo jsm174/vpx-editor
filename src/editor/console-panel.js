@@ -1,7 +1,15 @@
 import { showConsoleContextMenu } from './context-menu.js';
 import { resizeCanvas } from './view-manager.js';
+import { escapeHtml } from '../shared/window-utils.js';
 
 const consoleOutput = document.getElementById('console-output');
+
+function formatLogLine(text) {
+  const escaped = escapeHtml(text);
+  if (/ (ERROR|FATAL) /.test(text)) return `<span class="log-error">${escaped}</span>`;
+  if (/ WARN /.test(text)) return `<span class="log-warn">${escaped}</span>`;
+  return escaped;
+}
 const consoleResizeHandle = document.getElementById('console-resize-handle');
 const consolePanel = document.getElementById('console-panel');
 let consolePinned = false;
@@ -36,13 +44,19 @@ function hideConsole() {
 function appendConsoleLine(text, type = 'stdout') {
   if (!consoleOutput) return;
   const lines = text.split('\n');
-  const addTimestamp = type === 'info' || type === 'command' || type === 'success' || type === 'error';
+  const addTimestamp =
+    type === 'info' || type === 'command' || type === 'success' || type === 'error' || type === 'warn';
   const timestamp = addTimestamp ? formatTimestamp() : null;
+  const useLogLevel = type === 'stdout' || type === 'stderr';
   for (const lineText of lines) {
-    if (lineText === '' && (type === 'stdout' || type === 'stderr')) continue;
+    if (lineText === '' && useLogLevel) continue;
     const line = document.createElement('div');
     line.className = `line ${type}`;
-    line.textContent = timestamp ? `${timestamp}: ${lineText || ' '}` : lineText;
+    if (useLogLevel) {
+      line.innerHTML = formatLogLine(lineText);
+    } else {
+      line.textContent = timestamp ? `${timestamp}: ${lineText || ' '}` : lineText;
+    }
     consoleOutput.appendChild(line);
   }
   if (!consolePinned) {

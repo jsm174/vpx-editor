@@ -1418,6 +1418,12 @@ button:focus {
   color: #f48771;
 }
 
+#console-output .log-error { color: #c62828; }
+#console-output .log-warn { color: #7b5800; }
+
+[data-theme="dark"] #console-output .log-error { color: #ef5350; }
+[data-theme="dark"] #console-output .log-warn { color: #ffc107; }
+
 .collection-manager-content {
   position: relative;
   background: var(--bg-panel);
