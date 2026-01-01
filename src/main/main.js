@@ -613,6 +613,20 @@ function createMenu() {
           },
         },
         {
+          id: 'cut',
+          label: 'Cut',
+          accelerator: 'CmdOrCtrl+X',
+          enabled: clipboardState.hasSelection && !isLocked && !dialogOpen,
+          click: (menuItem, focusedWindow) => {
+            const editorCtx = windowRegistry.getByWindow(focusedWindow);
+            if (editorCtx) {
+              editorCtx.window.webContents.send('cut');
+            } else if (focusedWindow) {
+              focusedWindow.webContents.cut();
+            }
+          },
+        },
+        {
           id: 'copy',
           label: 'Copy',
           accelerator: 'CmdOrCtrl+C',
