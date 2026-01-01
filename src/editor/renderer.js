@@ -384,7 +384,7 @@ elements.canvas.addEventListener('mousedown', e => {
       return;
     }
 
-    if (state.tool !== 'magnify' && (state.tool === 'pan' || e.shiftKey || e.altKey)) {
+    if (state.tool !== 'magnify' && (state.tool === 'pan' || e.altKey)) {
       state.isDragging = true;
       state.dragStart = { x: e.clientX - state.panX, y: e.clientY - state.panY };
       setCanvasCursor('grabbing');
@@ -431,23 +431,43 @@ elements.canvas.addEventListener('mousedown', e => {
         dragRect.active = true;
         dragRect.startX = dragRect.endX = world.x;
         dragRect.startY = dragRect.endY = world.y;
-        selectItem(null, true);
-      } else {
-        const hitInSelection = state.selectedItems.find(name => hits.includes(name));
-        if (!hitInSelection) {
-          selectItem(hits[0], true);
+        if (!e.shiftKey) {
+          selectItem(null, true);
         }
-        const anyUnlocked = state.selectedItems.some(name => !state.items[name]?.is_locked);
-        if (anyUnlocked && !state.isTableLocked) {
-          undoManager.beginUndo('Move object');
-          for (const itemName of state.selectedItems) {
-            if (!state.items[itemName]?.is_locked) {
-              undoManager.markForUndo(itemName);
+      } else {
+        const clickedItem = hits[0];
+
+        if (e.shiftKey) {
+          if (state.selectedItems.includes(clickedItem)) {
+            const newSelection = state.selectedItems.filter(n => n !== clickedItem);
+            if (newSelection.length > 0) {
+              setSelection(newSelection, newSelection[0]);
+            } else {
+              selectItem(null, true);
             }
+          } else {
+            const newSelection = [...state.selectedItems, clickedItem];
+            setSelection(newSelection, clickedItem);
           }
-          state.draggingObject = true;
-          state.objectMoved = false;
-          state.objectDragStart = { x: world.x, y: world.y };
+          updatePropertiesPanel();
+          render();
+        } else {
+          const hitInSelection = state.selectedItems.find(name => hits.includes(name));
+          if (!hitInSelection) {
+            selectItem(hits[0], true);
+          }
+          const anyUnlocked = state.selectedItems.some(name => !state.items[name]?.is_locked);
+          if (anyUnlocked && !state.isTableLocked) {
+            undoManager.beginUndo('Move object');
+            for (const itemName of state.selectedItems) {
+              if (!state.items[itemName]?.is_locked) {
+                undoManager.markForUndo(itemName);
+              }
+            }
+            state.draggingObject = true;
+            state.objectMoved = false;
+            state.objectDragStart = { x: world.x, y: world.y };
+          }
         }
       }
     }
