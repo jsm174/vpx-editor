@@ -118,6 +118,7 @@ contextBridge.exposeInMainWorld('vpxEditor', {
   browseExecutable: name => ipcRenderer.invoke('browse-executable', name),
   checkFileExists: filePath => ipcRenderer.invoke('check-file-exists', filePath),
   saveSettings: settings => ipcRenderer.invoke('save-settings', settings),
+  resetWindowBounds: () => ipcRenderer.send('reset-window-bounds'),
   onGridSizeChanged: callback => ipcRenderer.on('grid-size-changed', (event, gridSize) => callback(gridSize)),
   getGridSize: () => ipcRenderer.invoke('get-grid-size'),
   onTextureQualityChanged: callback => ipcRenderer.on('texture-quality-changed', (event, quality) => callback(quality)),

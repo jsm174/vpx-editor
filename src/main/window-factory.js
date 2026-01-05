@@ -36,6 +36,8 @@ export function createWindowFactory(deps) {
     focusCollectionEditor,
     isCollectionPromptOpen,
     focusCollectionPrompt,
+    getWindowBounds,
+    trackWindowBounds,
   } = deps;
 
   function setupDialogEditMenu(browserWindow) {
@@ -458,9 +460,9 @@ export function createWindowFactory(deps) {
       ? path.join(__dirname, 'image-manager.js')
       : path.join(process.cwd(), '.vite/build/image-manager.js');
 
+    const bounds = getWindowBounds('imageManager', { width: 950, height: 650 });
     ctx.imageManagerWindow = new BrowserWindow({
-      width: 950,
-      height: 650,
+      ...bounds,
       title: 'Image Manager',
       minimizable: false,
       webPreferences: {
@@ -469,6 +471,7 @@ export function createWindowFactory(deps) {
         nodeIntegration: false,
       },
     });
+    trackWindowBounds(ctx.imageManagerWindow, 'imageManager');
     setupDialogEditMenu(ctx.imageManagerWindow);
 
     const themeQuery = { theme: getActualTheme(settings.theme) };
@@ -487,6 +490,8 @@ export function createWindowFactory(deps) {
     });
 
     ctx.imageManagerWindow.webContents.on('did-finish-load', async () => {
+      const title = ctx.tableName ? `Image Manager - [${ctx.tableName}.vpx]` : 'Image Manager';
+      ctx.imageManagerWindow.setTitle(title);
       const state = await getTableState(ctx);
       if (state) {
         ctx.imageManagerWindow.webContents.send('init', state);
@@ -510,9 +515,9 @@ export function createWindowFactory(deps) {
       ? path.join(__dirname, 'material-manager.js')
       : path.join(process.cwd(), '.vite/build/material-manager.js');
 
+    const bounds = getWindowBounds('materialManager', { width: 900, height: 650 });
     ctx.materialManagerWindow = new BrowserWindow({
-      width: 900,
-      height: 650,
+      ...bounds,
       title: 'Material Manager',
       minimizable: false,
       webPreferences: {
@@ -521,6 +526,7 @@ export function createWindowFactory(deps) {
         nodeIntegration: false,
       },
     });
+    trackWindowBounds(ctx.materialManagerWindow, 'materialManager');
     setupDialogEditMenu(ctx.materialManagerWindow);
 
     ctx.materialManagerWindow.on('closed', () => {
@@ -528,6 +534,8 @@ export function createWindowFactory(deps) {
     });
 
     ctx.materialManagerWindow.webContents.on('did-finish-load', async () => {
+      const title = ctx.tableName ? `Material Manager - [${ctx.tableName}.vpx]` : 'Material Manager';
+      ctx.materialManagerWindow.setTitle(title);
       const state = await getMaterialsState(ctx);
       if (state) {
         ctx.materialManagerWindow.webContents.send('init', state);
@@ -562,9 +570,9 @@ export function createWindowFactory(deps) {
       ? path.join(__dirname, 'sound-manager.js')
       : path.join(process.cwd(), '.vite/build/sound-manager.js');
 
+    const bounds = getWindowBounds('soundManager', { width: 800, height: 550 });
     ctx.soundManagerWindow = new BrowserWindow({
-      width: 800,
-      height: 550,
+      ...bounds,
       title: 'Sound Manager',
       minimizable: false,
       webPreferences: {
@@ -573,6 +581,7 @@ export function createWindowFactory(deps) {
         nodeIntegration: false,
       },
     });
+    trackWindowBounds(ctx.soundManagerWindow, 'soundManager');
     setupDialogEditMenu(ctx.soundManagerWindow);
 
     ctx.soundManagerWindow.on('closed', () => {
@@ -580,6 +589,8 @@ export function createWindowFactory(deps) {
     });
 
     ctx.soundManagerWindow.webContents.on('did-finish-load', async () => {
+      const title = ctx.tableName ? `Sound Manager - [${ctx.tableName}.vpx]` : 'Sound Manager';
+      ctx.soundManagerWindow.setTitle(title);
       const state = await getSoundsState(ctx);
       if (state) {
         ctx.soundManagerWindow.webContents.send('init', state);
@@ -689,9 +700,9 @@ export function createWindowFactory(deps) {
       ? path.join(__dirname, 'dimensions-manager.js')
       : path.join(process.cwd(), '.vite/build/dimensions-manager.js');
 
+    const bounds = getWindowBounds('dimensionsManager', { width: 800, height: 520 });
     ctx.dimensionsManagerWindow = new BrowserWindow({
-      width: 800,
-      height: 520,
+      ...bounds,
       title: 'Dimensions Manager',
       minimizable: false,
       webPreferences: {
@@ -700,6 +711,7 @@ export function createWindowFactory(deps) {
         nodeIntegration: false,
       },
     });
+    trackWindowBounds(ctx.dimensionsManagerWindow, 'dimensionsManager');
     setupDialogEditMenu(ctx.dimensionsManagerWindow);
 
     const themeQuery = { theme: getActualTheme(settings.theme) };
@@ -718,6 +730,8 @@ export function createWindowFactory(deps) {
     });
 
     ctx.dimensionsManagerWindow.webContents.on('did-finish-load', async () => {
+      const title = ctx.tableName ? `Dimensions Manager - [${ctx.tableName}.vpx]` : 'Dimensions Manager';
+      ctx.dimensionsManagerWindow.setTitle(title);
       const state = await getDimensionsState(ctx);
       if (state) {
         ctx.dimensionsManagerWindow.webContents.send('init-dimensions', state);
@@ -741,9 +755,9 @@ export function createWindowFactory(deps) {
       ? path.join(__dirname, 'index.js')
       : path.join(process.cwd(), '.vite/build/index.js');
 
+    const bounds = getWindowBounds('collectionManager', { width: 500, height: 400 });
     ctx.collectionManagerWindow = new BrowserWindow({
-      width: 500,
-      height: 400,
+      ...bounds,
       title: 'Collection Manager',
       show: false,
       resizable: true,
@@ -754,6 +768,7 @@ export function createWindowFactory(deps) {
         nodeIntegration: false,
       },
     });
+    trackWindowBounds(ctx.collectionManagerWindow, 'collectionManager');
     setupDialogEditMenu(ctx.collectionManagerWindow);
 
     const themeQuery = { theme: getActualTheme(settings.theme) };
@@ -785,6 +800,8 @@ export function createWindowFactory(deps) {
     });
 
     ctx.collectionManagerWindow.webContents.on('did-finish-load', async () => {
+      const title = ctx.tableName ? `Collection Manager - [${ctx.tableName}.vpx]` : 'Collection Manager';
+      ctx.collectionManagerWindow.setTitle(title);
       const data = await getCollectionManagerData(ctx);
       ctx.collectionManagerWindow.webContents.send('init-collection-manager', data);
       ctx.collectionManagerWindow.show();
@@ -808,9 +825,9 @@ export function createWindowFactory(deps) {
       ? path.join(__dirname, 'render-probe-manager.js')
       : path.join(process.cwd(), '.vite/build/render-probe-manager.js');
 
+    const bounds = getWindowBounds('renderProbeManager', { width: 700, height: 600 });
     ctx.renderProbeManagerWindow = new BrowserWindow({
-      width: 700,
-      height: 600,
+      ...bounds,
       title: 'Render Probe Manager',
       minimizable: false,
       webPreferences: {
@@ -819,6 +836,7 @@ export function createWindowFactory(deps) {
         nodeIntegration: false,
       },
     });
+    trackWindowBounds(ctx.renderProbeManagerWindow, 'renderProbeManager');
     setupDialogEditMenu(ctx.renderProbeManagerWindow);
 
     const themeQuery = { theme: getActualTheme(settings.theme) };
@@ -837,6 +855,8 @@ export function createWindowFactory(deps) {
     });
 
     ctx.renderProbeManagerWindow.webContents.on('did-finish-load', async () => {
+      const title = ctx.tableName ? `Render Probe Manager - [${ctx.tableName}.vpx]` : 'Render Probe Manager';
+      ctx.renderProbeManagerWindow.setTitle(title);
       const state = await getRenderProbesState(ctx);
       if (state) {
         ctx.renderProbeManagerWindow.webContents.send('init', state);
@@ -860,17 +880,17 @@ export function createWindowFactory(deps) {
       ? path.join(__dirname, 'script-editor.js')
       : path.join(process.cwd(), '.vite/build/script-editor.js');
 
-    const scriptTitle = ctx.tableName ? `Script Editor - [${ctx.tableName}.vpx]` : 'Script Editor';
+    const bounds = getWindowBounds('scriptEditor', { width: 1000, height: 700 });
     ctx.scriptEditorWindow = new BrowserWindow({
-      width: 1000,
-      height: 700,
-      title: scriptTitle,
+      ...bounds,
+      title: 'Script Editor',
       webPreferences: {
         preload: preloadPath,
         contextIsolation: true,
         nodeIntegration: false,
       },
     });
+    trackWindowBounds(ctx.scriptEditorWindow, 'scriptEditor');
     setupDialogEditMenu(ctx.scriptEditorWindow);
 
     if (ctx.window && !ctx.window.isDestroyed()) {
@@ -1488,9 +1508,9 @@ export function createWindowFactory(deps) {
       ? path.join(__dirname, 'search-select.js')
       : path.join(process.cwd(), '.vite/build/search-select.js');
 
+    const bounds = getWindowBounds('searchSelect', { width: 1100, height: 600 });
     ctx.searchSelectWindow = new BrowserWindow({
-      width: 1100,
-      height: 600,
+      ...bounds,
       title: 'Search/Select Element',
       minimizable: false,
       webPreferences: {
@@ -1499,6 +1519,7 @@ export function createWindowFactory(deps) {
         nodeIntegration: false,
       },
     });
+    trackWindowBounds(ctx.searchSelectWindow, 'searchSelect');
     setupDialogEditMenu(ctx.searchSelectWindow);
 
     const themeQuery = { theme: getActualTheme(settings.theme) };

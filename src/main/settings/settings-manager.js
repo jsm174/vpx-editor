@@ -1,4 +1,4 @@
-import { app } from 'electron';
+import { app, screen } from 'electron';
 import fs from 'fs-extra';
 import path from 'node:path';
 import {
@@ -42,6 +42,7 @@ let settings = {
   drawLightCenters: false,
   lastTableFolder: null,
   lastObjFolder: null,
+  windowBounds: {},
 };
 
 function getSettingsPath() {
@@ -85,4 +86,91 @@ function setLastFolder(type, folderPath) {
   saveSettings();
 }
 
-export { settings, loadSettings, saveSettings, getSettingsPath, DEFAULT_EDITOR_COLORS, getLastFolder, setLastFolder };
+function boundsIntersectDisplay(bounds) {
+  const displays = screen.getAllDisplays();
+  const minVisible = 50;
+
+  for (const display of displays) {
+    const db = display.bounds;
+    const left = Math.max(bounds.x, db.x);
+    const top = Math.max(bounds.y, db.y);
+    const right = Math.min(bounds.x + bounds.width, db.x + db.width);
+    const bottom = Math.min(bounds.y + bounds.height, db.y + db.height);
+
+    const overlapWidth = right - left;
+    const overlapHeight = bottom - top;
+
+    if (overlapWidth >= minVisible && overlapHeight >= minVisible) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function getCenteredBounds(width, height) {
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
+  return {
+    x: Math.round((screenWidth - width) / 2),
+    y: Math.round((screenHeight - height) / 2),
+    width,
+    height,
+  };
+}
+
+function getWindowBounds(windowName, defaults) {
+  const saved = settings.windowBounds?.[windowName];
+  if (saved && boundsIntersectDisplay(saved)) {
+    return { ...defaults, ...saved };
+  }
+  if (saved) {
+    return getCenteredBounds(saved.width || defaults.width, saved.height || defaults.height);
+  }
+  return defaults;
+}
+
+function setWindowBounds(windowName, bounds) {
+  if (!settings.windowBounds) {
+    settings.windowBounds = {};
+  }
+  settings.windowBounds[windowName] = bounds;
+  saveSettings();
+}
+
+function resetWindowBounds() {
+  settings.windowBounds = {};
+  saveSettings();
+}
+
+function trackWindowBounds(win, windowName) {
+  let saveTimeout = null;
+  const saveBounds = () => {
+    if (win.isDestroyed()) return;
+    const bounds = win.getBounds();
+    setWindowBounds(windowName, bounds);
+  };
+
+  win.on('resize', () => {
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(saveBounds, 500);
+  });
+
+  win.on('move', () => {
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(saveBounds, 500);
+  });
+}
+
+export {
+  settings,
+  loadSettings,
+  saveSettings,
+  getSettingsPath,
+  DEFAULT_EDITOR_COLORS,
+  getLastFolder,
+  setLastFolder,
+  getWindowBounds,
+  setWindowBounds,
+  resetWindowBounds,
+  trackWindowBounds,
+};

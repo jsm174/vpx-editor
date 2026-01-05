@@ -34,6 +34,9 @@ import {
   DEFAULT_EDITOR_COLORS,
   getLastFolder,
   setLastFolder,
+  getWindowBounds,
+  trackWindowBounds,
+  resetWindowBounds,
 } from './settings/settings-manager.js';
 import { createMenu as createMenuImpl, insertItem as insertItemImpl } from './menu/menu-setup.js';
 import { createWindowFactory } from './window-factory.js';
@@ -385,9 +388,9 @@ function insertItem(itemType) {
 function createEditorWindow() {
   const id = `editor-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+  const bounds = getWindowBounds('mainWindow', { width: 1400, height: 900 });
   const win = new BrowserWindow({
-    width: 1400,
-    height: 900,
+    ...bounds,
     webPreferences: {
       preload: path.join(__dirname, 'index.js'),
       contextIsolation: true,
@@ -395,6 +398,7 @@ function createEditorWindow() {
     },
   });
 
+  trackWindowBounds(win, 'mainWindow');
   win.webContents.windowId = id;
 
   const ctx = new WindowContext(id, win);
@@ -3096,55 +3100,7 @@ async function getTableState(ctx) {
 }
 
 function openImageManagerWindow() {
-  const ctx = windowRegistry.getFocused();
-  if (!ctx?.extractedDir) {
-    dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
-    return;
-  }
-
-  if (ctx.imageManagerWindow) {
-    ctx.imageManagerWindow.focus();
-    return;
-  }
-
-  const preloadPath = app.isPackaged
-    ? path.join(__dirname, 'image-manager.js')
-    : path.join(process.cwd(), '.vite/build/image-manager.js');
-
-  ctx.imageManagerWindow = new BrowserWindow({
-    width: 950,
-    height: 650,
-    title: 'Image Manager',
-    minimizable: false,
-    webPreferences: {
-      preload: preloadPath,
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
-  setupDialogEditMenu(ctx.imageManagerWindow);
-
-  const themeQuery = { theme: getActualTheme(settings.theme) };
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    const htmlPath = path.join(process.cwd(), 'src/windows/managers/image-manager.html');
-    ctx.imageManagerWindow.loadFile(htmlPath, { query: themeQuery });
-  } else {
-    ctx.imageManagerWindow.loadFile(
-      path.join(__dirname, '../renderer/main_window/src/windows/managers/image-manager.html'),
-      { query: themeQuery }
-    );
-  }
-
-  ctx.imageManagerWindow.on('closed', () => {
-    ctx.imageManagerWindow = null;
-  });
-
-  ctx.imageManagerWindow.webContents.on('did-finish-load', async () => {
-    const state = await getTableState(ctx);
-    if (state) {
-      ctx.imageManagerWindow.webContents.send('init', state);
-    }
-  });
+  windowFactory.openImageManagerWindow();
 }
 
 async function getSearchSelectState(ctx) {
@@ -3194,57 +3150,7 @@ async function getSearchSelectState(ctx) {
 }
 
 async function showSearchSelect() {
-  const ctx = windowRegistry.getFocused();
-  if (!ctx?.extractedDir) {
-    return;
-  }
-
-  if (ctx.searchSelectWindow) {
-    ctx.searchSelectWindow.focus();
-    return;
-  }
-
-  const preloadPath = app.isPackaged
-    ? path.join(__dirname, 'search-select.js')
-    : path.join(process.cwd(), '.vite/build/search-select.js');
-
-  ctx.searchSelectWindow = new BrowserWindow({
-    width: 1100,
-    height: 600,
-    title: 'Search/Select Element',
-    minimizable: false,
-    webPreferences: {
-      preload: preloadPath,
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
-  setupDialogEditMenu(ctx.searchSelectWindow);
-
-  const themeQuery = { theme: getActualTheme(settings.theme) };
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    const htmlPath = path.join(process.cwd(), 'src/windows/search-select/search-select.html');
-    ctx.searchSelectWindow.loadFile(htmlPath, { query: themeQuery });
-  } else {
-    ctx.searchSelectWindow.loadFile(
-      path.join(__dirname, '../renderer/main_window/src/windows/search-select/search-select.html'),
-      {
-        query: themeQuery,
-      }
-    );
-  }
-
-  ctx.searchSelectWindow.on('closed', () => {
-    ctx.searchSelectWindow = null;
-  });
-
-  ctx.searchSelectWindow.webContents.on('did-finish-load', async () => {
-    const state = await getSearchSelectState(ctx);
-    if (state) {
-      ctx.searchSelectWindow.webContents.send('init', state);
-    }
-    ctx.window.webContents.send('request-selection-resend');
-  });
+  windowFactory.showSearchSelect();
 }
 
 const searchSelectUpdateTimers = new Map();
@@ -3350,55 +3256,7 @@ async function getMaterialsState(ctx) {
 }
 
 function openMaterialManagerWindow() {
-  const ctx = windowRegistry.getFocused();
-  if (!ctx?.extractedDir) {
-    dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
-    return;
-  }
-
-  if (ctx.materialManagerWindow) {
-    ctx.materialManagerWindow.focus();
-    return;
-  }
-
-  const preloadPath = app.isPackaged
-    ? path.join(__dirname, 'material-manager.js')
-    : path.join(process.cwd(), '.vite/build/material-manager.js');
-
-  ctx.materialManagerWindow = new BrowserWindow({
-    width: 900,
-    height: 650,
-    title: 'Material Manager',
-    minimizable: false,
-    webPreferences: {
-      preload: preloadPath,
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
-  setupDialogEditMenu(ctx.materialManagerWindow);
-
-  ctx.materialManagerWindow.on('closed', () => {
-    ctx.materialManagerWindow = null;
-  });
-
-  ctx.materialManagerWindow.webContents.on('did-finish-load', async () => {
-    const state = await getMaterialsState(ctx);
-    if (state) {
-      ctx.materialManagerWindow.webContents.send('init', state);
-    }
-  });
-
-  const themeQuery = { theme: getActualTheme(settings.theme) };
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    const htmlPath = path.join(process.cwd(), 'src/windows/managers/material-manager.html');
-    ctx.materialManagerWindow.loadFile(htmlPath, { query: themeQuery });
-  } else {
-    ctx.materialManagerWindow.loadFile(
-      path.join(__dirname, '../renderer/main_window/src/windows/managers/material-manager.html'),
-      { query: themeQuery }
-    );
-  }
+  windowFactory.openMaterialManagerWindow();
 }
 
 async function getSoundsState(ctx) {
@@ -3415,55 +3273,7 @@ async function getSoundsState(ctx) {
 }
 
 function openSoundManagerWindow() {
-  const ctx = windowRegistry.getFocused();
-  if (!ctx?.extractedDir) {
-    dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
-    return;
-  }
-
-  if (ctx.soundManagerWindow) {
-    ctx.soundManagerWindow.focus();
-    return;
-  }
-
-  const preloadPath = app.isPackaged
-    ? path.join(__dirname, 'sound-manager.js')
-    : path.join(process.cwd(), '.vite/build/sound-manager.js');
-
-  ctx.soundManagerWindow = new BrowserWindow({
-    width: 800,
-    height: 550,
-    title: 'Sound Manager',
-    minimizable: false,
-    webPreferences: {
-      preload: preloadPath,
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
-  setupDialogEditMenu(ctx.soundManagerWindow);
-
-  ctx.soundManagerWindow.on('closed', () => {
-    ctx.soundManagerWindow = null;
-  });
-
-  ctx.soundManagerWindow.webContents.on('did-finish-load', async () => {
-    const state = await getSoundsState(ctx);
-    if (state) {
-      ctx.soundManagerWindow.webContents.send('init', state);
-    }
-  });
-
-  const themeQuery = { theme: getActualTheme(settings.theme) };
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    const htmlPath = path.join(process.cwd(), 'src/windows/managers/sound-manager.html');
-    ctx.soundManagerWindow.loadFile(htmlPath, { query: themeQuery });
-  } else {
-    ctx.soundManagerWindow.loadFile(
-      path.join(__dirname, '../renderer/main_window/src/windows/managers/sound-manager.html'),
-      { query: themeQuery }
-    );
-  }
+  windowFactory.openSoundManagerWindow();
 }
 
 async function getTableInfoState(ctx) {
@@ -3707,122 +3517,11 @@ async function getDimensionsState(ctx) {
 }
 
 async function openDimensionsManagerWindow() {
-  const ctx = windowRegistry.getFocused();
-  if (!ctx?.extractedDir) {
-    dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
-    return;
-  }
-
-  if (ctx.dimensionsManagerWindow) {
-    ctx.dimensionsManagerWindow.focus();
-    return;
-  }
-
-  const preloadPath = app.isPackaged
-    ? path.join(__dirname, 'dimensions-manager.js')
-    : path.join(process.cwd(), '.vite/build/dimensions-manager.js');
-
-  ctx.dimensionsManagerWindow = new BrowserWindow({
-    width: 800,
-    height: 520,
-    title: 'Dimensions Manager',
-    minimizable: false,
-    webPreferences: {
-      preload: preloadPath,
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
-  setupDialogEditMenu(ctx.dimensionsManagerWindow);
-
-  const themeQuery = { theme: getActualTheme(settings.theme) };
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    const htmlPath = path.join(process.cwd(), 'src/windows/managers/dimensions-manager-window.html');
-    ctx.dimensionsManagerWindow.loadFile(htmlPath, { query: themeQuery });
-  } else {
-    ctx.dimensionsManagerWindow.loadFile(
-      path.join(__dirname, '../renderer/main_window/src/windows/managers/dimensions-manager-window.html'),
-      { query: themeQuery }
-    );
-  }
-
-  ctx.dimensionsManagerWindow.on('closed', () => {
-    ctx.dimensionsManagerWindow = null;
-  });
-
-  ctx.dimensionsManagerWindow.webContents.on('did-finish-load', async () => {
-    const state = await getDimensionsState(ctx);
-    if (state) {
-      ctx.dimensionsManagerWindow.webContents.send('init-dimensions', state);
-    }
-  });
+  windowFactory.openDimensionsManagerWindow();
 }
 
 function openCollectionManagerWindow() {
-  const ctx = windowRegistry.getFocused();
-  if (!ctx?.extractedDir) {
-    dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
-    return;
-  }
-
-  if (ctx.collectionManagerWindow) {
-    ctx.collectionManagerWindow.focus();
-    return;
-  }
-
-  const preloadPath = app.isPackaged
-    ? path.join(__dirname, 'index.js')
-    : path.join(process.cwd(), '.vite/build/index.js');
-
-  ctx.collectionManagerWindow = new BrowserWindow({
-    width: 500,
-    height: 400,
-    title: 'Collection Manager',
-    show: false,
-    resizable: true,
-    minimizable: false,
-    webPreferences: {
-      preload: preloadPath,
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
-  setupDialogEditMenu(ctx.collectionManagerWindow);
-
-  const themeQuery = { theme: getActualTheme(settings.theme) };
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    const htmlPath = path.join(process.cwd(), 'src/windows/managers/collection-manager-window.html');
-    ctx.collectionManagerWindow.loadFile(htmlPath, { query: themeQuery });
-  } else {
-    ctx.collectionManagerWindow.loadFile(
-      path.join(__dirname, '../renderer/main_window/src/windows/managers/collection-manager-window.html'),
-      { query: themeQuery }
-    );
-  }
-
-  ctx.collectionManagerWindow.on('close', e => {
-    if (collectionEditorWindow && !collectionEditorWindow.isDestroyed()) {
-      e.preventDefault();
-      collectionEditorWindow.focus();
-      return;
-    }
-    if (collectionPromptWindow && !collectionPromptWindow.isDestroyed()) {
-      e.preventDefault();
-      collectionPromptWindow.focus();
-      return;
-    }
-  });
-
-  ctx.collectionManagerWindow.on('closed', () => {
-    ctx.collectionManagerWindow = null;
-  });
-
-  ctx.collectionManagerWindow.webContents.on('did-finish-load', async () => {
-    const data = await getCollectionManagerData(ctx);
-    ctx.collectionManagerWindow.webContents.send('init-collection-manager', data);
-    ctx.collectionManagerWindow.show();
-    ctx.window.webContents.send('request-selection-resend');
-  });
+  windowFactory.openCollectionManagerWindow();
 }
 
 async function getCollectionManagerData(ctx) {
@@ -3883,55 +3582,7 @@ async function getRenderProbesState(ctx) {
 }
 
 function openRenderProbeManagerWindow() {
-  const ctx = windowRegistry.getFocused();
-  if (!ctx?.extractedDir) {
-    dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
-    return;
-  }
-
-  if (ctx.renderProbeManagerWindow) {
-    ctx.renderProbeManagerWindow.focus();
-    return;
-  }
-
-  const preloadPath = app.isPackaged
-    ? path.join(__dirname, 'render-probe-manager.js')
-    : path.join(process.cwd(), '.vite/build/render-probe-manager.js');
-
-  ctx.renderProbeManagerWindow = new BrowserWindow({
-    width: 700,
-    height: 600,
-    title: 'Render Probe Manager',
-    minimizable: false,
-    webPreferences: {
-      preload: preloadPath,
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
-  setupDialogEditMenu(ctx.renderProbeManagerWindow);
-
-  const themeQuery = { theme: getActualTheme(settings.theme) };
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    const htmlPath = path.join(process.cwd(), 'src/windows/managers/render-probe-manager.html');
-    ctx.renderProbeManagerWindow.loadFile(htmlPath, { query: themeQuery });
-  } else {
-    ctx.renderProbeManagerWindow.loadFile(
-      path.join(__dirname, '../renderer/main_window/src/windows/managers/render-probe-manager.html'),
-      { query: themeQuery }
-    );
-  }
-
-  ctx.renderProbeManagerWindow.on('closed', () => {
-    ctx.renderProbeManagerWindow = null;
-  });
-
-  ctx.renderProbeManagerWindow.webContents.on('did-finish-load', async () => {
-    const state = await getRenderProbesState(ctx);
-    if (state) {
-      ctx.renderProbeManagerWindow.webContents.send('init', state);
-    }
-  });
+  windowFactory.openRenderProbeManagerWindow();
 }
 
 async function getScriptContent(ctx) {
@@ -3946,91 +3597,7 @@ async function getScriptContent(ctx) {
 }
 
 function openScriptEditorWindow(ctx) {
-  if (!ctx) ctx = windowRegistry.getFocused();
-  if (!ctx?.extractedDir) {
-    dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
-    return;
-  }
-
-  if (ctx.scriptEditorWindow || ctx.scriptEditorClosePending) {
-    if (ctx.scriptEditorWindow) ctx.scriptEditorWindow.focus();
-    return;
-  }
-
-  const preloadPath = app.isPackaged
-    ? path.join(__dirname, 'script-editor.js')
-    : path.join(process.cwd(), '.vite/build/script-editor.js');
-
-  const scriptTitle = ctx.tableName ? `Script Editor - [${ctx.tableName}.vpx]` : 'Script Editor';
-  ctx.scriptEditorWindow = new BrowserWindow({
-    width: 1000,
-    height: 700,
-    title: scriptTitle,
-    webPreferences: {
-      preload: preloadPath,
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
-  setupDialogEditMenu(ctx.scriptEditorWindow);
-
-  if (ctx.window && !ctx.window.isDestroyed()) {
-    ctx.window.webContents.send('script-editor-opened');
-  }
-
-  const themeQuery = { theme: getActualTheme(settings.theme) };
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    const htmlPath = path.join(process.cwd(), 'src/windows/script-editor/script-editor.html');
-    ctx.scriptEditorWindow.loadFile(htmlPath, { query: themeQuery });
-  } else {
-    ctx.scriptEditorWindow.loadFile(
-      path.join(__dirname, '../renderer/main_window/src/windows/script-editor/script-editor.html'),
-      {
-        query: themeQuery,
-      }
-    );
-  }
-
-  ctx.scriptEditorWindow.on('close', e => {
-    if (ctx.scriptEditorClosePending) return;
-    e.preventDefault();
-    ctx.scriptEditorClosePending = true;
-    ctx.scriptEditorWindow.webContents.send('check-can-close');
-  });
-
-  ctx.scriptEditorWindow.on('closed', () => {
-    ctx.scriptEditorWindow = null;
-    ctx.scriptEditorClosePending = false;
-    if (ctx.window && !ctx.window.isDestroyed()) {
-      ctx.window.webContents.send('script-editor-closed');
-    }
-  });
-
-  ctx.scriptEditorWindow.webContents.on('did-finish-load', async () => {
-    const scriptTitle = ctx.tableName ? `Script Editor - [${ctx.tableName}.vpx]` : 'Script Editor';
-    ctx.scriptEditorWindow.setTitle(scriptTitle);
-    const script = await getScriptContent(ctx);
-    let gameitems = [];
-    try {
-      const gameitemsContent = await fs.promises.readFile(`${ctx.extractedDir}/gameitems.json`, 'utf-8');
-      const gameitemsData = JSON.parse(gameitemsContent);
-      gameitems = gameitemsData
-        .map(gi => {
-          const fileName = gi.file_name || '';
-          const type = fileName.split('.')[0] || 'Unknown';
-          const name = fileName.replace(/^\w+\./, '').replace(/\.json$/, '');
-          return { name, type };
-        })
-        .filter(gi => gi.name);
-    } catch (e) {}
-    ctx.scriptEditorWindow.webContents.send('init', {
-      script: script || '',
-      extractedDir: ctx.extractedDir,
-      theme: settings.theme,
-      gameitems,
-      tableName: ctx.tableName,
-    });
-  });
+  windowFactory.openScriptEditorWindow(ctx);
 }
 
 ipcMain.handle('save-script', async (event, content) => {
@@ -4095,6 +3662,26 @@ let meshImportResolve = null;
 let meshImportWindowContext = null;
 let drawingOrderWindow = null;
 let drawingOrderWindowContext = null;
+
+const windowFactory = createWindowFactory({
+  windowRegistry,
+  settings,
+  getActualTheme,
+  createMenu,
+  MAIN_WINDOW_VITE_DEV_SERVER_URL,
+  MAIN_WINDOW_VITE_NAME,
+  isCollectionEditorOpen: () => collectionEditorWindow && !collectionEditorWindow.isDestroyed(),
+  focusCollectionEditor: () => collectionEditorWindow?.focus(),
+  isCollectionPromptOpen: () => collectionPromptWindow && !collectionPromptWindow.isDestroyed(),
+  focusCollectionPrompt: () => collectionPromptWindow?.focus(),
+  getWindowBounds,
+  trackWindowBounds,
+  WindowContext,
+  versionInfo,
+  showCloseConfirm,
+  saveVPX: () => vpxOps.saveVPX(getVpxOpsDeps()),
+  DEFAULT_UNIT_CONVERSION,
+});
 
 function getContextForManagerEvent(event) {
   const ctx = windowRegistry.getContextFromEvent(event);
@@ -4362,6 +3949,23 @@ ipcMain.handle('save-settings', async (event, newSettings) => {
     });
   });
   return { success: true };
+});
+
+ipcMain.on('reset-window-bounds', () => {
+  resetWindowBounds();
+  windowRegistry.forEach(ctx => {
+    if (ctx.window && !ctx.window.isDestroyed()) ctx.window.center();
+    if (ctx.scriptEditorWindow && !ctx.scriptEditorWindow.isDestroyed()) ctx.scriptEditorWindow.center();
+    if (ctx.imageManagerWindow && !ctx.imageManagerWindow.isDestroyed()) ctx.imageManagerWindow.center();
+    if (ctx.materialManagerWindow && !ctx.materialManagerWindow.isDestroyed()) ctx.materialManagerWindow.center();
+    if (ctx.soundManagerWindow && !ctx.soundManagerWindow.isDestroyed()) ctx.soundManagerWindow.center();
+    if (ctx.collectionManagerWindow && !ctx.collectionManagerWindow.isDestroyed()) ctx.collectionManagerWindow.center();
+    if (ctx.dimensionsManagerWindow && !ctx.dimensionsManagerWindow.isDestroyed()) ctx.dimensionsManagerWindow.center();
+    if (ctx.renderProbeManagerWindow && !ctx.renderProbeManagerWindow.isDestroyed())
+      ctx.renderProbeManagerWindow.center();
+    if (ctx.searchSelectWindow && !ctx.searchSelectWindow.isDestroyed()) ctx.searchSelectWindow.center();
+  });
+  if (settingsWindow && !settingsWindow.isDestroyed()) settingsWindow.center();
 });
 
 ipcMain.handle('get-grid-size', () => {

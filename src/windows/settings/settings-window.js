@@ -134,6 +134,10 @@ defaultColorsBtn.onclick = () => {
   colorBackground.value = DEFAULT_TABLE_BACKGROUND_COLOR;
 };
 
+document.getElementById('settings-reset-windows').onclick = () => {
+  window.vpxEditor.resetWindowBounds();
+};
+
 vpxtoolOverride.onchange = updateVpxtoolState;
 vpinballPathInput.oninput = validateAll;
 vpxtoolPathInput.oninput = validateAll;
