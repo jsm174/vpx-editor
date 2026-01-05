@@ -24,7 +24,7 @@
     "url": "https://github.com/jsm174/vpx-editor.git"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^7.10.2",
+    "@electron-forge/cli": "^7.8.3",
     "@electron-forge/maker-deb": "^7.10.2",
     "@electron-forge/maker-dmg": "^7.10.2",
     "@electron-forge/maker-flatpak": "^7.10.2",
@@ -38,7 +38,7 @@
     "@electron/fuses": "^1.8.0",
     "electron": "39.2.5",
     "prettier": "^3.7.4",
-    "vite": "^5.4.21"
+    "vite": "^7.3.0"
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1",
