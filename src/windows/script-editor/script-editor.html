@@ -24,8 +24,6 @@
       <select id="function-list">
         <option value="">(Select Function)</option>
       </select>
-      <div class="toolbar-spacer"></div>
-      <button id="btn-save" class="toolbar-btn primary" disabled>Save</button>
     </div>
 
     <div id="editor-container"></div>
@@ -41,11 +39,10 @@
     console.log('Script Editor loading, preload:', typeof window.scriptEditor);
 
     let editor = null;
-    let originalContent = '';
-    let modified = false;
     let extractedDir = null;
     let tableItems = [];
     let parsedFunctions = [];
+    let saveTimeout = null;
 
     const ITEM_EVENTS = {
       Primitive: ['Init', 'Timer'],
@@ -162,12 +159,6 @@
 
     require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
 
-    let baseTitle = 'Script Editor';
-
-    function updateTitle() {
-      document.title = modified ? `${baseTitle} *` : baseTitle;
-    }
-
     function setStatus(msg) {
       document.getElementById('status').textContent = msg;
     }
@@ -179,15 +170,18 @@
       const result = await window.scriptEditor.saveScript(content);
 
       if (result.success) {
-        originalContent = content;
-        modified = false;
-        updateTitle();
         setStatus('Saved');
-        document.getElementById('btn-save').disabled = true;
         window.scriptEditor.notifyScriptChanged();
       } else {
         setStatus(`Save failed: ${result.error}`);
       }
+    }
+
+    function scheduleAutoSave() {
+      if (saveTimeout) clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(() => {
+        saveScript();
+      }, 500);
     }
 
     require(['vs/editor/editor.main'], function () {
@@ -225,9 +219,8 @@
       window.scriptEditor.onInit((data) => {
         console.log('Script Editor received init');
         extractedDir = data.extractedDir;
-        originalContent = data.script || '';
-        baseTitle = data.tableName ? `Script Editor - [${data.tableName}.vpx]` : 'Script Editor';
-        document.title = baseTitle;
+        const initialContent = data.script || '';
+        document.title = data.tableName ? `Script Editor - [${data.tableName}.vpx]` : 'Script Editor';
 
         if (data.gameitems) {
           populateItemList(data.gameitems);
@@ -241,7 +234,7 @@
         const monacoTheme = data.theme === 'light' ? 'vs' : 'vs-dark';
 
         editor = monaco.editor.create(container, {
-          value: originalContent,
+          value: initialContent,
           language: 'vb',
           theme: monacoTheme,
           automaticLayout: true,
@@ -259,12 +252,7 @@
 
         let updateTimeout = null;
         editor.onDidChangeModelContent(() => {
-          const isModified = editor.getValue() !== originalContent;
-          if (modified !== isModified) {
-            modified = isModified;
-            updateTitle();
-            document.getElementById('btn-save').disabled = !modified;
-          }
+          scheduleAutoSave();
           if (updateTimeout) clearTimeout(updateTimeout);
           updateTimeout = setTimeout(updateFunctionList, 500);
         });
@@ -274,11 +262,10 @@
         });
 
         editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+          if (saveTimeout) clearTimeout(saveTimeout);
           saveScript();
         });
 
-        modified = false;
-        document.getElementById('btn-save').disabled = true;
         setStatus('Ready');
         updateFunctionList();
       });
@@ -293,20 +280,14 @@
       window.scriptEditor.onScriptUndone((content) => {
         if (editor) {
           const position = editor.getPosition();
-          originalContent = content;
           editor.setValue(content);
           if (position) {
             editor.setPosition(position);
           }
-          modified = false;
-          updateTitle();
-          document.getElementById('btn-save').disabled = true;
           setStatus('Script restored from undo');
         }
       });
     });
-
-    document.getElementById('btn-save').addEventListener('click', saveScript);
 
     document.getElementById('item-list').addEventListener('change', (e) => {
       const selectedOption = e.target.selectedOptions[0];
@@ -332,20 +313,12 @@
       }
     });
 
-    window.addEventListener('beforeunload', (e) => {
-      if (modified) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    });
-
     window.scriptEditor.onCheckCanClose(async () => {
-      if (modified) {
-        const discard = await window.scriptEditor.showUnsavedChangesDialog();
-        window.scriptEditor.respondCanClose(discard);
-      } else {
-        window.scriptEditor.respondCanClose(true);
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+        await saveScript();
       }
+      window.scriptEditor.respondCanClose(true);
     });
   </script>
 </body>
