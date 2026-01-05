@@ -17,7 +17,7 @@ A cross-platform editor for Visual Pinball X (.vpx) table files.
 
 ## Overview
 
-VPX Editor is a cross-platform table editor for [Visual Pinball](https://github.com/vpinball/vpinball), built with [Electron](https://www.electronjs.org/) and [Three.js](https://threejs.org/). It uses [vpxtool](https://github.com/francisdb/vpxtool) to extract and assemble VPX files.
+VPX Editor is a cross-platform table editor for [Visual Pinball](https://github.com/vpinball/vpinball), built with [Electron](https://www.electronjs.org/), [TypeScript](https://www.typescriptlang.org/), and [Three.js](https://threejs.org/). It uses [vpxtool](https://github.com/francisdb/vpxtool) to extract and assemble VPX files.
 
 This project was initially created with the assistance of Claude AI.
 
@@ -120,6 +120,12 @@ To get more output during the flatpak build:
 
 ```bash
 DEBUG=electron-installer-flatpak,@malept/flatpak-bundler npm run make
+```
+
+### Type Checking
+
+```bash
+npm run typecheck
 ```
 
 ### Code Formatting

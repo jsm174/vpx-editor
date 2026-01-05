@@ -9,8 +9,9 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "format": "prettier --write \"src/**/*.js\" \"*.js\"",
-    "format:check": "prettier --check \"src/**/*.js\" \"*.js\"",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.{js,ts}\" \"*.{js,ts}\"",
+    "format:check": "prettier --check \"src/**/*.{js,ts}\" \"*.{js,ts}\"",
     "postinstall": "node scripts/download-vpxtool.js"
   },
   "keywords": [],
@@ -35,9 +36,13 @@
     "@electron-forge/plugin-fuses": "^7.10.2",
     "@electron-forge/plugin-vite": "^7.10.2",
     "@electron-forge/publisher-github": "^7.10.2",
+    "@electron-forge/shared-types": "^7.10.2",
     "@electron/fuses": "^1.8.0",
+    "@types/node": "^25.0.3",
+    "@types/three": "^0.182.0",
     "electron": "39.2.5",
     "prettier": "^3.7.4",
+    "typescript": "^5.9.3",
     "vite": "^7.3.0"
   },
   "dependencies": {

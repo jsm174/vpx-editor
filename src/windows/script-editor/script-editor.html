@@ -43,6 +43,15 @@
     let tableItems = [];
     let parsedFunctions = [];
     let saveTimeout = null;
+    let isTableLocked = false;
+
+    function setTableLocked(locked) {
+      isTableLocked = locked;
+      if (editor) {
+        editor.updateOptions({ readOnly: locked });
+      }
+      setStatus(locked ? 'Table is locked (read-only)' : 'Ready');
+    }
 
     const ITEM_EVENTS = {
       Primitive: ['Init', 'Timer'],
@@ -148,6 +157,7 @@
           return;
         }
       }
+      if (isTableLocked) return;
       const newSub = `\nSub ${subName}()\n\t\nEnd Sub\n`;
       const model = editor.getModel();
       const lastLine = model.getLineCount();
@@ -266,7 +276,11 @@
           saveScript();
         });
 
-        setStatus('Ready');
+        if (data.isLocked) {
+          setTableLocked(true);
+        } else {
+          setStatus('Ready');
+        }
         updateFunctionList();
       });
 
@@ -275,6 +289,10 @@
         if (editor) {
           monaco.editor.setTheme(theme === 'light' ? 'vs' : 'vs-dark');
         }
+      });
+
+      window.scriptEditor.onTableLockChanged((locked) => {
+        setTableLocked(locked);
       });
 
       window.scriptEditor.onScriptUndone((content) => {

@@ -161,7 +161,6 @@
 
       switch (rawType) {
         case 'Wall':
-        case 'Surface':
           type = 'Wall';
           image = joinWithSeparator(item.image, item.side_image);
           material = joinWithSeparator(item.top_material, item.side_material, item.slingshot_material);
@@ -383,7 +382,7 @@
           break;
       }
 
-      const typesWithCollectionNA = ['Wall', 'Surface', 'Ramp', 'Flasher', 'Rubber', 'Spinner',
+      const typesWithCollectionNA = ['Wall', 'Ramp', 'Flasher', 'Rubber', 'Spinner',
         'Kicker', 'Light', 'Bumper', 'Flipper', 'Gate', 'Trigger', 'Plunger', 'Primitive', 'HitTarget'];
       const collection = typesWithCollectionNA.includes(rawType) ? 'N/A' : '';
 

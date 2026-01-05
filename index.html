@@ -14,10 +14,10 @@
   <div id="app">
     <header id="toolbar">
       <div class="tool-group undo-controls">
-        <button id="undo-btn" class="tool-btn icon-btn" data-tooltip="Undo (⌘Z)" disabled>
+        <button id="undo-btn" class="tool-btn icon-btn" data-tooltip="Undo" disabled>
           <img src="icons/undo.png" alt="Undo">
         </button>
-        <button id="redo-btn" class="tool-btn icon-btn" data-tooltip="Redo (⌘⇧Z)" disabled>
+        <button id="redo-btn" class="tool-btn icon-btn" data-tooltip="Redo" disabled>
           <img src="icons/redo.png" alt="Redo">
         </button>
       </div>
@@ -30,7 +30,7 @@
         </button>
       </div>
       <div class="tool-group">
-        <button id="toggle-materials" class="tool-btn" data-tooltip="Toggle Materials (M)" style="display:none">
+        <button id="toggle-materials" class="tool-btn" data-tooltip="Toggle Materials" style="display:none">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"/>
             <circle cx="12" cy="12" r="4" fill="currentColor"/>
@@ -39,7 +39,7 @@
         </button>
       </div>
       <div class="tool-group">
-        <button id="btn-play" class="tool-btn icon-btn" data-tooltip="Play (F5)">
+        <button id="btn-play" class="tool-btn icon-btn" data-tooltip="Play">
           <img src="icons/play.png" alt="Play">
         </button>
       </div>
@@ -51,22 +51,22 @@
         <div class="toolbox-section">
           <div class="toolbox-title">TOOLBAR</div>
           <div class="toolbox-grid" id="toolbar-tools">
-            <button id="tool-magnify" class="toolbox-btn" data-tooltip="Magnify (Z)">
+            <button id="tool-magnify" class="toolbox-btn" data-tooltip="Magnify">
               <img src="icons/magnify.png" alt="Magnify">
             </button>
-            <button id="tool-select" class="toolbox-btn active" data-tooltip="Select (V)">
+            <button id="tool-select" class="toolbox-btn active" data-tooltip="Select">
               <img src="icons/arrow.png" alt="Select">
             </button>
-            <button id="tool-pan" class="toolbox-btn" data-tooltip="Pan (H)">
+            <button id="tool-pan" class="toolbox-btn" data-tooltip="Pan">
               <img src="icons/pan.png" alt="Pan">
             </button>
-            <button id="toggle-backglass" class="toolbox-btn" data-tooltip="Backglass View/POV (Ctrl+Space)">
+            <button id="toggle-backglass" class="toolbox-btn" data-tooltip="Backglass View/POV">
               <img src="icons/backglass.png" alt="Backglass">
             </button>
             <button id="tool-script" class="toolbox-btn" data-tooltip="Script Editor">
               <img src="icons/script.png" alt="Script">
             </button>
-            <button id="tool-3d" class="toolbox-btn" data-tooltip="3D View (3)">
+            <button id="tool-3d" class="toolbox-btn" data-tooltip="3D View">
               <img src="icons/3d.png" alt="3D">
             </button>
           </div>
@@ -83,8 +83,14 @@
         <div id="item-picker" class="hidden">
           <div id="item-picker-list"></div>
         </div>
-        <button id="toggle-wireframe" class="floating-btn floating-btn-left" style="display:none" data-tooltip="Toggle Wireframe (W)"><img src="icons/wireframe.png" width="14" height="14" style="filter:invert(1)"></button>
-        <button id="vr-mode-toggle" class="floating-btn" style="display:none" data-tooltip="Toggle VR Visibility">VR</button>
+        <button id="toggle-wireframe" class="floating-btn floating-btn-left" style="display:none" data-tooltip="Toggle Wireframe"><img src="icons/wireframe.png" width="14" height="14" style="filter:invert(1)"></button>
+        <select id="play-mode-select" class="floating-select" style="display:none" data-tooltip="Play Mode">
+          <option value="desktop">Desktop</option>
+          <option value="fullscreen">Full Single Screen</option>
+          <option value="cabinet">Cabinet</option>
+          <option value="mixedreality">Mixed Reality</option>
+          <option value="vr">Virtual Reality</option>
+        </select>
       </div>
 
       <div id="right-resize-handle"></div>

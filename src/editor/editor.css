@@ -317,6 +317,33 @@ button:focus {
   left: 8px;
 }
 
+.floating-select {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  padding: 4px 6px;
+  font-size: 10px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.floating-select:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.floating-select:focus {
+  outline: none;
+}
+
+.floating-select option {
+  background: #333;
+  color: #fff;
+}
+
 #right-panel {
   width: 260px;
   min-width: 150px;

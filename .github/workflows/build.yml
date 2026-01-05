@@ -51,6 +51,9 @@ jobs:
         run: |
           echo '{"revision":"${{ needs.version.outputs.revision }}","sha":"${{ needs.version.outputs.sha7 }}"}' > src/shared/version.json
 
+      - name: TypeScript check
+        run: npm run typecheck
+
       - name: Import code signing certificate
         if: vars.MACOS_CODESIGN == '1'
         run: |
@@ -119,6 +122,9 @@ jobs:
         run: |
           echo '{"revision":"${{ needs.version.outputs.revision }}","sha":"${{ needs.version.outputs.sha7 }}"}' > src/shared/version.json
 
+      - name: TypeScript check
+        run: npm run typecheck
+
       - name: Build
         run: npm run make -- --arch=x64
         env:
@@ -179,6 +185,9 @@ jobs:
       - name: Set version info
         run: |
           echo '{"revision":"${{ needs.version.outputs.revision }}","sha":"${{ needs.version.outputs.sha7 }}"}' > src/shared/version.json
+
+      - name: TypeScript check
+        run: npm run typecheck
 
       - name: Build
         run: npm run make -- --arch=x64
