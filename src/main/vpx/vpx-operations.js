@@ -663,14 +663,12 @@ export async function playTable(deps) {
   await fs.promises.rm(playDir, { recursive: true, force: true });
   await fs.promises.mkdir(playDir, { recursive: true });
 
+  const b2sPattern = `${ctx.tableName}.directb2s`.toLowerCase();
   const files = await fs.promises.readdir(vpxDir);
-  for (const file of files) {
-    if (file.toLowerCase().endsWith('.directb2s')) {
-      const src = path.join(vpxDir, file);
-      const dest = path.join(playDir, file);
-      await fs.promises.copyFile(src, dest);
-      sendConsoleOutput(ctx, 'info', `Copied ${file}`);
-    }
+  const b2sFile = files.find(f => f.toLowerCase() === b2sPattern);
+  if (b2sFile) {
+    await fs.promises.copyFile(path.join(vpxDir, b2sFile), path.join(playDir, b2sFile));
+    sendConsoleOutput(ctx, 'info', `Copied ${b2sFile}`);
   }
 
   const pinmameDir = path.join(vpxDir, 'pinmame');
