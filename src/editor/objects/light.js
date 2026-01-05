@@ -6,11 +6,18 @@ import { imageOptions, surfaceOptions } from '../../shared/options-generators.js
 import { createMeshGeometry } from '../../shared/mesh-utils.js';
 import { LIGHT_DEFAULTS } from '../../shared/object-defaults.js';
 import { blendColorsToHex, blendColorsToRgba } from '../../shared/color-utils.js';
+import {
+  RENDER_COLOR_BLACK,
+  RENDER_COLOR_RED,
+  RENDER_COLOR_BLUE,
+  PATH_SMOOTHING_ACCURACY,
+} from '../../shared/constants.js';
 
 import bulbLightMesh from '../meshes/bulbLight.json';
 import bulbSocketMesh from '../meshes/bulbSocket.json';
 
 const LIGHT_CROSS_SIZE = 10.0;
+const LIGHT_BULB_MESH_SCALE = 0.5;
 
 export function createLight3DMesh(item) {
   const center = item.center || item.vCenter;
@@ -29,7 +36,7 @@ export function createLight3DMesh(item) {
 
     let geometry;
     if (hasCustomShape) {
-      const vertices = generateSmoothedPath(item.drag_points, true, 8);
+      const vertices = generateSmoothedPath(item.drag_points, true, PATH_SMOOTHING_ACCURACY);
       if (vertices.length < 3) {
         geometry = new THREE.CircleGeometry(falloff, 32);
       } else {
@@ -83,68 +90,123 @@ export function createLight3DMesh(item) {
   return group;
 }
 
-export function renderLight(item, isSelected) {
+function renderOutline(ctx, item, cx, cy, scale, toScreenFn, drawCrossAlways) {
+  const falloff = (item.falloff_radius ?? item.falloff ?? LIGHT_DEFAULTS.falloff) * scale;
+  const isCustomShape = item.drag_points && item.drag_points.length >= 3;
+
+  ctx.lineWidth = 1;
+
+  if (isCustomShape) {
+    ctx.strokeStyle = RENDER_COLOR_RED;
+    ctx.beginPath();
+    ctx.arc(cx, cy, falloff, 0, Math.PI * 2);
+    ctx.stroke();
+
+    const vertices = generateSmoothedPath(item.drag_points, true, PATH_SMOOTHING_ACCURACY);
+    if (vertices.length >= 2) {
+      ctx.strokeStyle = RENDER_COLOR_BLACK;
+      ctx.beginPath();
+      const first = toScreenFn
+        ? toScreenFn(vertices[0].x, vertices[0].y)
+        : { x: vertices[0].x * scale, y: vertices[0].y * scale };
+      ctx.moveTo(first.x, first.y);
+
+      for (let i = 1; i < vertices.length; i++) {
+        const pt = toScreenFn
+          ? toScreenFn(vertices[i].x, vertices[i].y)
+          : { x: vertices[i].x * scale, y: vertices[i].y * scale };
+        ctx.lineTo(pt.x, pt.y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    }
+  } else {
+    ctx.strokeStyle = RENDER_COLOR_BLACK;
+    ctx.beginPath();
+    ctx.arc(cx, cy, falloff, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  if (isCustomShape || drawCrossAlways) {
+    const crossSize = LIGHT_CROSS_SIZE * scale;
+    ctx.strokeStyle = RENDER_COLOR_BLACK;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - crossSize, cy);
+    ctx.lineTo(cx + crossSize, cy);
+    ctx.moveTo(cx, cy - crossSize);
+    ctx.lineTo(cx, cy + crossSize);
+    ctx.stroke();
+  }
+}
+
+export function uiRenderPass1(item, isSelected) {
+  const center = item.center || item.vCenter;
+  if (!center) return;
+
+  if (!state.viewSolid) return;
+
+  const isCustomShape = item.drag_points && item.drag_points.length >= 3;
+  if (!isCustomShape) return;
+
+  const vertices = generateSmoothedPath(item.drag_points, true, PATH_SMOOTHING_ACCURACY);
+  if (vertices.length < 3) return;
+
+  const fillColor = blendColorsToRgba(item.color, item.color2, 0.3);
+  elements.ctx.fillStyle = fillColor;
+
+  elements.ctx.beginPath();
+  const first = toScreen(vertices[0].x, vertices[0].y);
+  elements.ctx.moveTo(first.x, first.y);
+
+  for (let i = 1; i < vertices.length; i++) {
+    const pt = toScreen(vertices[i].x, vertices[i].y);
+    elements.ctx.lineTo(pt.x, pt.y);
+  }
+  elements.ctx.closePath();
+  elements.ctx.fill();
+}
+
+export function uiRenderPass2(item, isSelected) {
   const center = item.center || item.vCenter;
   if (!center) return;
 
   const { x: cx, y: cy } = toScreen(center.x, center.y);
-  const falloff = (item.falloff_radius ?? item.falloff ?? LIGHT_DEFAULTS.falloff) * state.zoom;
-  const isCustomShape = item.drag_points && item.drag_points.length >= 3;
-  const fillColor = blendColorsToRgba(item.color, item.color2, 0.3);
 
-  elements.ctx.strokeStyle = '#ff0000';
-  elements.ctx.lineWidth = 1;
-  elements.ctx.beginPath();
-  elements.ctx.arc(cx, cy, falloff, 0, Math.PI * 2);
-  if (state.viewSolid) {
-    elements.ctx.fillStyle = fillColor;
-    elements.ctx.fill();
-  }
-  elements.ctx.stroke();
+  renderOutline(elements.ctx, item, cx, cy, state.zoom, toScreen, state.drawLightCenters);
 
-  if (isCustomShape) {
-    const vertices = generateSmoothedPath(item.drag_points, true, 8);
-    if (vertices.length >= 2) {
-      elements.ctx.strokeStyle = getStrokeStyle(item, isSelected);
-      elements.ctx.lineWidth = getLineWidth(isSelected);
-
-      elements.ctx.beginPath();
-      const first = toScreen(vertices[0].x, vertices[0].y);
-      elements.ctx.moveTo(first.x, first.y);
-
-      for (let i = 1; i < vertices.length; i++) {
-        const pt = toScreen(vertices[i].x, vertices[i].y);
-        elements.ctx.lineTo(pt.x, pt.y);
-      }
-      elements.ctx.closePath();
-      if (state.viewSolid) {
-        elements.ctx.fillStyle = fillColor;
-        elements.ctx.fill();
-      }
-      elements.ctx.stroke();
-    }
-  }
-
-  if (isCustomShape || state.drawLightCenters) {
-    const crossSize = LIGHT_CROSS_SIZE * state.zoom;
-    elements.ctx.strokeStyle = getStrokeStyle(item, isSelected, '#000000');
-    elements.ctx.lineWidth = getLineWidth(isSelected);
-    elements.ctx.beginPath();
-    elements.ctx.moveTo(cx - crossSize, cy);
-    elements.ctx.lineTo(cx + crossSize, cy);
-    elements.ctx.moveTo(cx, cy - crossSize);
-    elements.ctx.lineTo(cx, cy + crossSize);
-    elements.ctx.stroke();
-  }
-
-  if (item.is_bulb_light) {
-    const meshRadius = (item.mesh_radius ?? LIGHT_DEFAULTS.mesh_radius) * 0.5 * state.zoom;
-    elements.ctx.strokeStyle = '#007fff';
+  if (item.show_bulb_mesh) {
+    const meshRadius = (item.mesh_radius ?? LIGHT_DEFAULTS.mesh_radius) * LIGHT_BULB_MESH_SCALE * state.zoom;
+    elements.ctx.strokeStyle = RENDER_COLOR_BLUE;
     elements.ctx.lineWidth = 1;
     elements.ctx.beginPath();
     elements.ctx.arc(cx, cy, meshRadius, 0, Math.PI * 2);
     elements.ctx.stroke();
   }
+}
+
+export function renderBlueprint(ctx, item, scale, solid) {
+  const center = item.center || item.vCenter;
+  if (!center) return;
+
+  const cx = center.x * scale;
+  const cy = center.y * scale;
+
+  renderOutline(ctx, item, cx, cy, scale, null, true);
+
+  if (item.show_bulb_mesh) {
+    const meshRadius = (item.mesh_radius ?? LIGHT_DEFAULTS.mesh_radius) * LIGHT_BULB_MESH_SCALE * scale;
+    ctx.strokeStyle = RENDER_COLOR_BLUE;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, meshRadius, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+}
+
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
 }
 
 export function hitTestLight(item, worldX, worldY, center, distFromCenter) {

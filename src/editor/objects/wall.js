@@ -7,10 +7,12 @@ import {
   getLineWidth,
   getFillColorWithAlpha,
   pointInPolygon,
+  drawPolygon,
 } from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
 import { WALL_DEFAULTS } from '../../shared/object-defaults.js';
+import { RENDER_COLOR_BLACK, BLUEPRINT_SOLID_COLOR, PATH_SMOOTHING_ACCURACY } from '../../shared/constants.js';
 
 function createWallSidesGeometry(shape, height) {
   const points = shape.getPoints();
@@ -54,7 +56,7 @@ export function createWall3DMesh(item) {
 
   if (Math.abs(height) < 0.1 && !topVisible) return null;
 
-  const vertices = generateSmoothedPath(points, true, 8);
+  const vertices = generateSmoothedPath(points, true, PATH_SMOOTHING_ACCURACY);
   if (vertices.length < 3) return null;
 
   const shape = new THREE.Shape();
@@ -90,44 +92,31 @@ export function createWall3DMesh(item) {
   return mesh;
 }
 
-export function renderWall(item, isSelected) {
+function getVertices(item) {
   const points = item.drag_points;
-  if (!points || points.length < 2) return;
+  if (!points || points.length < 2) return null;
+  const vertices = generateSmoothedPath(points, true, PATH_SMOOTHING_ACCURACY);
+  if (vertices.length < 2) return null;
+  return vertices;
+}
 
-  const vertices = generateSmoothedPath(points, true, 8);
-  if (vertices.length < 2) return;
+export function uiRenderPass1(item, isSelected) {
+  const vertices = getVertices(item);
+  if (!vertices) return;
 
-  elements.ctx.strokeStyle = getStrokeStyle(item, isSelected);
-  elements.ctx.lineWidth = getLineWidth(isSelected);
+  const fillColor = state.viewSolid ? getFillColorWithAlpha(0.6) : null;
+  if (!fillColor) return;
 
-  elements.ctx.beginPath();
-  const first = toScreen(vertices[0].x, vertices[0].y);
-  elements.ctx.moveTo(first.x, first.y);
+  drawPolygon(elements.ctx, vertices, toScreen, fillColor, null, 0);
+}
 
-  for (let i = 1; i < vertices.length; i++) {
-    const pt = toScreen(vertices[i].x, vertices[i].y);
-    elements.ctx.lineTo(pt.x, pt.y);
-  }
-  elements.ctx.closePath();
-  if (state.viewSolid) {
-    elements.ctx.fillStyle = getFillColorWithAlpha(0.6);
-    elements.ctx.fill();
-  }
-  elements.ctx.stroke();
+export function uiRenderPass2(item, isSelected) {
+  const vertices = getVertices(item);
+  if (!vertices) return;
 
-  if (vertices.length === 4) {
-    const p0 = toScreen(vertices[0].x, vertices[0].y);
-    const p1 = toScreen(vertices[1].x, vertices[1].y);
-    const p2 = toScreen(vertices[2].x, vertices[2].y);
-    const p3 = toScreen(vertices[3].x, vertices[3].y);
-    elements.ctx.beginPath();
-    elements.ctx.moveTo(p0.x, p0.y);
-    elements.ctx.lineTo(p2.x, p2.y);
-    elements.ctx.moveTo(p1.x, p1.y);
-    elements.ctx.lineTo(p3.x, p3.y);
-    elements.ctx.stroke();
-  }
+  drawPolygon(elements.ctx, vertices, toScreen, null, getStrokeStyle(item, isSelected), getLineWidth(isSelected));
 
+  const points = item.drag_points;
   for (let i = 0; i < points.length; i++) {
     const pt = points[i];
     if (pt.is_slingshot || pt.slingshot) {
@@ -137,14 +126,30 @@ export function renderWall(item, isSelected) {
       const p1 = toScreen(v1.x, v1.y);
       const p2 = toScreen(v2.x, v2.y);
 
-      elements.ctx.strokeStyle = '#000000';
+      elements.ctx.strokeStyle = RENDER_COLOR_BLACK;
       elements.ctx.lineWidth = 3;
       elements.ctx.beginPath();
       elements.ctx.moveTo(p1.x, p1.y);
       elements.ctx.lineTo(p2.x, p2.y);
       elements.ctx.stroke();
+
+      elements.ctx.strokeStyle = getStrokeStyle(item, isSelected);
+      elements.ctx.lineWidth = getLineWidth(isSelected);
     }
   }
+}
+
+export function renderBlueprint(ctx, item, scale, solid) {
+  const vertices = getVertices(item);
+  if (!vertices) return;
+
+  const transformFn = (x, y) => ({ x: x * scale, y: y * scale });
+  drawPolygon(ctx, vertices, transformFn, solid ? BLUEPRINT_SOLID_COLOR : null, RENDER_COLOR_BLACK, 1);
+}
+
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
 }
 
 export function hitTestWall(item, worldX, worldY) {

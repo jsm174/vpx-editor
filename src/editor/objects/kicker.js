@@ -5,6 +5,10 @@ import { createMaterialWithTexture } from '../../shared/3d-material-helpers.js';
 import { materialOptions, surfaceOptions } from '../../shared/options-generators.js';
 import { KICKER_DEFAULTS } from '../../shared/object-defaults.js';
 import { createMeshGeometry } from '../../shared/mesh-utils.js';
+import { RENDER_COLOR_RED, RENDER_COLOR_BLACK } from '../../shared/constants.js';
+
+const KICKER_ARROW_HALF_LENGTH = 50.0;
+const KICKER_ARROW_HEAD_ANGLE = 0.6;
 
 const KICKER_TYPES = [
   { value: 'cup', label: 'Cup' },
@@ -37,8 +41,8 @@ export function createKicker3DMesh(item) {
   const kickerType = (item.kicker_type || 'hole').toLowerCase();
   if (kickerType === 'invisible') return null;
 
-  const radius = item.radius ?? KICKER_DEFAULT_RADIUS;
-  let orientation = ((item.orientation ?? KICKER_DEFAULT_ORIENTATION) * Math.PI) / 180;
+  const radius = item.radius ?? KICKER_DEFAULTS.radius;
+  let orientation = ((item.orientation ?? KICKER_DEFAULTS.orientation) * Math.PI) / 180;
   let zOffset = 0;
   let meshData;
   let textureName = null;
@@ -83,45 +87,86 @@ export function createKicker3DMesh(item) {
   return mesh;
 }
 
-export function renderKicker(item, isSelected) {
-  const { center } = item;
-  const { x: cx, y: cy } = toScreen(center.x, center.y);
+function getKickerGeometry(item, scale) {
   const radius = item.radius ?? KICKER_DEFAULTS.radius;
   const orientation = item.orientation ?? KICKER_DEFAULTS.orientation;
-  const r = radius * state.zoom;
+  const r = radius * scale;
   const rad = (-orientation * Math.PI) / 180;
+  return { r, rad };
+}
 
-  elements.ctx.strokeStyle = getStrokeStyle(item, isSelected);
-  elements.ctx.lineWidth = getLineWidth(isSelected);
+function drawKicker(ctx, item, cx, cy, scale, strokeStyle, lineWidth, arrowColor) {
+  const { r, rad } = getKickerGeometry(item, scale);
 
-  elements.ctx.beginPath();
-  elements.ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  elements.ctx.stroke();
+  ctx.strokeStyle = strokeStyle;
+  ctx.lineWidth = lineWidth;
 
-  [0.75, 0.5, 0.25].forEach(scale => {
-    elements.ctx.beginPath();
-    elements.ctx.arc(cx, cy, r * scale, 0, Math.PI * 2);
-    elements.ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+
+  [0.75, 0.5, 0.25].forEach(s => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * s, 0, Math.PI * 2);
+    ctx.stroke();
   });
 
-  const arrowLen = r * 0.5;
-  const arrowHeadLen = arrowLen * 0.5;
-  const tipX = cx + Math.sin(rad) * arrowLen;
-  const tipY = cy - Math.cos(rad) * arrowLen;
+  const halfLength = KICKER_ARROW_HALF_LENGTH * scale;
+  const len1 = halfLength * 0.5;
+  const len2 = halfLength * 0.25;
+  const tipX = cx + Math.sin(rad) * len1;
+  const tipY = cy - Math.cos(rad) * len1;
 
-  elements.ctx.strokeStyle = '#ff0000';
-  elements.ctx.lineWidth = 1;
-  elements.ctx.beginPath();
-  elements.ctx.moveTo(cx, cy);
-  elements.ctx.lineTo(tipX, tipY);
-  elements.ctx.stroke();
+  ctx.strokeStyle = arrowColor;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(tipX, tipY);
+  ctx.lineTo(cx, cy);
+  ctx.stroke();
 
-  elements.ctx.beginPath();
-  elements.ctx.moveTo(tipX, tipY);
-  elements.ctx.lineTo(tipX + Math.sin(rad + 2.5) * arrowHeadLen, tipY - Math.cos(rad + 2.5) * arrowHeadLen);
-  elements.ctx.moveTo(tipX, tipY);
-  elements.ctx.lineTo(tipX + Math.sin(rad - 2.5) * arrowHeadLen, tipY - Math.cos(rad - 2.5) * arrowHeadLen);
-  elements.ctx.stroke();
+  const arrowAng1 = rad + KICKER_ARROW_HEAD_ANGLE;
+  const arrowAng2 = rad - KICKER_ARROW_HEAD_ANGLE;
+  ctx.beginPath();
+  ctx.moveTo(tipX, tipY);
+  ctx.lineTo(cx + Math.sin(arrowAng1) * len2, cy - Math.cos(arrowAng1) * len2);
+  ctx.moveTo(tipX, tipY);
+  ctx.lineTo(cx + Math.sin(arrowAng2) * len2, cy - Math.cos(arrowAng2) * len2);
+  ctx.stroke();
+}
+
+export function uiRenderPass1(item, isSelected) {}
+
+export function uiRenderPass2(item, isSelected) {
+  const { center } = item;
+  if (!center) return;
+
+  const { x: cx, y: cy } = toScreen(center.x, center.y);
+  drawKicker(
+    elements.ctx,
+    item,
+    cx,
+    cy,
+    state.zoom,
+    getStrokeStyle(item, isSelected),
+    getLineWidth(isSelected),
+    RENDER_COLOR_RED
+  );
+}
+
+export function renderBlueprint(ctx, item, scale, solid) {
+  const { center } = item;
+  if (!center) return;
+
+  drawKicker(ctx, item, center.x * scale, center.y * scale, scale, RENDER_COLOR_BLACK, 1, RENDER_COLOR_RED);
+}
+
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
+}
+
+export function renderKicker(item, isSelected) {
+  render(item, isSelected);
 }
 
 export function kickerProperties(item) {

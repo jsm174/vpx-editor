@@ -15,6 +15,7 @@ import {
   timerTab,
 } from '../../shared/property-templates.js';
 import { getMaterialColor } from '../../shared/color-utils.js';
+import { RENDER_COLOR_BLACK, BLUEPRINT_SOLID_COLOR } from '../../shared/constants.js';
 
 import bumperBaseMesh from '../meshes/bumperBase.json';
 import bumperCapMesh from '../meshes/bumperCap.json';
@@ -85,60 +86,105 @@ export function createBumper3DMesh(item) {
   return group;
 }
 
-export function renderBumper(item, isSelected) {
-  const { center } = item;
-  const { x: cx, y: cy } = toScreen(center.x, center.y);
+function getBumperGeometry(item, scale) {
   const radius = item.radius ?? BUMPER_DEFAULTS.radius;
   const orientation = item.orientation ?? BUMPER_DEFAULTS.orientation;
-  const r = radius * state.zoom;
+  const r = radius * scale;
   const outerR = r * BUMPER_OUTER_RADIUS_MULT;
-  const poleR = BUMPER_POLE_RADIUS * state.zoom;
-  const poleOffset = r + BUMPER_POLE_OFFSET * state.zoom;
+  const poleR = BUMPER_POLE_RADIUS * scale;
+  const poleOffset = r + BUMPER_POLE_OFFSET * scale;
   const rad = (-(orientation - 90) * Math.PI) / 180;
 
-  if (state.viewSolid) {
-    const defaultColor = state.editorColors?.defaultMaterial || '#ff69b4';
-    const baseColor = getMaterialColor(item.base_material, defaultColor);
-    const capColor = getMaterialColor(item.cap_material, defaultColor);
+  return { r, outerR, poleR, poleOffset, rad };
+}
 
-    elements.ctx.fillStyle = baseColor;
-    elements.ctx.beginPath();
-    elements.ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
-    elements.ctx.arc(cx, cy, r, 0, Math.PI * 2, true);
-    elements.ctx.fill();
+function drawBumperCircles(ctx, cx, cy, r, outerR, poleR, poleOffset, rad, strokeStyle, lineWidth, fillStyle) {
+  const pole1x = cx - Math.cos(rad) * poleOffset;
+  const pole1y = cy - Math.sin(rad) * poleOffset;
+  const pole2x = cx + Math.cos(rad) * poleOffset;
+  const pole2y = cy + Math.sin(rad) * poleOffset;
 
-    elements.ctx.fillStyle = capColor;
-    elements.ctx.beginPath();
-    elements.ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    elements.ctx.fill();
+  ctx.strokeStyle = strokeStyle;
+  ctx.lineWidth = lineWidth;
 
-    elements.ctx.fillStyle = baseColor;
-    elements.ctx.beginPath();
-    elements.ctx.arc(cx - Math.cos(rad) * poleOffset, cy - Math.sin(rad) * poleOffset, poleR, 0, Math.PI * 2);
-    elements.ctx.fill();
-    elements.ctx.beginPath();
-    elements.ctx.arc(cx + Math.cos(rad) * poleOffset, cy + Math.sin(rad) * poleOffset, poleR, 0, Math.PI * 2);
-    elements.ctx.fill();
-  }
+  if (fillStyle) ctx.fillStyle = fillStyle;
+  ctx.beginPath();
+  ctx.arc(pole1x, pole1y, poleR, 0, Math.PI * 2);
+  if (fillStyle) ctx.fill();
+  ctx.stroke();
 
-  elements.ctx.strokeStyle = getStrokeStyle(item, isSelected);
-  elements.ctx.lineWidth = getLineWidth(isSelected);
-  elements.ctx.beginPath();
-  elements.ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
-  elements.ctx.stroke();
-  elements.ctx.beginPath();
-  elements.ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  elements.ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(pole2x, pole2y, poleR, 0, Math.PI * 2);
+  if (fillStyle) ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+  if (fillStyle) ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  if (fillStyle) ctx.fill();
+  ctx.stroke();
+}
+
+export function uiRenderPass1(item, isSelected) {
+  const { center } = item;
+  if (!center) return;
+
+  if (!state.viewSolid) return;
+
+  const { x: cx, y: cy } = toScreen(center.x, center.y);
+  const { r, outerR, poleR, poleOffset, rad } = getBumperGeometry(item, state.zoom);
+
+  const defaultColor = state.editorColors?.defaultMaterial || '#ff69b4';
+  const capColor = getMaterialColor(item.cap_material, defaultColor);
+  const baseColor = getMaterialColor(item.base_material, defaultColor);
+
+  elements.ctx.fillStyle = baseColor;
   elements.ctx.beginPath();
   elements.ctx.arc(cx - Math.cos(rad) * poleOffset, cy - Math.sin(rad) * poleOffset, poleR, 0, Math.PI * 2);
-  elements.ctx.stroke();
+  elements.ctx.fill();
   elements.ctx.beginPath();
   elements.ctx.arc(cx + Math.cos(rad) * poleOffset, cy + Math.sin(rad) * poleOffset, poleR, 0, Math.PI * 2);
-  elements.ctx.stroke();
+  elements.ctx.fill();
+
+  elements.ctx.fillStyle = capColor;
+  elements.ctx.beginPath();
+  elements.ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+  elements.ctx.fill();
+
+  elements.ctx.fillStyle = baseColor;
+  elements.ctx.beginPath();
+  elements.ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  elements.ctx.fill();
+}
+
+export function uiRenderPass2(item, isSelected) {
+  const { center } = item;
+  if (!center) return;
+
+  const { x: cx, y: cy } = toScreen(center.x, center.y);
+  const { r, outerR, poleR, poleOffset, rad } = getBumperGeometry(item, state.zoom);
+
+  drawBumperCircles(
+    elements.ctx,
+    cx,
+    cy,
+    r,
+    outerR,
+    poleR,
+    poleOffset,
+    rad,
+    getStrokeStyle(item, isSelected),
+    getLineWidth(isSelected),
+    null
+  );
 
   if (state.drawLightCenters) {
     const crossSize = BUMPER_CROSS_SIZE * state.zoom;
-    elements.ctx.strokeStyle = '#000000';
+    elements.ctx.strokeStyle = RENDER_COLOR_BLACK;
     elements.ctx.lineWidth = 1;
     elements.ctx.beginPath();
     elements.ctx.moveTo(cx - crossSize, cy);
@@ -147,6 +193,34 @@ export function renderBumper(item, isSelected) {
     elements.ctx.lineTo(cx, cy + crossSize);
     elements.ctx.stroke();
   }
+}
+
+export function renderBlueprint(ctx, item, scale, solid) {
+  const { center } = item;
+  if (!center) return;
+
+  const cx = center.x * scale;
+  const cy = center.y * scale;
+  const { r, outerR, poleR, poleOffset, rad } = getBumperGeometry(item, scale);
+
+  drawBumperCircles(
+    ctx,
+    cx,
+    cy,
+    r,
+    outerR,
+    poleR,
+    poleOffset,
+    rad,
+    RENDER_COLOR_BLACK,
+    1,
+    solid ? BLUEPRINT_SOLID_COLOR : null
+  );
+}
+
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
 }
 
 export function hitTestBumper(item, worldX, worldY, center, distFromCenter) {

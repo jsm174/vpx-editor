@@ -1,9 +1,60 @@
 import { state, elements } from '../state.js';
-import { toScreen } from '../utils.js';
+import { toScreen, getLineWidth, getSelectColor } from '../utils.js';
 import { collectionOptions } from '../../shared/options-generators.js';
 import { LIGHTSEQUENCER_DEFAULTS } from '../../shared/object-defaults.js';
+import { RENDER_COLOR_BLACK, RENDER_COLOR_RED, RENDER_COLOR_DARK_RED } from '../../shared/constants.js';
 
-export function renderLightSequencer(item, isSelected) {
+export function uiRenderPass1(item, isSelected) {
+  const center = item.center || item.vCenter || { x: 0, y: 0 };
+  const { x: cx, y: cy } = toScreen(center.x, center.y);
+
+  const smallR = 4 * state.zoom;
+  const distance = 12 * state.zoom;
+
+  for (let i = 0; i < 8; i++) {
+    const angle = ((Math.PI * 2) / 8) * i;
+    const sn = Math.sin(angle);
+    const cs = Math.cos(angle);
+    const px = cx + sn * distance;
+    const py = cy - cs * distance;
+
+    elements.ctx.fillStyle = i % 2 === 0 ? RENDER_COLOR_RED : RENDER_COLOR_DARK_RED;
+    elements.ctx.beginPath();
+    elements.ctx.arc(px, py, smallR, 0, Math.PI * 2);
+    elements.ctx.fill();
+  }
+
+  elements.ctx.fillStyle = RENDER_COLOR_RED;
+  elements.ctx.beginPath();
+  elements.ctx.arc(cx, cy - 3 * state.zoom, smallR, 0, Math.PI * 2);
+  elements.ctx.fill();
+
+  const tableX = item.pos_x ?? LIGHTSEQUENCER_DEFAULTS.pos_x;
+  const tableY = item.pos_y ?? LIGHTSEQUENCER_DEFAULTS.pos_y;
+  const { x: tcx, y: tcy } = toScreen(tableX, tableY);
+
+  const smallR2 = 2 * state.zoom;
+  const distance2 = 7 * state.zoom;
+  for (let i = 0; i < 8; i++) {
+    const angle = ((Math.PI * 2) / 8) * i;
+    const sn = Math.sin(angle);
+    const cs = Math.cos(angle);
+    const px = tcx + sn * distance2;
+    const py = tcy - cs * distance2;
+
+    elements.ctx.fillStyle = i % 2 === 0 ? RENDER_COLOR_RED : RENDER_COLOR_DARK_RED;
+    elements.ctx.beginPath();
+    elements.ctx.arc(px, py, smallR2, 0, Math.PI * 2);
+    elements.ctx.fill();
+  }
+
+  elements.ctx.fillStyle = RENDER_COLOR_RED;
+  elements.ctx.beginPath();
+  elements.ctx.arc(tcx, tcy - 2 * state.zoom, smallR2, 0, Math.PI * 2);
+  elements.ctx.fill();
+}
+
+export function uiRenderPass2(item, isSelected) {
   const center = item.center || item.vCenter || { x: 0, y: 0 };
   const { x: cx, y: cy } = toScreen(center.x, center.y);
 
@@ -11,7 +62,7 @@ export function renderLightSequencer(item, isSelected) {
   const distance = 12 * state.zoom;
   const mainR = 18 * state.zoom;
 
-  const strokeColor = isSelected ? '#0000ff' : '#000000';
+  const strokeColor = isSelected ? getSelectColor() : RENDER_COLOR_BLACK;
   const strokeWidth = isSelected ? 4 : 1;
 
   for (let i = 0; i < 8; i++) {
@@ -21,21 +72,17 @@ export function renderLightSequencer(item, isSelected) {
     const px = cx + sn * distance;
     const py = cy - cs * distance;
 
-    elements.ctx.fillStyle = i % 2 === 0 ? '#ff0000' : '#800000';
     elements.ctx.strokeStyle = strokeColor;
     elements.ctx.lineWidth = strokeWidth;
     elements.ctx.beginPath();
     elements.ctx.arc(px, py, smallR, 0, Math.PI * 2);
-    elements.ctx.fill();
     elements.ctx.stroke();
   }
 
-  elements.ctx.fillStyle = '#ff0000';
   elements.ctx.strokeStyle = strokeColor;
   elements.ctx.lineWidth = strokeWidth;
   elements.ctx.beginPath();
   elements.ctx.arc(cx, cy - 3 * state.zoom, smallR, 0, Math.PI * 2);
-  elements.ctx.fill();
   elements.ctx.stroke();
 
   elements.ctx.strokeStyle = strokeColor;
@@ -48,7 +95,7 @@ export function renderLightSequencer(item, isSelected) {
   const tableY = item.pos_y ?? LIGHTSEQUENCER_DEFAULTS.pos_y;
   const { x: tcx, y: tcy } = toScreen(tableX, tableY);
 
-  elements.ctx.strokeStyle = '#000000';
+  elements.ctx.strokeStyle = RENDER_COLOR_BLACK;
   elements.ctx.lineWidth = 1;
   elements.ctx.beginPath();
   elements.ctx.moveTo(tcx - 10 * state.zoom, tcy);
@@ -56,26 +103,17 @@ export function renderLightSequencer(item, isSelected) {
   elements.ctx.moveTo(tcx, tcy - 10 * state.zoom);
   elements.ctx.lineTo(tcx, tcy + 10 * state.zoom);
   elements.ctx.stroke();
+}
 
-  const smallR2 = 2 * state.zoom;
-  const distance2 = 7 * state.zoom;
-  for (let i = 0; i < 8; i++) {
-    const angle = ((Math.PI * 2) / 8) * i;
-    const sn = Math.sin(angle);
-    const cs = Math.cos(angle);
-    const px = tcx + sn * distance2;
-    const py = tcy - cs * distance2;
+export function renderBlueprint(ctx, item, scale, solid) {}
 
-    elements.ctx.fillStyle = i % 2 === 0 ? '#ff0000' : '#800000';
-    elements.ctx.beginPath();
-    elements.ctx.arc(px, py, smallR2, 0, Math.PI * 2);
-    elements.ctx.fill();
-  }
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
+}
 
-  elements.ctx.fillStyle = '#ff0000';
-  elements.ctx.beginPath();
-  elements.ctx.arc(tcx, tcy - 2 * state.zoom, smallR2, 0, Math.PI * 2);
-  elements.ctx.fill();
+export function renderLightSequencer(item, isSelected) {
+  render(item, isSelected);
 }
 
 export function hitTestLightSequencer(item, worldX, worldY, center, distFromCenter) {

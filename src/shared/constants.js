@@ -28,3 +28,18 @@ export const BOUNDS_PADDING = 100;
 
 export const VIEW_MODE_2D = '2d';
 export const VIEW_MODE_3D = '3d';
+
+export const BLUEPRINT_SOLID_COLOR = '#000000';
+export const BLUEPRINT_STROKE_COLOR = '#000000';
+export const BLUEPRINT_BACKGROUND_COLOR = '#ffffff';
+export const BLUEPRINT_MAX_DIMENSION = 4096;
+
+export const PATH_SMOOTHING_ACCURACY = 4;
+
+export const RENDER_COLOR_BLACK = '#000000';
+export const RENDER_COLOR_GRAY = '#808080';
+export const RENDER_COLOR_RED = '#ff0000';
+export const RENDER_COLOR_BLUE = '#007fff';
+export const RENDER_COLOR_GREEN = '#00b400';
+export const RENDER_COLOR_DARK_RED = '#800000';
+export const RENDER_COLOR_FIRST_POINT = '#0000ff';

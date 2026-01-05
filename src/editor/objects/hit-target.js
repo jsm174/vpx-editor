@@ -5,6 +5,7 @@ import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
 import { HITTARGET_DEFAULTS } from '../../shared/object-defaults.js';
 import { createMeshGeometry } from '../../shared/mesh-utils.js';
+import { RENDER_COLOR_BLACK, RENDER_COLOR_RED } from '../../shared/constants.js';
 
 import hitTargetRoundMesh from '../meshes/hitTargetRound.json';
 import hitTargetRectangleMesh from '../meshes/hitTargetRectangle.json';
@@ -76,50 +77,6 @@ const LEN1 = HALFLENGTH * 0.5;
 const LEN2 = LEN1 * 0.5;
 const ARROW_ANGLE = 0.6;
 
-function renderHitTargetMesh(meshData, px, py, size, rotZ) {
-  if (!meshData || !meshData.indices || !meshData.positions) return;
-
-  const cos = Math.cos(rotZ);
-  const sin = Math.sin(rotZ);
-
-  elements.ctx.save();
-  elements.ctx.lineJoin = 'miter';
-  elements.ctx.lineCap = 'butt';
-
-  for (let i = 0; i < meshData.indices.length; i += 3) {
-    const i0 = meshData.indices[i] * 3;
-    const i1 = meshData.indices[i + 1] * 3;
-    const i2 = meshData.indices[i + 2] * 3;
-
-    const ax = meshData.positions[i0] * size.x;
-    const ay = meshData.positions[i0 + 1] * size.y;
-    const bx = meshData.positions[i1] * size.x;
-    const by = meshData.positions[i1 + 1] * size.y;
-    const cx = meshData.positions[i2] * size.x;
-    const cy = meshData.positions[i2 + 1] * size.y;
-
-    const a = toScreen(px + ax * cos - ay * sin, py + ax * sin + ay * cos);
-    const b = toScreen(px + bx * cos - by * sin, py + bx * sin + by * cos);
-    const c = toScreen(px + cx * cos - cy * sin, py + cx * sin + cy * cos);
-
-    elements.ctx.beginPath();
-    elements.ctx.moveTo(a.x, a.y);
-    elements.ctx.lineTo(b.x, b.y);
-    elements.ctx.stroke();
-
-    elements.ctx.beginPath();
-    elements.ctx.moveTo(b.x, b.y);
-    elements.ctx.lineTo(c.x, c.y);
-    elements.ctx.stroke();
-
-    elements.ctx.beginPath();
-    elements.ctx.moveTo(c.x, c.y);
-    elements.ctx.lineTo(a.x, a.y);
-    elements.ctx.stroke();
-  }
-  elements.ctx.restore();
-}
-
 function getMeshForTargetType(targetType) {
   switch (targetType) {
     case 'drop_target_beveled':
@@ -145,7 +102,53 @@ function getMeshForTargetType(targetType) {
   }
 }
 
-export function renderHitTarget(item, isSelected) {
+function renderHitTargetMeshToCtx(ctx, meshData, px, py, size, rotZ, transformFn) {
+  if (!meshData || !meshData.indices || !meshData.positions) return;
+
+  const cos = Math.cos(rotZ);
+  const sin = Math.sin(rotZ);
+
+  ctx.save();
+  ctx.lineJoin = 'miter';
+  ctx.lineCap = 'butt';
+
+  for (let i = 0; i < meshData.indices.length; i += 3) {
+    const i0 = meshData.indices[i] * 3;
+    const i1 = meshData.indices[i + 1] * 3;
+    const i2 = meshData.indices[i + 2] * 3;
+
+    const ax = meshData.positions[i0] * size.x;
+    const ay = meshData.positions[i0 + 1] * size.y;
+    const bx = meshData.positions[i1] * size.x;
+    const by = meshData.positions[i1 + 1] * size.y;
+    const cx = meshData.positions[i2] * size.x;
+    const cy = meshData.positions[i2 + 1] * size.y;
+
+    const a = transformFn(px + ax * cos - ay * sin, py + ax * sin + ay * cos);
+    const b = transformFn(px + bx * cos - by * sin, py + bx * sin + by * cos);
+    const c = transformFn(px + cx * cos - cy * sin, py + cx * sin + cy * cos);
+
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y);
+    ctx.lineTo(c.x, c.y);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(c.x, c.y);
+    ctx.lineTo(a.x, a.y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+export function uiRenderPass1(item, isSelected) {}
+
+export function uiRenderPass2(item, isSelected) {
   const pos = item.vPosition || item.position;
   if (!pos) return;
 
@@ -162,7 +165,7 @@ export function renderHitTarget(item, isSelected) {
   elements.ctx.lineWidth = getLineWidth(isSelected);
 
   const meshData = getMeshForTargetType(targetType);
-  renderHitTargetMesh(meshData, pos.x, pos.y, size, rotZ);
+  renderHitTargetMeshToCtx(elements.ctx, meshData, pos.x, pos.y, size, rotZ, toScreen);
 
   if (isSelected && !item.is_locked) {
     const radangle = ((item.rot_z ?? HITTARGET_DEFAULTS.rot_z) * Math.PI) / 180 - Math.PI;
@@ -172,7 +175,7 @@ export function renderHitTarget(item, isSelected) {
     const tipX = px + sn * LEN1 * state.zoom;
     const tipY = py - cs * LEN1 * state.zoom;
 
-    elements.ctx.strokeStyle = '#ff0000';
+    elements.ctx.strokeStyle = RENDER_COLOR_RED;
     elements.ctx.lineWidth = 1;
 
     elements.ctx.beginPath();
@@ -189,6 +192,35 @@ export function renderHitTarget(item, isSelected) {
     elements.ctx.lineTo(px + Math.sin(arrowAng2) * LEN2 * state.zoom, py - Math.cos(arrowAng2) * LEN2 * state.zoom);
     elements.ctx.stroke();
   }
+}
+
+export function renderBlueprint(ctx, item, scale, solid) {
+  const pos = item.vPosition || item.position;
+  if (!pos) return;
+
+  const size = item.size || {
+    x: HITTARGET_DEFAULTS.size_x,
+    y: HITTARGET_DEFAULTS.size_y,
+    z: HITTARGET_DEFAULTS.size_z,
+  };
+  const rotZ = ((item.rot_z ?? HITTARGET_DEFAULTS.rot_z) * Math.PI) / 180;
+  const targetType = (item.target_type || 'drop_target_simple').toLowerCase();
+
+  ctx.strokeStyle = RENDER_COLOR_BLACK;
+  ctx.lineWidth = 1;
+
+  const meshData = getMeshForTargetType(targetType);
+  const transformFn = (x, y) => ({ x: x * scale, y: y * scale });
+  renderHitTargetMeshToCtx(ctx, meshData, pos.x, pos.y, size, rotZ, transformFn);
+}
+
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
+}
+
+export function renderHitTarget(item, isSelected) {
+  render(item, isSelected);
 }
 
 export function hitTargetProperties(item) {

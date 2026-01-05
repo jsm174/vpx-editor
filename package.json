@@ -1,7 +1,7 @@
 {
   "name": "vpx-editor",
   "productName": "VPX Editor",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Visual Pinball X Table Editor",
   "main": ".vite/build/main.js",
   "scripts": {

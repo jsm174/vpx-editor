@@ -12,6 +12,12 @@ import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, surfaceOptions } from '../../shared/options-generators.js';
 import { TRIGGER_DEFAULTS } from '../../shared/object-defaults.js';
 import { createMeshGeometry } from '../../shared/mesh-utils.js';
+import {
+  RENDER_COLOR_GREEN,
+  RENDER_COLOR_BLACK,
+  BLUEPRINT_SOLID_COLOR,
+  PATH_SMOOTHING_ACCURACY,
+} from '../../shared/constants.js';
 
 import triggerSimpleMesh from '../meshes/triggerSimple.json';
 import triggerStarMesh from '../meshes/triggerStar.json';
@@ -68,7 +74,7 @@ export function createTrigger3DMesh(item) {
   return mesh;
 }
 
-export function renderTrigger(item, isSelected) {
+function renderTriggerShape(ctx, item, scale, solid, strokeColor, fillColor, lineWidth, transformFn) {
   const center = item.center || item.vCenter;
   if (!center) return;
 
@@ -76,20 +82,20 @@ export function renderTrigger(item, isSelected) {
   const radius = item.radius ?? TRIGGER_DEFAULTS.radius;
   const rotation = ((item.rotation ?? TRIGGER_DEFAULTS.rotation) * Math.PI) / 180;
 
-  elements.ctx.strokeStyle = getStrokeStyle(item, isSelected, '#00b400');
-  elements.ctx.lineWidth = getLineWidth(isSelected);
-
   if (shape === 'star' || shape === 'button') {
     const r = radius;
     const r2 = r * Math.SQRT1_2;
     const cos = Math.cos(rotation);
     const sin = Math.sin(rotation);
-    const screenCenter = toScreen(center.x, center.y);
-    const screenRadius = r * state.zoom;
+    const screenCenter = transformFn(center.x, center.y);
+    const screenRadius = r * scale;
 
-    elements.ctx.beginPath();
-    elements.ctx.arc(screenCenter.x, screenCenter.y, screenRadius, 0, Math.PI * 2);
-    elements.ctx.stroke();
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = lineWidth;
+
+    ctx.beginPath();
+    ctx.arc(screenCenter.x, screenCenter.y, screenRadius, 0, Math.PI * 2);
+    ctx.stroke();
 
     const endpoints = [
       { x: -r, y: 0 },
@@ -103,105 +109,188 @@ export function renderTrigger(item, isSelected) {
     ].map(p => {
       const rx = p.x * cos - p.y * sin;
       const ry = p.x * sin + p.y * cos;
-      return toScreen(center.x + rx, center.y + ry);
+      return transformFn(center.x + rx, center.y + ry);
     });
 
-    elements.ctx.beginPath();
-    elements.ctx.moveTo(endpoints[0].x, endpoints[0].y);
-    elements.ctx.lineTo(endpoints[1].x, endpoints[1].y);
-    elements.ctx.moveTo(endpoints[2].x, endpoints[2].y);
-    elements.ctx.lineTo(endpoints[3].x, endpoints[3].y);
-    elements.ctx.moveTo(endpoints[4].x, endpoints[4].y);
-    elements.ctx.lineTo(endpoints[5].x, endpoints[5].y);
-    elements.ctx.moveTo(endpoints[6].x, endpoints[6].y);
-    elements.ctx.lineTo(endpoints[7].x, endpoints[7].y);
-    elements.ctx.stroke();
-  } else {
-    if (item.drag_points && item.drag_points.length >= 3) {
-      let vertices;
-      if (shape === 'none') {
-        vertices = item.drag_points.map(p => {
-          const v = p.vertex || p;
-          return { x: v.x, y: v.y };
-        });
-      } else {
-        vertices = generateSmoothedPath(item.drag_points, true, 8);
-      }
-      if (vertices.length >= 3) {
-        elements.ctx.beginPath();
-        const first = toScreen(vertices[0].x, vertices[0].y);
-        elements.ctx.moveTo(first.x, first.y);
-        for (let i = 1; i < vertices.length; i++) {
-          const pt = toScreen(vertices[i].x, vertices[i].y);
-          elements.ctx.lineTo(pt.x, pt.y);
-        }
-        elements.ctx.closePath();
-        if (state.viewSolid) {
-          elements.ctx.fillStyle = getFillColorWithAlpha(0.3);
-          elements.ctx.fill();
-        }
-        elements.ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(endpoints[0].x, endpoints[0].y);
+    ctx.lineTo(endpoints[1].x, endpoints[1].y);
+    ctx.moveTo(endpoints[2].x, endpoints[2].y);
+    ctx.lineTo(endpoints[3].x, endpoints[3].y);
+    ctx.moveTo(endpoints[4].x, endpoints[4].y);
+    ctx.lineTo(endpoints[5].x, endpoints[5].y);
+    ctx.moveTo(endpoints[6].x, endpoints[6].y);
+    ctx.lineTo(endpoints[7].x, endpoints[7].y);
+    ctx.stroke();
+    return;
+  }
 
-        if (vertices.length === 4) {
-          const p0 = toScreen(vertices[0].x, vertices[0].y);
-          const p1 = toScreen(vertices[1].x, vertices[1].y);
-          const p2 = toScreen(vertices[2].x, vertices[2].y);
-          const p3 = toScreen(vertices[3].x, vertices[3].y);
-          elements.ctx.beginPath();
-          elements.ctx.moveTo(p0.x, p0.y);
-          elements.ctx.lineTo(p2.x, p2.y);
-          elements.ctx.moveTo(p1.x, p1.y);
-          elements.ctx.lineTo(p3.x, p3.y);
-          elements.ctx.stroke();
-        }
-      }
+  if (item.drag_points && item.drag_points.length >= 3) {
+    let vertices;
+    if (shape === 'none') {
+      vertices = item.drag_points.map(p => {
+        const v = p.vertex || p;
+        return { x: v.x, y: v.y };
+      });
+    } else {
+      vertices = generateSmoothedPath(item.drag_points, true, PATH_SMOOTHING_ACCURACY);
     }
+    if (vertices.length >= 3) {
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = lineWidth;
 
-    if (shape === 'wire_a' || shape === 'wire_b' || shape === 'wire_c' || shape === 'wire_d' || shape === 'inder') {
-      let meshData;
-      if (shape === 'wire_d') {
-        meshData = triggerWireDMesh;
-      } else if (shape === 'inder') {
-        meshData = triggerInderMesh;
-      } else {
-        meshData = triggerSimpleMesh;
+      ctx.beginPath();
+      const first = transformFn(vertices[0].x, vertices[0].y);
+      ctx.moveTo(first.x, first.y);
+      for (let i = 1; i < vertices.length; i++) {
+        const pt = transformFn(vertices[i].x, vertices[i].y);
+        ctx.lineTo(pt.x, pt.y);
       }
+      ctx.closePath();
+      if (solid && fillColor) {
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+      }
+      ctx.stroke();
 
-      if (meshData.indices && meshData.indices.length > 0) {
-        const scaleX = item.scale_x ?? TRIGGER_DEFAULTS.scale_x;
-        const scaleY = item.scale_y ?? TRIGGER_DEFAULTS.scale_y;
-        const cos = Math.cos(rotation);
-        const sin = Math.sin(rotation);
-
-        const numPts = Math.floor(meshData.indices.length / 3) + 1;
-        const drawPts = [];
-
-        const ax = meshData.positions[meshData.indices[0] * 3];
-        const ay = meshData.positions[meshData.indices[0] * 3 + 1];
-        const arx = (ax * cos - ay * sin) * scaleX;
-        const ary = (ax * sin + ay * cos) * scaleY;
-        drawPts.push(toScreen(center.x + arx, center.y + ary));
-
-        for (let i = 0; i < meshData.indices.length; i += 3) {
-          const idx = meshData.indices[i + 1];
-          const bx = meshData.positions[idx * 3];
-          const by = meshData.positions[idx * 3 + 1];
-          const brx = (bx * cos - by * sin) * scaleX;
-          const bry = (bx * sin + by * cos) * scaleY;
-          drawPts.push(toScreen(center.x + brx, center.y + bry));
-        }
-
-        if (drawPts.length > 1) {
-          elements.ctx.beginPath();
-          elements.ctx.moveTo(drawPts[0].x, drawPts[0].y);
-          for (let i = 1; i < drawPts.length; i++) {
-            elements.ctx.lineTo(drawPts[i].x, drawPts[i].y);
-          }
-          elements.ctx.stroke();
-        }
+      if (vertices.length === 4) {
+        const p0 = transformFn(vertices[0].x, vertices[0].y);
+        const p1 = transformFn(vertices[1].x, vertices[1].y);
+        const p2 = transformFn(vertices[2].x, vertices[2].y);
+        const p3 = transformFn(vertices[3].x, vertices[3].y);
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p3.x, p3.y);
+        ctx.stroke();
       }
     }
   }
+
+  if (shape === 'wire_a' || shape === 'wire_b' || shape === 'wire_c' || shape === 'wire_d' || shape === 'inder') {
+    let meshData;
+    if (shape === 'wire_d') {
+      meshData = triggerWireDMesh;
+    } else if (shape === 'inder') {
+      meshData = triggerInderMesh;
+    } else {
+      meshData = triggerSimpleMesh;
+    }
+
+    if (meshData.indices && meshData.indices.length > 0) {
+      const scaleX = item.scale_x ?? TRIGGER_DEFAULTS.scale_x;
+      const scaleY = item.scale_y ?? TRIGGER_DEFAULTS.scale_y;
+      const cos = Math.cos(rotation);
+      const sin = Math.sin(rotation);
+
+      const drawPts = [];
+
+      const ax = meshData.positions[meshData.indices[0] * 3];
+      const ay = meshData.positions[meshData.indices[0] * 3 + 1];
+      const arx = (ax * cos - ay * sin) * scaleX;
+      const ary = (ax * sin + ay * cos) * scaleY;
+      drawPts.push(transformFn(center.x + arx, center.y + ary));
+
+      for (let i = 0; i < meshData.indices.length; i += 3) {
+        const idx = meshData.indices[i + 1];
+        const bx = meshData.positions[idx * 3];
+        const by = meshData.positions[idx * 3 + 1];
+        const brx = (bx * cos - by * sin) * scaleX;
+        const bry = (bx * sin + by * cos) * scaleY;
+        drawPts.push(transformFn(center.x + brx, center.y + bry));
+      }
+
+      if (drawPts.length > 1) {
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = lineWidth;
+        ctx.beginPath();
+        ctx.moveTo(drawPts[0].x, drawPts[0].y);
+        for (let i = 1; i < drawPts.length; i++) {
+          ctx.lineTo(drawPts[i].x, drawPts[i].y);
+        }
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+export function uiRenderPass1(item, isSelected) {
+  if (!state.viewSolid) return;
+
+  const center = item.center || item.vCenter;
+  if (!center) return;
+
+  const shape = (item.shape || 'wire_a').toLowerCase();
+  if (shape === 'star' || shape === 'button') return;
+  if (!item.drag_points || item.drag_points.length < 3) return;
+
+  let vertices;
+  if (shape === 'none') {
+    vertices = item.drag_points.map(p => {
+      const v = p.vertex || p;
+      return { x: v.x, y: v.y };
+    });
+  } else {
+    vertices = generateSmoothedPath(item.drag_points, true, PATH_SMOOTHING_ACCURACY);
+  }
+  if (vertices.length < 3) return;
+
+  const fillColor = getFillColorWithAlpha(0.3);
+  elements.ctx.fillStyle = fillColor;
+  elements.ctx.beginPath();
+  const first = toScreen(vertices[0].x, vertices[0].y);
+  elements.ctx.moveTo(first.x, first.y);
+  for (let i = 1; i < vertices.length; i++) {
+    const pt = toScreen(vertices[i].x, vertices[i].y);
+    elements.ctx.lineTo(pt.x, pt.y);
+  }
+  elements.ctx.closePath();
+  elements.ctx.fill();
+}
+
+export function uiRenderPass2(item, isSelected) {
+  renderTriggerShape(
+    elements.ctx,
+    item,
+    state.zoom,
+    false,
+    getStrokeStyle(item, isSelected, RENDER_COLOR_GREEN, false),
+    null,
+    getLineWidth(isSelected),
+    toScreen
+  );
+}
+
+export function renderBlueprint(ctx, item, scale, solid) {
+  const center = item.center || item.vCenter;
+  if (!center) return;
+
+  const cx = center.x * scale;
+  const cy = center.y * scale;
+  const radius = (item.radius ?? TRIGGER_DEFAULTS.radius) * scale;
+
+  if (solid) {
+    ctx.fillStyle = BLUEPRINT_SOLID_COLOR;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.strokeStyle = RENDER_COLOR_BLACK;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
+}
+
+export function renderTrigger(item, isSelected) {
+  render(item, isSelected);
 }
 
 export function hitTestTrigger(item, worldX, worldY, center, distFromCenter) {

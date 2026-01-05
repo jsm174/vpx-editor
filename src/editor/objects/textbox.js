@@ -1,21 +1,54 @@
 import { state, elements } from '../state.js';
 import { toScreen, getStrokeStyle, getLineWidth } from '../utils.js';
 import { TEXTBOX_DEFAULTS } from '../../shared/object-defaults.js';
+import { RENDER_COLOR_BLACK } from '../../shared/constants.js';
 
-export function renderTextBox(item, isSelected) {
+function drawTextBox(ctx, x1, y1, x2, y2, fillStyle, strokeStyle, lineWidth) {
+  if (fillStyle) {
+    ctx.fillStyle = fillStyle;
+    ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+  }
+  if (strokeStyle) {
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = lineWidth;
+    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+  }
+}
+
+export function uiRenderPass1(item, isSelected) {
+  if (!item.ver1 || !item.ver2) return;
+  if (!item.back_color) return;
+
+  const { x: x1, y: y1 } = toScreen(item.ver1.x, item.ver1.y);
+  const { x: x2, y: y2 } = toScreen(item.ver2.x, item.ver2.y);
+  drawTextBox(elements.ctx, x1, y1, x2, y2, item.back_color, null, 0);
+}
+
+export function uiRenderPass2(item, isSelected) {
   if (!item.ver1 || !item.ver2) return;
 
   const { x: x1, y: y1 } = toScreen(item.ver1.x, item.ver1.y);
   const { x: x2, y: y2 } = toScreen(item.ver2.x, item.ver2.y);
+  drawTextBox(elements.ctx, x1, y1, x2, y2, null, getStrokeStyle(item, isSelected), getLineWidth(isSelected));
+}
 
-  if (item.back_color) {
-    elements.ctx.fillStyle = item.back_color;
-    elements.ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
-  }
+export function renderBlueprint(ctx, item, scale, solid) {
+  if (!item.ver1 || !item.ver2) return;
 
-  elements.ctx.strokeStyle = getStrokeStyle(item, isSelected);
-  elements.ctx.lineWidth = getLineWidth(isSelected);
-  elements.ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+  const x1 = item.ver1.x * scale;
+  const y1 = item.ver1.y * scale;
+  const x2 = item.ver2.x * scale;
+  const y2 = item.ver2.y * scale;
+  drawTextBox(ctx, x1, y1, x2, y2, null, RENDER_COLOR_BLACK, 1);
+}
+
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
+}
+
+export function renderTextBox(item, isSelected) {
+  render(item, isSelected);
 }
 
 export function hitTestTextBox(item, worldX, worldY) {

@@ -12,6 +12,7 @@ import {
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
 import { RAMP_DEFAULTS } from '../../shared/object-defaults.js';
+import { RENDER_COLOR_BLACK, BLUEPRINT_SOLID_COLOR, PATH_SMOOTHING_ACCURACY } from '../../shared/constants.js';
 
 function interpolateZFromDragPoints(points, smoothedPath) {
   if (!points || points.length < 2) return smoothedPath.map(() => 0);
@@ -84,7 +85,7 @@ export function createRamp3DMesh(item) {
     const group = new THREE.Group();
     const wireMat = createMaterial(item.material, null);
 
-    const smoothedPath = generateSmoothedPath(points, false, 4);
+    const smoothedPath = generateSmoothedPath(points, false, PATH_SMOOTHING_ACCURACY);
     if (smoothedPath.length < 2) return null;
 
     const zOffsets = interpolateZFromDragPoints(points, smoothedPath);
@@ -158,7 +159,7 @@ export function createRamp3DMesh(item) {
     return group;
   }
 
-  const smoothedPath = generateSmoothedPath(points, false, 4);
+  const smoothedPath = generateSmoothedPath(points, false, PATH_SMOOTHING_ACCURACY);
   if (smoothedPath.length < 2) return null;
 
   const zOffsets = interpolateZFromDragPoints(points, smoothedPath);
@@ -287,14 +288,13 @@ export function createRamp3DMesh(item) {
   return group;
 }
 
-export function renderRamp(item, isSelected) {
+function getRampShapeData(item) {
   const points = item.drag_points;
-  if (!points || points.length < 2) return;
+  if (!points || points.length < 2) return null;
 
   const widthBottom = item.width_bottom ?? RAMP_DEFAULTS.width_bottom;
   const widthTop = item.width_top ?? RAMP_DEFAULTS.width_top;
   const rampType = item.ramp_type;
-
   const rampTypeLower = (rampType || '').toLowerCase();
   const isWireRamp =
     rampTypeLower === 'one_wire' ||
@@ -303,109 +303,181 @@ export function renderRamp(item, isSelected) {
     rampTypeLower === 'three_wire_right' ||
     rampTypeLower === 'four_wire';
 
-  const smoothResult = generateSmoothedPath(points, false, 4.0, true);
+  const smoothResult = generateSmoothedPath(points, false, PATH_SMOOTHING_ACCURACY, true);
   const centerline = smoothResult.vertices;
   const controlPointIndices = smoothResult.controlPointIndices;
-  if (centerline.length < 2) return;
+  if (centerline.length < 2) return null;
 
   if (isWireRamp) {
     const wireDistanceX = item.wire_distance_x ?? RAMP_DEFAULTS.wire_distance_x;
     const wireDiameter = item.wire_diameter ?? RAMP_DEFAULTS.wire_diameter;
     const isOneWire = rampTypeLower === 'one_wire';
+    const width = isOneWire ? wireDiameter : wireDistanceX;
+    const { left, right } = generateRampShape(centerline, width, width);
+    return { left, right, centerline, controlPointIndices, isWireRamp, rampTypeLower };
+  }
+
+  const { left, right } = generateRampShape(centerline, widthBottom, widthTop);
+  return { left, right, centerline, controlPointIndices, isWireRamp, rampTypeLower };
+}
+
+export function uiRenderPass1(item, isSelected) {
+  if (!state.viewSolid) return;
+
+  const shapeData = getRampShapeData(item);
+  if (!shapeData || shapeData.isWireRamp) return;
+
+  const { left, right } = shapeData;
+  const fillColor = getFillColorWithAlpha(0.6);
+
+  elements.ctx.fillStyle = fillColor;
+  elements.ctx.beginPath();
+
+  const firstLeft = toScreen(left[0].x, left[0].y);
+  elements.ctx.moveTo(firstLeft.x, firstLeft.y);
+
+  for (let i = 1; i < left.length; i++) {
+    const { x, y } = toScreen(left[i].x, left[i].y);
+    elements.ctx.lineTo(x, y);
+  }
+
+  for (let i = right.length - 1; i >= 0; i--) {
+    const { x, y } = toScreen(right[i].x, right[i].y);
+    elements.ctx.lineTo(x, y);
+  }
+
+  elements.ctx.closePath();
+  elements.ctx.fill();
+}
+
+function drawRampShape(ctx, shapeData, transformFn, strokeStyle, lineWidth, fillStyle) {
+  const { left, right, centerline, controlPointIndices, isWireRamp, rampTypeLower } = shapeData;
+
+  ctx.strokeStyle = strokeStyle;
+  ctx.lineWidth = lineWidth;
+
+  if (isWireRamp) {
     const isFourWire = rampTypeLower === 'four_wire';
     const isThreeWireRight = rampTypeLower === 'three_wire_right';
     const isThreeWireLeft = rampTypeLower === 'three_wire_left';
 
-    const width = isOneWire ? wireDiameter : wireDistanceX;
-    const { left, right } = generateRampShape(centerline, width, width);
-
-    elements.ctx.strokeStyle = getStrokeStyle(item, isSelected);
-    elements.ctx.lineWidth = getLineWidth(isSelected);
-
-    elements.ctx.beginPath();
-    const firstLeft = toScreen(left[0].x, left[0].y);
-    elements.ctx.moveTo(firstLeft.x, firstLeft.y);
+    ctx.beginPath();
+    const firstLeft = transformFn(left[0].x, left[0].y);
+    ctx.moveTo(firstLeft.x, firstLeft.y);
     for (let i = 1; i < left.length; i++) {
-      const { x, y } = toScreen(left[i].x, left[i].y);
-      elements.ctx.lineTo(x, y);
+      const pt = transformFn(left[i].x, left[i].y);
+      ctx.lineTo(pt.x, pt.y);
     }
     for (let i = right.length - 1; i >= 0; i--) {
-      const { x, y } = toScreen(right[i].x, right[i].y);
-      elements.ctx.lineTo(x, y);
+      const pt = transformFn(right[i].x, right[i].y);
+      ctx.lineTo(pt.x, pt.y);
     }
-    elements.ctx.closePath();
-    elements.ctx.stroke();
+    ctx.closePath();
+    ctx.stroke();
 
-    elements.ctx.beginPath();
+    ctx.beginPath();
     for (let i = 0; i < centerline.length; i++) {
-      const { x, y } = toScreen(centerline[i].x, centerline[i].y);
-      if (i === 0) elements.ctx.moveTo(x, y);
-      else elements.ctx.lineTo(x, y);
+      const pt = transformFn(centerline[i].x, centerline[i].y);
+      if (i === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
     }
-    elements.ctx.stroke();
+    ctx.stroke();
 
     if (isFourWire || isThreeWireRight) {
-      elements.ctx.strokeStyle = '#000000';
-      elements.ctx.lineWidth = 3;
-      elements.ctx.beginPath();
+      ctx.strokeStyle = RENDER_COLOR_BLACK;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
       for (let i = 0; i < left.length; i++) {
-        const { x, y } = toScreen(left[i].x, left[i].y);
-        if (i === 0) elements.ctx.moveTo(x, y);
-        else elements.ctx.lineTo(x, y);
+        const pt = transformFn(left[i].x, left[i].y);
+        if (i === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
       }
-      elements.ctx.stroke();
+      ctx.stroke();
     }
     if (isFourWire || isThreeWireLeft) {
-      elements.ctx.strokeStyle = '#000000';
-      elements.ctx.lineWidth = 3;
-      elements.ctx.beginPath();
+      ctx.strokeStyle = RENDER_COLOR_BLACK;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
       for (let i = 0; i < right.length; i++) {
-        const { x, y } = toScreen(right[i].x, right[i].y);
-        if (i === 0) elements.ctx.moveTo(x, y);
-        else elements.ctx.lineTo(x, y);
+        const pt = transformFn(right[i].x, right[i].y);
+        if (i === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
       }
-      elements.ctx.stroke();
+      ctx.stroke();
     }
   } else {
-    const { left, right } = generateRampShape(centerline, widthBottom, widthTop);
-
-    elements.ctx.strokeStyle = getStrokeStyle(item, isSelected);
-    elements.ctx.lineWidth = isSelected ? getLineWidth(isSelected) : 2;
-
-    elements.ctx.beginPath();
-
-    const firstLeft = toScreen(left[0].x, left[0].y);
-    elements.ctx.moveTo(firstLeft.x, firstLeft.y);
+    ctx.beginPath();
+    const firstLeft = transformFn(left[0].x, left[0].y);
+    ctx.moveTo(firstLeft.x, firstLeft.y);
 
     for (let i = 1; i < left.length; i++) {
-      const { x, y } = toScreen(left[i].x, left[i].y);
-      elements.ctx.lineTo(x, y);
+      const pt = transformFn(left[i].x, left[i].y);
+      ctx.lineTo(pt.x, pt.y);
     }
 
     for (let i = right.length - 1; i >= 0; i--) {
-      const { x, y } = toScreen(right[i].x, right[i].y);
-      elements.ctx.lineTo(x, y);
+      const pt = transformFn(right[i].x, right[i].y);
+      ctx.lineTo(pt.x, pt.y);
     }
 
-    elements.ctx.closePath();
-    if (state.viewSolid) {
-      elements.ctx.fillStyle = getFillColorWithAlpha(0.6);
-      elements.ctx.fill();
+    ctx.closePath();
+    if (fillStyle) {
+      ctx.fillStyle = fillStyle;
+      ctx.fill();
     }
-    elements.ctx.stroke();
+    ctx.stroke();
 
-    elements.ctx.lineWidth = 1;
+    ctx.strokeStyle = RENDER_COLOR_BLACK;
+    ctx.lineWidth = 1;
     for (const idx of controlPointIndices) {
       if (idx >= 0 && idx < left.length) {
-        const l = toScreen(left[idx].x, left[idx].y);
-        const r = toScreen(right[idx].x, right[idx].y);
-        elements.ctx.beginPath();
-        elements.ctx.moveTo(l.x, l.y);
-        elements.ctx.lineTo(r.x, r.y);
-        elements.ctx.stroke();
+        const l = transformFn(left[idx].x, left[idx].y);
+        const r = transformFn(right[idx].x, right[idx].y);
+        ctx.beginPath();
+        ctx.moveTo(l.x, l.y);
+        ctx.lineTo(r.x, r.y);
+        ctx.stroke();
       }
     }
   }
+}
+
+export function uiRenderPass2(item, isSelected) {
+  const shapeData = getRampShapeData(item);
+  if (!shapeData) return;
+
+  drawRampShape(
+    elements.ctx,
+    shapeData,
+    toScreen,
+    getStrokeStyle(item, isSelected),
+    isSelected ? getLineWidth(isSelected) : 2,
+    null
+  );
+}
+
+export function renderBlueprint(ctx, item, scale, solid) {
+  const shapeData = getRampShapeData(item);
+  if (!shapeData) return;
+
+  const transformFn = (x, y) => ({ x: x * scale, y: y * scale });
+  drawRampShape(
+    ctx,
+    shapeData,
+    transformFn,
+    RENDER_COLOR_BLACK,
+    1,
+    solid && !shapeData.isWireRamp ? BLUEPRINT_SOLID_COLOR : null
+  );
+}
+
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
+}
+
+export function renderRamp(item, isSelected) {
+  render(item, isSelected);
 }
 
 export function hitTestRamp(item, worldX, worldY) {
@@ -416,7 +488,7 @@ export function hitTestRamp(item, worldX, worldY) {
     const v = p.vertex || p;
     return { x: v.x, y: v.y };
   });
-  const centerline = generateSmoothedPath(pts, false, 4.0);
+  const centerline = generateSmoothedPath(pts, false, PATH_SMOOTHING_ACCURACY);
   if (centerline.length < 2) return false;
   const { left, right } = generateRampShape(centerline, widthBottom, widthTop);
   const polygon = [...left, ...right.slice().reverse()];

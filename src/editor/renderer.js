@@ -795,6 +795,11 @@ window.vpxEditor.onPlayStopped?.(() => {
   document.getElementById('btn-play').classList.remove('playing');
 });
 
+window.vpxEditor.onExportBlueprint?.(async data => {
+  const { exportBlueprintAndDownload } = await import('./blueprint-export.js');
+  await exportBlueprintAndDownload(data.solid, data.isBackglass);
+});
+
 document.getElementById('toggle-wireframe').addEventListener('click', () => {
   if (state.viewMode === VIEW_MODE_3D && is3DInitialized()) {
     const isWireframe = toggleWireframe();

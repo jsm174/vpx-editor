@@ -14,6 +14,7 @@ import {
   propTabContent,
   timerTab,
 } from '../../shared/property-templates.js';
+import { RENDER_COLOR_BLACK } from '../../shared/constants.js';
 
 import spinnerPlateMesh from '../meshes/spinnerPlate.json';
 import spinnerBracketMesh from '../meshes/spinnerBracket.json';
@@ -45,30 +46,57 @@ export function createSpinner3DMesh(item) {
   return group;
 }
 
-export function renderSpinner(item, isSelected) {
-  const { center } = item;
-  if (!center) return;
-
+function getSpinnerGeometry(item, scale) {
   const length = item.length ?? SPINNER_DEFAULTS.length;
   const rotation = item.rotation ?? SPINNER_DEFAULTS.rotation;
-  const { x: cx, y: cy } = toScreen(center.x, center.y);
-  const halfLen = length * 0.5 * state.zoom;
+  const halfLen = length * 0.5 * scale;
   const rad = (-rotation * Math.PI) / 180;
+  return { halfLen, rad };
+}
+
+function drawSpinner(ctx, item, cx, cy, scale, strokeStyle) {
+  const { halfLen, rad } = getSpinnerGeometry(item, scale);
   const cs = Math.cos(rad);
   const sn = Math.sin(rad);
 
-  elements.ctx.strokeStyle = getStrokeStyle(item, isSelected);
-  elements.ctx.lineWidth = SPINNER_LINE_WIDTH_THICK;
-  elements.ctx.beginPath();
-  elements.ctx.moveTo(cx + cs * halfLen, cy + sn * halfLen);
-  elements.ctx.lineTo(cx - cs * halfLen, cy - sn * halfLen);
-  elements.ctx.stroke();
+  ctx.strokeStyle = strokeStyle;
+  ctx.lineWidth = SPINNER_LINE_WIDTH_THICK;
+  ctx.beginPath();
+  ctx.moveTo(cx + cs * halfLen, cy + sn * halfLen);
+  ctx.lineTo(cx - cs * halfLen, cy - sn * halfLen);
+  ctx.stroke();
 
-  elements.ctx.lineWidth = SPINNER_LINE_WIDTH_THIN;
-  elements.ctx.beginPath();
-  elements.ctx.moveTo(cx + cs * halfLen, cy + sn * halfLen);
-  elements.ctx.lineTo(cx - cs * halfLen, cy - sn * halfLen);
-  elements.ctx.stroke();
+  ctx.lineWidth = SPINNER_LINE_WIDTH_THIN;
+  ctx.beginPath();
+  ctx.moveTo(cx + cs * halfLen, cy + sn * halfLen);
+  ctx.lineTo(cx - cs * halfLen, cy - sn * halfLen);
+  ctx.stroke();
+}
+
+export function uiRenderPass1(item, isSelected) {}
+
+export function uiRenderPass2(item, isSelected) {
+  const { center } = item;
+  if (!center) return;
+
+  const { x: cx, y: cy } = toScreen(center.x, center.y);
+  drawSpinner(elements.ctx, item, cx, cy, state.zoom, getStrokeStyle(item, isSelected));
+}
+
+export function renderBlueprint(ctx, item, scale, solid) {
+  const { center } = item;
+  if (!center) return;
+
+  drawSpinner(ctx, item, center.x * scale, center.y * scale, scale, RENDER_COLOR_BLACK);
+}
+
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
+}
+
+export function renderSpinner(item, isSelected) {
+  render(item, isSelected);
 }
 
 export function spinnerProperties(item) {

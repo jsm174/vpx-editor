@@ -1,10 +1,13 @@
 import { state, elements } from '../state.js';
-import { toScreen, getLineWidth } from '../utils.js';
+import { toScreen, getLineWidth, getSelectColor } from '../utils.js';
+import { RENDER_COLOR_GRAY } from '../../shared/constants.js';
 
 const PARTGROUP_DEFAULT_TIMER_INTERVAL = 100;
 const PARTGROUP_DEFAULT_PLAYER_MODE_VISIBILITY_MASK = 0xffff;
 
-export function renderPartGroup(item, isSelected) {
+export function uiRenderPass1(item, isSelected) {}
+
+export function uiRenderPass2(item, isSelected) {
   const center = item.center;
   if (!center) return;
 
@@ -12,7 +15,7 @@ export function renderPartGroup(item, isSelected) {
   const ctx = elements.ctx;
   const size = 15;
 
-  ctx.strokeStyle = isSelected ? '#00ff00' : '#888888';
+  ctx.strokeStyle = isSelected ? getSelectColor() : RENDER_COLOR_GRAY;
   ctx.lineWidth = getLineWidth(isSelected);
 
   ctx.beginPath();
@@ -25,6 +28,17 @@ export function renderPartGroup(item, isSelected) {
   ctx.beginPath();
   ctx.arc(cx, cy, size * 0.6, 0, Math.PI * 2);
   ctx.stroke();
+}
+
+export function renderBlueprint(ctx, item, scale, solid) {}
+
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
+}
+
+export function renderPartGroup(item, isSelected) {
+  render(item, isSelected);
 }
 
 export function partGroupProperties(item) {

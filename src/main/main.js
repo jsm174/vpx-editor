@@ -566,6 +566,17 @@ function createMenu() {
         },
         { type: 'separator' },
         {
+          label: 'Export Blueprint...',
+          enabled: hasTable && !dialogOpen,
+          click: async () => {
+            const result = await showBlueprintDialog(ctx, inBackglass);
+            if (result) {
+              ctx?.window.webContents.send('export-blueprint', result);
+            }
+          },
+        },
+        { type: 'separator' },
+        {
           label: 'Close',
           accelerator: 'CmdOrCtrl+W',
           enabled: hasWindow && !dialogOpen,
@@ -1074,6 +1085,35 @@ async function showWorkFolderModal(ctx, type, message) {
   }
 }
 
+async function showBlueprintDialog(ctx, inBackglass) {
+  nativeDialogOpen = true;
+  windowRegistry.forEach(c => {
+    c.window.webContents.send('set-input-disabled', true);
+  });
+  createMenu();
+
+  const result = await dialog.showMessageBox(ctx.window, {
+    type: 'question',
+    message: 'Export Blueprint',
+    detail: 'Do you want a solid blueprint (filled shapes) or outline only?',
+    buttons: ['Solid', 'Outline', 'Cancel'],
+    defaultId: 0,
+    cancelId: 2,
+  });
+
+  nativeDialogOpen = false;
+  windowRegistry.forEach(c => {
+    c.window.webContents.send('set-input-disabled', false);
+  });
+  createMenu();
+
+  if (result.response === 2) {
+    return null;
+  }
+
+  return { solid: result.response === 0, isBackglass: inBackglass };
+}
+
 async function showInfoModal(ctx, title, message) {
   nativeDialogOpen = true;
   windowRegistry.forEach(c => {
@@ -1402,6 +1442,51 @@ ipcMain.handle('export-image', async (event, srcPath, suggestedName) => {
   try {
     await fs.promises.copyFile(srcPath, result.filePath);
     return { success: true, path: result.filePath };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('export-blueprint', async (event, data, suggestedName) => {
+  const ctx = getContextForManagerEvent(event);
+  const win = BrowserWindow.fromWebContents(event.sender) || ctx?.window;
+  const result = await dialog.showSaveDialog(win, {
+    defaultPath: suggestedName,
+    filters: [{ name: 'PNG Image', extensions: ['png'] }],
+  });
+
+  if (result.canceled) {
+    return { success: false };
+  }
+
+  try {
+    const buffer = Buffer.from(data);
+    await fs.promises.writeFile(result.filePath, buffer);
+    return { success: true, path: result.filePath };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('export-blueprint-get-path', async (event, suggestedName) => {
+  const ctx = getContextForManagerEvent(event);
+  const win = BrowserWindow.fromWebContents(event.sender) || ctx?.window;
+  const result = await dialog.showSaveDialog(win, {
+    defaultPath: suggestedName,
+    filters: [{ name: 'PNG Image', extensions: ['png'] }],
+  });
+
+  if (result.canceled) {
+    return null;
+  }
+  return result.filePath;
+});
+
+ipcMain.handle('save-blueprint-direct', async (event, data, filePath) => {
+  try {
+    const buffer = Buffer.from(data);
+    await fs.promises.writeFile(filePath, buffer);
+    return { success: true };
   } catch (err) {
     return { success: false, error: err.message };
   }

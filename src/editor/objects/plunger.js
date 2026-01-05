@@ -2,37 +2,73 @@ import { state, elements } from '../state.js';
 import { toScreen, getStrokeStyle, getLineWidth } from '../utils.js';
 import { materialOptions, imageOptions, surfaceOptions } from '../../shared/options-generators.js';
 import { PLUNGER_DEFAULTS } from '../../shared/object-defaults.js';
+import { RENDER_COLOR_GRAY, RENDER_COLOR_BLACK } from '../../shared/constants.js';
 
-export function renderPlunger(item, isSelected) {
-  const { center, width, stroke, height } = item;
-  if (!center) return;
-
-  const { x: cx, y: cy } = toScreen(center.x, center.y);
-  const w = (width ?? PLUNGER_DEFAULTS.width) * state.zoom;
-  const s = (stroke ?? PLUNGER_DEFAULTS.stroke) * state.zoom;
-  const h = (height ?? PLUNGER_DEFAULTS.height) * state.zoom;
-
+function getPlungerGeometry(item, cx, cy, scale) {
+  const w = (item.width ?? PLUNGER_DEFAULTS.width) * scale;
+  const s = (item.stroke ?? PLUNGER_DEFAULTS.stroke) * scale;
+  const h = (item.height ?? PLUNGER_DEFAULTS.height) * scale;
   const left = cx - w;
   const right = cx + w;
   const top = cy - s;
   const bottom = cy + h;
+  return { w, s, h, left, right, top, bottom };
+}
 
-  elements.ctx.strokeStyle = getStrokeStyle(item, isSelected);
-  elements.ctx.lineWidth = getLineWidth(isSelected);
-  elements.ctx.strokeRect(left, top, right - left, bottom - top);
+function drawPlunger(ctx, item, cx, cy, scale, strokeStyle, lineWidth, parkLineColor) {
+  const { s, left, right, top, bottom } = getPlungerGeometry(item, cx, cy, scale);
+
+  ctx.strokeStyle = strokeStyle;
+  ctx.lineWidth = lineWidth;
+  ctx.strokeRect(left, top, right - left, bottom - top);
 
   const parkPosition = item.park_position ?? PLUNGER_DEFAULTS.park_position;
   if (parkPosition > 0 && parkPosition < 1) {
     const parkY = cy - s + parkPosition * s;
-    elements.ctx.strokeStyle = '#808080';
-    elements.ctx.lineWidth = 1;
-    elements.ctx.setLineDash([4, 4]);
-    elements.ctx.beginPath();
-    elements.ctx.moveTo(left, parkY);
-    elements.ctx.lineTo(right, parkY);
-    elements.ctx.stroke();
-    elements.ctx.setLineDash([]);
+    ctx.strokeStyle = parkLineColor;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(left, parkY);
+    ctx.lineTo(right, parkY);
+    ctx.stroke();
+    ctx.setLineDash([]);
   }
+}
+
+export function uiRenderPass1(item, isSelected) {}
+
+export function uiRenderPass2(item, isSelected) {
+  const { center } = item;
+  if (!center) return;
+
+  const { x: cx, y: cy } = toScreen(center.x, center.y);
+  drawPlunger(
+    elements.ctx,
+    item,
+    cx,
+    cy,
+    state.zoom,
+    getStrokeStyle(item, isSelected),
+    getLineWidth(isSelected),
+    RENDER_COLOR_GRAY
+  );
+}
+
+export function renderBlueprint(ctx, item, scale, solid) {
+  const { center } = item;
+  if (!center) return;
+
+  drawPlunger(ctx, item, center.x * scale, center.y * scale, scale, RENDER_COLOR_BLACK, 1, RENDER_COLOR_BLACK);
+}
+
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
+}
+
+export function renderPlunger(item, isSelected) {
+  render(item, isSelected);
 }
 
 export function plungerProperties(item) {

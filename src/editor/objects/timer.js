@@ -2,7 +2,9 @@ import { state, elements } from '../state.js';
 import { toScreen, getStrokeStyle, getLineWidth } from '../utils.js';
 import { TIMER_DEFAULTS } from '../../shared/object-defaults.js';
 
-export function renderTimer(item, isSelected) {
+export function uiRenderPass1(item, isSelected) {}
+
+export function uiRenderPass2(item, isSelected) {
   const center = item.center || item.vCenter;
   if (!center) return;
 
@@ -33,6 +35,17 @@ export function renderTimer(item, isSelected) {
   elements.ctx.moveTo(cx, cy);
   elements.ctx.lineTo(cx + 10.5 * state.zoom, cy - 7.5 * state.zoom);
   elements.ctx.stroke();
+}
+
+export function renderBlueprint(ctx, item, scale, solid) {}
+
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
+}
+
+export function renderTimer(item, isSelected) {
+  render(item, isSelected);
 }
 
 export function timerProperties(item) {

@@ -50,14 +50,55 @@ export function getFillColorWithAlpha(alpha = 0.6) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-export function getStrokeStyle(item, isSelected, defaultColor = '#000000') {
-  if (item.is_locked) return getLockedColor();
-  if (isSelected) return getSelectColor();
+export function getStrokeStyle(item, isSelected, defaultColor = '#000000', useLockedColorWhenUnselected = true) {
+  if (isSelected) {
+    return item.is_locked ? getLockedColor() : getSelectColor();
+  }
+  if (item.is_locked && useLockedColorWhenUnselected) {
+    return getLockedColor();
+  }
   return defaultColor;
 }
 
 export function getLineWidth(isSelected) {
   return isSelected ? 4 : 1;
+}
+
+export function drawPolygon(ctx, vertices, transformFn, fillStyle, strokeStyle, lineWidth) {
+  if (!vertices || vertices.length < 2) return;
+
+  ctx.beginPath();
+  const first = transformFn(vertices[0].x, vertices[0].y);
+  ctx.moveTo(first.x, first.y);
+
+  for (let i = 1; i < vertices.length; i++) {
+    const pt = transformFn(vertices[i].x, vertices[i].y);
+    ctx.lineTo(pt.x, pt.y);
+  }
+  ctx.closePath();
+
+  if (fillStyle) {
+    ctx.fillStyle = fillStyle;
+    ctx.fill();
+  }
+  if (strokeStyle) {
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+
+    if (vertices.length === 4) {
+      const p0 = transformFn(vertices[0].x, vertices[0].y);
+      const p1 = transformFn(vertices[1].x, vertices[1].y);
+      const p2 = transformFn(vertices[2].x, vertices[2].y);
+      const p3 = transformFn(vertices[3].x, vertices[3].y);
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p3.x, p3.y);
+      ctx.stroke();
+    }
+  }
 }
 
 function distance(a, b) {

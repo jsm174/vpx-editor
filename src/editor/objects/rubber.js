@@ -12,6 +12,7 @@ import {
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
 import { RUBBER_DEFAULTS } from '../../shared/object-defaults.js';
+import { RENDER_COLOR_BLACK, BLUEPRINT_SOLID_COLOR } from '../../shared/constants.js';
 
 export function createRubber3DMesh(item) {
   const points = item.drag_points;
@@ -118,52 +119,108 @@ function generateRubberShape(centerline, thickness, loop = false) {
 const HIT_SHAPE_DETAIL_LEVEL = 7.0;
 const RUBBER_2D_ACCURACY = 4.0 * Math.pow(10.0, (10.0 - HIT_SHAPE_DETAIL_LEVEL) / 1.5);
 
-export function renderRubber(item, isSelected) {
+function getRubberShapeData(item) {
   const points = item.drag_points;
-  if (!points || points.length < 2) return;
+  if (!points || points.length < 2) return null;
 
   const thickness = item.thickness ?? RUBBER_DEFAULTS.thickness;
-
   const { vertices: centerline, controlPointIndices } = generateSmoothedPath(points, true, RUBBER_2D_ACCURACY, true);
-  if (centerline.length < 2) return;
+  if (centerline.length < 2) return null;
 
   const { left, right } = generateRubberShape(centerline, thickness, true);
+  return { left, right, controlPointIndices };
+}
 
-  elements.ctx.strokeStyle = getStrokeStyle(item, isSelected);
-  elements.ctx.lineWidth = getLineWidth(isSelected);
-
-  elements.ctx.beginPath();
-
-  const firstLeft = toScreen(left[0].x, left[0].y);
-  elements.ctx.moveTo(firstLeft.x, firstLeft.y);
+function drawRubberShape(ctx, left, right, controlPointIndices, transformFn, fillStyle, strokeStyle, lineWidth) {
+  ctx.beginPath();
+  const firstLeft = transformFn(left[0].x, left[0].y);
+  ctx.moveTo(firstLeft.x, firstLeft.y);
 
   for (let i = 1; i < left.length; i++) {
-    const { x, y } = toScreen(left[i].x, left[i].y);
-    elements.ctx.lineTo(x, y);
+    const { x, y } = transformFn(left[i].x, left[i].y);
+    ctx.lineTo(x, y);
   }
 
   for (let i = right.length - 1; i >= 0; i--) {
-    const { x, y } = toScreen(right[i].x, right[i].y);
-    elements.ctx.lineTo(x, y);
+    const { x, y } = transformFn(right[i].x, right[i].y);
+    ctx.lineTo(x, y);
   }
 
-  elements.ctx.closePath();
-  if (state.viewSolid) {
-    elements.ctx.fillStyle = getFillColorWithAlpha(0.6);
-    elements.ctx.fill();
+  ctx.closePath();
+  if (fillStyle) {
+    ctx.fillStyle = fillStyle;
+    ctx.fill();
   }
-  elements.ctx.stroke();
+  if (strokeStyle) {
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+  }
 
-  for (const idx of controlPointIndices) {
-    if (idx < left.length && idx < right.length) {
-      const leftPt = toScreen(left[idx].x, left[idx].y);
-      const rightPt = toScreen(right[idx].x, right[idx].y);
-      elements.ctx.beginPath();
-      elements.ctx.moveTo(leftPt.x, leftPt.y);
-      elements.ctx.lineTo(rightPt.x, rightPt.y);
-      elements.ctx.stroke();
+  if (controlPointIndices && strokeStyle) {
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = lineWidth;
+    for (const idx of controlPointIndices) {
+      if (idx < left.length && idx < right.length) {
+        const leftPt = transformFn(left[idx].x, left[idx].y);
+        const rightPt = transformFn(right[idx].x, right[idx].y);
+        ctx.beginPath();
+        ctx.moveTo(leftPt.x, leftPt.y);
+        ctx.lineTo(rightPt.x, rightPt.y);
+        ctx.stroke();
+      }
     }
   }
+}
+
+export function uiRenderPass1(item, isSelected) {
+  if (!state.viewSolid) return;
+
+  const shapeData = getRubberShapeData(item);
+  if (!shapeData) return;
+
+  const { left, right } = shapeData;
+  drawRubberShape(elements.ctx, left, right, null, toScreen, getFillColorWithAlpha(0.6), null, 0);
+}
+
+export function uiRenderPass2(item, isSelected) {
+  const shapeData = getRubberShapeData(item);
+  if (!shapeData) return;
+
+  const { left, right, controlPointIndices } = shapeData;
+  drawRubberShape(
+    elements.ctx,
+    left,
+    right,
+    controlPointIndices,
+    toScreen,
+    null,
+    getStrokeStyle(item, isSelected),
+    getLineWidth(isSelected)
+  );
+}
+
+export function renderBlueprint(ctx, item, scale, solid) {
+  const shapeData = getRubberShapeData(item);
+  if (!shapeData) return;
+
+  const { left, right, controlPointIndices } = shapeData;
+  const transformFn = (x, y) => ({ x: x * scale, y: y * scale });
+  drawRubberShape(
+    ctx,
+    left,
+    right,
+    controlPointIndices,
+    transformFn,
+    solid ? BLUEPRINT_SOLID_COLOR : null,
+    RENDER_COLOR_BLACK,
+    1
+  );
+}
+
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
 }
 
 export function hitTestRubber(item, worldX, worldY) {

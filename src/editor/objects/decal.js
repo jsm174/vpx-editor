@@ -1,44 +1,71 @@
 import { state, elements } from '../state.js';
-import { toScreen, getLineWidth } from '../utils.js';
+import { toScreen, getLineWidth, getStrokeStyle, drawPolygon } from '../utils.js';
 import { materialOptions, imageOptions, surfaceOptions } from '../../shared/options-generators.js';
 import { DECAL_DEFAULTS } from '../../shared/object-defaults.js';
+import { RENDER_COLOR_BLACK, RENDER_COLOR_BLUE, BLUEPRINT_SOLID_COLOR } from '../../shared/constants.js';
 
-export function renderDecal(item, isSelected) {
-  const center = item.center || item.vCenter;
-  if (!center) return;
-
-  const { x: cx, y: cy } = toScreen(center.x, center.y);
-  const halfW = ((item.width ?? DECAL_DEFAULTS.width) * state.zoom) / 2;
-  const halfH = ((item.height ?? DECAL_DEFAULTS.height) * state.zoom) / 2;
+function getDecalCorners(item, cx, cy, scale) {
+  const halfW = ((item.width ?? DECAL_DEFAULTS.width) * scale) / 2;
+  const halfH = ((item.height ?? DECAL_DEFAULTS.height) * scale) / 2;
   const rot = ((item.rotation ?? DECAL_DEFAULTS.rotation) * Math.PI) / 180;
 
   const sn = Math.sin(rot);
   const cs = Math.cos(rot);
 
-  const corners = [
+  return [
     { x: cx + sn * halfH + cs * halfW, y: cy - cs * halfH + sn * halfW },
     { x: cx + sn * halfH - cs * halfW, y: cy - cs * halfH - sn * halfW },
     { x: cx - sn * halfH - cs * halfW, y: cy + cs * halfH - sn * halfW },
     { x: cx - sn * halfH + cs * halfW, y: cy + cs * halfH + sn * halfW },
   ];
+}
 
-  elements.ctx.lineWidth = getLineWidth(isSelected);
+const identityTransform = (x, y) => ({ x, y });
 
-  elements.ctx.beginPath();
-  elements.ctx.moveTo(corners[0].x, corners[0].y);
-  for (let i = 1; i < corners.length; i++) {
-    elements.ctx.lineTo(corners[i].x, corners[i].y);
-  }
-  elements.ctx.closePath();
+export function uiRenderPass1(item, isSelected) {
+  if (!state.viewSolid) return;
 
-  if (state.viewSolid) {
-    elements.ctx.fillStyle = 'rgb(0, 0, 255)';
-    elements.ctx.fill();
-  }
+  const center = item.center || item.vCenter;
+  if (!center) return;
 
-  elements.ctx.strokeStyle = isSelected ? '#0000ff' : '#000000';
-  elements.ctx.lineWidth = isSelected ? 4 : getLineWidth(isSelected);
-  elements.ctx.stroke();
+  const { x: cx, y: cy } = toScreen(center.x, center.y);
+  const corners = getDecalCorners(item, cx, cy, state.zoom);
+  drawPolygon(elements.ctx, corners, identityTransform, RENDER_COLOR_BLUE, null, 0);
+}
+
+export function uiRenderPass2(item, isSelected) {
+  const center = item.center || item.vCenter;
+  if (!center) return;
+
+  const { x: cx, y: cy } = toScreen(center.x, center.y);
+  const corners = getDecalCorners(item, cx, cy, state.zoom);
+  drawPolygon(
+    elements.ctx,
+    corners,
+    identityTransform,
+    null,
+    getStrokeStyle(item, isSelected),
+    isSelected ? 4 : getLineWidth(isSelected)
+  );
+}
+
+export function renderBlueprint(ctx, item, scale, solid) {
+  const center = item.center || item.vCenter;
+  if (!center) return;
+
+  const cx = center.x * scale;
+  const cy = center.y * scale;
+  const corners = getDecalCorners(item, cx, cy, scale);
+  drawPolygon(ctx, corners, identityTransform, solid ? BLUEPRINT_SOLID_COLOR : null, RENDER_COLOR_BLACK, 1);
+}
+
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
+}
+
+export function renderDecal(item, isSelected) {
+  render(item, isSelected);
 }
 
 export function hitTestDecal(item, worldX, worldY, center) {

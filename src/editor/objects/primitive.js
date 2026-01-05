@@ -7,6 +7,7 @@ import { materialOptions, imageOptions, lightOptions, renderProbeOptions } from 
 import { PRIMITIVE_DEFAULTS } from '../../shared/object-defaults.js';
 import { getWireframeMode } from '../canvas-renderer-3d.js';
 import { registerCallback, invokeCallback } from '../../shared/callbacks.js';
+import { RENDER_COLOR_BLACK, BLUEPRINT_SOLID_COLOR } from '../../shared/constants.js';
 
 const objLoader = new OBJLoader();
 const meshCache = new Map();
@@ -157,7 +158,9 @@ async function loadPrimitiveOBJ(objPath, meshContainer, placeholder, item) {
   }
 }
 
-export function renderPrimitive(item, isSelected) {
+export function uiRenderPass1(item, isSelected) {}
+
+export function uiRenderPass2(item, isSelected) {
   const pos = item.position || { x: 0, y: 0, z: 0 };
 
   if (item.name === 'playfield_mesh') return;
@@ -217,6 +220,169 @@ export function renderPrimitive(item, isSelected) {
     elements.ctx.lineTo(p3.x, p3.y);
     elements.ctx.stroke();
   }
+}
+
+export function renderBlueprint(ctx, item, scale, solid) {
+  const pos = item.position || { x: 0, y: 0, z: 0 };
+
+  if (item.name === 'playfield_mesh') return;
+
+  const use3DMesh = item.use_3d_mesh !== false;
+  const cacheKey = item._fileName;
+  const cached = cacheKey ? meshCache.get(cacheKey) : null;
+  const edgeFactor = item.edge_factor_ui ?? 0.25;
+
+  ctx.strokeStyle = RENDER_COLOR_BLACK;
+  ctx.lineWidth = 1;
+
+  if (use3DMesh && cached && cached.vertices && cached.indices) {
+    const size = item.size || { x: 1, y: 1, z: 1 };
+    const rotAndTra = item.rot_and_tra || [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const transformed = transformMeshVerticesForBlueprint(
+      cached.vertices,
+      cached.normals || [],
+      pos,
+      size,
+      rotAndTra,
+      scale
+    );
+    const numVertices = cached.vertices.length / 3;
+
+    if (solid) {
+      ctx.fillStyle = BLUEPRINT_SOLID_COLOR;
+      for (let i = 0; i < cached.indices.length; i += 3) {
+        const i0 = cached.indices[i];
+        const i1 = cached.indices[i + 1];
+        const i2 = cached.indices[i + 2];
+        const ax = transformed.vertices2D[i0 * 2];
+        const ay = transformed.vertices2D[i0 * 2 + 1];
+        const bx = transformed.vertices2D[i1 * 2];
+        const by = transformed.vertices2D[i1 * 2 + 1];
+        const cx = transformed.vertices2D[i2 * 2];
+        const cy = transformed.vertices2D[i2 * 2 + 1];
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(bx, by);
+        ctx.lineTo(ax, ay);
+        ctx.closePath();
+        ctx.fill();
+      }
+      return;
+    }
+
+    if (edgeFactor <= 0 || edgeFactor >= 1) {
+      if (edgeFactor >= 1 || numVertices <= 100) {
+        for (let i = 0; i < cached.indices.length; i += 3) {
+          const i0 = cached.indices[i];
+          const i1 = cached.indices[i + 1];
+          const i2 = cached.indices[i + 2];
+          const ax = transformed.vertices2D[i0 * 2];
+          const ay = transformed.vertices2D[i0 * 2 + 1];
+          const bx = transformed.vertices2D[i1 * 2];
+          const by = transformed.vertices2D[i1 * 2 + 1];
+          const cx = transformed.vertices2D[i2 * 2];
+          const cy = transformed.vertices2D[i2 * 2 + 1];
+          ctx.beginPath();
+          ctx.moveTo(ax, ay);
+          ctx.lineTo(bx, by);
+          ctx.moveTo(bx, by);
+          ctx.lineTo(cx, cy);
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(ax, ay);
+          ctx.stroke();
+        }
+      } else {
+        if (cached.indices.length > 0) {
+          const i0 = cached.indices[0];
+          ctx.beginPath();
+          ctx.moveTo(transformed.vertices2D[i0 * 2], transformed.vertices2D[i0 * 2 + 1]);
+          for (let i = 0; i < cached.indices.length; i += 3) {
+            const i1 = cached.indices[i + 1];
+            ctx.lineTo(transformed.vertices2D[i1 * 2], transformed.vertices2D[i1 * 2 + 1]);
+          }
+          ctx.stroke();
+        }
+      }
+    } else {
+      ctx.beginPath();
+      for (let i = 0; i < cached.indices.length; i += 3) {
+        const i0 = cached.indices[i];
+        const i1 = cached.indices[i + 1];
+        const i2 = cached.indices[i + 2];
+        const ax = transformed.vertices2D[i0 * 2];
+        const ay = transformed.vertices2D[i0 * 2 + 1];
+        const bx = transformed.vertices2D[i1 * 2];
+        const by = transformed.vertices2D[i1 * 2 + 1];
+        const cx = transformed.vertices2D[i2 * 2];
+        const cy = transformed.vertices2D[i2 * 2 + 1];
+        const An = transformed.normalsZ[i0];
+        const Bn = transformed.normalsZ[i1];
+        const Cn = transformed.normalsZ[i2];
+
+        if (Math.abs(An + Bn) < edgeFactor) {
+          ctx.moveTo(ax, ay);
+          ctx.lineTo(bx, by);
+        }
+        if (Math.abs(Bn + Cn) < edgeFactor) {
+          ctx.moveTo(bx, by);
+          ctx.lineTo(cx, cy);
+        }
+        if (Math.abs(Cn + An) < edgeFactor) {
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(ax, ay);
+        }
+      }
+      ctx.stroke();
+    }
+  } else {
+    const size = item.size || {
+      x: PRIMITIVE_DEFAULTS.size_x,
+      y: PRIMITIVE_DEFAULTS.size_y,
+      z: PRIMITIVE_DEFAULTS.size_z,
+    };
+    const halfX = size.x * 0.5;
+    const halfY = size.y * 0.5;
+
+    const p0 = { x: (pos.x - halfX) * scale, y: (pos.y - halfY) * scale };
+    const p1 = { x: (pos.x - halfX) * scale, y: (pos.y + halfY) * scale };
+    const p2 = { x: (pos.x + halfX) * scale, y: (pos.y + halfY) * scale };
+    const p3 = { x: (pos.x + halfX) * scale, y: (pos.y - halfY) * scale };
+
+    if (solid) {
+      ctx.fillStyle = BLUEPRINT_SOLID_COLOR;
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.lineTo(p3.x, p3.y);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(p0.x, p0.y);
+    ctx.lineTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.lineTo(p3.x, p3.y);
+    ctx.closePath();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(p0.x, p0.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p3.x, p3.y);
+    ctx.stroke();
+  }
+}
+
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
+}
+
+export function renderPrimitive(item, isSelected) {
+  render(item, isSelected);
 }
 
 function transformMeshVertices(vertices, normals, pos, size, rotAndTra) {
@@ -348,6 +514,116 @@ function transformMeshVertices(vertices, normals, pos, size, rotAndTra) {
     }
 
     normalsZ.push(nz);
+  }
+
+  return { vertices2D, normalsZ };
+}
+
+function transformMeshVerticesForBlueprint(vertices, normals, pos, size, rotAndTra, scale) {
+  const rotX = ((rotAndTra[0] || 0) * Math.PI) / 180;
+  const rotY = ((rotAndTra[1] || 0) * Math.PI) / 180;
+  const rotZ = ((rotAndTra[2] || 0) * Math.PI) / 180;
+  const transX = rotAndTra[3] || 0;
+  const transY = rotAndTra[4] || 0;
+  const transZ = rotAndTra[5] || 0;
+  const objRotX = ((rotAndTra[6] || 0) * Math.PI) / 180;
+  const objRotY = ((rotAndTra[7] || 0) * Math.PI) / 180;
+  const objRotZ = ((rotAndTra[8] || 0) * Math.PI) / 180;
+
+  const cosRX = Math.cos(rotX),
+    sinRX = Math.sin(rotX);
+  const cosRY = Math.cos(rotY),
+    sinRY = Math.sin(rotY);
+  const cosRZ = Math.cos(rotZ),
+    sinRZ = Math.sin(rotZ);
+  const cosOX = Math.cos(objRotX),
+    sinOX = Math.sin(objRotX);
+  const cosOY = Math.cos(objRotY),
+    sinOY = Math.sin(objRotY);
+  const cosOZ = Math.cos(objRotZ),
+    sinOZ = Math.sin(objRotZ);
+
+  const vertices2D = [];
+  const normalsZ = [];
+
+  for (let i = 0; i < vertices.length; i += 3) {
+    let x = vertices[i];
+    let y = vertices[i + 1];
+    let z = vertices[i + 2];
+
+    x *= size.x || 1;
+    y *= size.y || 1;
+    z *= size.z || 1;
+
+    x += transX;
+    y += transY;
+    z += transZ;
+
+    let temp;
+    temp = x * cosRZ - y * sinRZ;
+    y = x * sinRZ + y * cosRZ;
+    x = temp;
+
+    temp = x * cosRY + z * sinRY;
+    z = -x * sinRY + z * cosRY;
+    x = temp;
+
+    temp = y * cosRX - z * sinRX;
+    z = y * sinRX + z * cosRX;
+    y = temp;
+
+    temp = x * cosOZ - y * sinOZ;
+    y = x * sinOZ + y * cosOZ;
+    x = temp;
+
+    temp = x * cosOY + z * sinOY;
+    z = -x * sinOY + z * cosOY;
+    x = temp;
+
+    temp = y * cosOX - z * sinOX;
+    z = y * sinOX + z * cosOX;
+    y = temp;
+
+    x += pos.x;
+    y += pos.y;
+
+    vertices2D.push(x * scale, y * scale);
+
+    if (normals && normals.length > 0) {
+      const ni = i;
+      let nx = normals[ni] || 0;
+      let ny = normals[ni + 1] || 0;
+      let nz = normals[ni + 2] || 0;
+
+      temp = nx * cosRZ - ny * sinRZ;
+      ny = nx * sinRZ + ny * cosRZ;
+      nx = temp;
+
+      temp = nx * cosRY + nz * sinRY;
+      nz = -nx * sinRY + nz * cosRY;
+      nx = temp;
+
+      temp = ny * cosRX - nz * sinRX;
+      nz = ny * sinRX + nz * cosRX;
+      ny = temp;
+
+      temp = nx * cosOZ - ny * sinOZ;
+      ny = nx * sinOZ + ny * cosOZ;
+      nx = temp;
+
+      temp = nx * cosOY + nz * sinOY;
+      nz = -nx * sinOY + nz * cosOY;
+      nx = temp;
+
+      temp = ny * cosOX - nz * sinOX;
+      nz = ny * sinOX + nz * cosOX;
+      ny = temp;
+
+      const len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+      normalsZ.push(len > 0 ? nz / len : 0);
+    } else {
+      normalsZ.push(0);
+    }
   }
 
   return { vertices2D, normalsZ };

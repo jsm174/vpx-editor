@@ -4,18 +4,45 @@ import { toScreen, getStrokeStyle, getLineWidth } from '../utils.js';
 import { imageOptions } from '../../shared/options-generators.js';
 import { BALL_DEFAULTS } from '../../shared/object-defaults.js';
 import { loadTexture } from '../texture-loader.js';
+import { RENDER_COLOR_BLACK, BLUEPRINT_SOLID_COLOR } from '../../shared/constants.js';
 
-export function renderBall(item, isSelected) {
+function drawBall(ctx, item, cx, cy, scale, strokeStyle, lineWidth, fillStyle) {
+  const radius = (item.radius ?? BALL_DEFAULTS.radius) * scale;
+
+  if (fillStyle) {
+    ctx.fillStyle = fillStyle;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.strokeStyle = strokeStyle;
+  ctx.lineWidth = lineWidth;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+export function uiRenderPass1(item, isSelected) {}
+
+export function uiRenderPass2(item, isSelected) {
   const pos = item.pos || { x: 0, y: 0 };
   const { x: cx, y: cy } = toScreen(pos.x, pos.y);
-  const radius = (item.radius ?? BALL_DEFAULTS.radius) * state.zoom;
+  drawBall(elements.ctx, item, cx, cy, state.zoom, getStrokeStyle(item, isSelected), getLineWidth(isSelected), null);
+}
 
-  elements.ctx.strokeStyle = getStrokeStyle(item, isSelected);
-  elements.ctx.lineWidth = getLineWidth(isSelected);
+export function renderBlueprint(ctx, item, scale, solid) {
+  const pos = item.pos || { x: 0, y: 0 };
+  drawBall(ctx, item, pos.x * scale, pos.y * scale, scale, RENDER_COLOR_BLACK, 1, solid ? BLUEPRINT_SOLID_COLOR : null);
+}
 
-  elements.ctx.beginPath();
-  elements.ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-  elements.ctx.stroke();
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
+}
+
+export function renderBall(item, isSelected) {
+  render(item, isSelected);
 }
 
 export function createBall3DMesh(item) {

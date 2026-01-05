@@ -201,4 +201,8 @@ contextBridge.exposeInMainWorld('vpxEditor', {
   showConfirm: config => ipcRenderer.invoke('show-confirm', config),
   onInitWorkFolder: callback => ipcRenderer.on('init-work-folder', (event, data) => callback(data)),
   workFolderResult: result => ipcRenderer.send('work-folder-result', result),
+  onExportBlueprint: callback => ipcRenderer.on('export-blueprint', (event, data) => callback(data)),
+  exportBlueprint: (data, filename) => ipcRenderer.invoke('export-blueprint', data, filename),
+  exportBlueprintGetPath: filename => ipcRenderer.invoke('export-blueprint-get-path', filename),
+  saveBlueprintDirect: (data, filePath) => ipcRenderer.invoke('save-blueprint-direct', data, filePath),
 });

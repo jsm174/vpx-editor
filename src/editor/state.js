@@ -12,6 +12,7 @@ import {
 
 export const state = {
   extractedDir: null,
+  tableName: null,
   gamedata: null,
   info: null,
   gameitems: [],

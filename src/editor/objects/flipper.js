@@ -4,6 +4,12 @@ import { toScreen, getStrokeStyle, getLineWidth, distToSegment } from '../utils.
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions, surfaceOptions } from '../../shared/options-generators.js';
 import { FLIPPER_DEFAULTS } from '../../shared/object-defaults.js';
+import {
+  RENDER_COLOR_BLACK,
+  RENDER_COLOR_GRAY,
+  RENDER_COLOR_DARK_RED,
+  BLUEPRINT_SOLID_COLOR,
+} from '../../shared/constants.js';
 
 import flipperBaseMesh from '../meshes/flipperBase.json';
 
@@ -132,8 +138,44 @@ function arcFromPoints(ctx, cx, cy, radius, x1, y1, x2, y2) {
   ctx.stroke();
 }
 
-export function renderFlipper(item, isSelected) {
-  const { center, rubber_thickness } = item;
+function drawFlipperOutline(ctx, cx, cy, verts, br, er) {
+  const { endCenter, rgv } = verts;
+
+  ctx.beginPath();
+  ctx.moveTo(rgv[0].x, rgv[0].y);
+  ctx.lineTo(rgv[1].x, rgv[1].y);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(rgv[2].x, rgv[2].y);
+  ctx.lineTo(rgv[3].x, rgv[3].y);
+  ctx.stroke();
+
+  arcFromPoints(ctx, cx, cy, br, rgv[0].x, rgv[0].y, rgv[3].x, rgv[3].y);
+  arcFromPoints(ctx, endCenter.x, endCenter.y, er, rgv[2].x, rgv[2].y, rgv[1].x, rgv[1].y);
+}
+
+function drawFlipperShapeStroke(ctx, cx, cy, verts, br, er) {
+  const { endCenter, rgv } = verts;
+
+  ctx.beginPath();
+  ctx.moveTo(rgv[0].x, rgv[0].y);
+  ctx.lineTo(rgv[1].x, rgv[1].y);
+  ctx.lineTo(rgv[2].x, rgv[2].y);
+  ctx.lineTo(rgv[3].x, rgv[3].y);
+  ctx.closePath();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, br, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(endCenter.x, endCenter.y, er, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+function getFlipperParams(item, scale) {
   const startAngleVal = item.start_angle ?? FLIPPER_DEFAULTS.start_angle;
   const endAngleVal = item.end_angle ?? FLIPPER_DEFAULTS.end_angle;
   const angleRad = (startAngleVal * Math.PI) / 180;
@@ -142,60 +184,37 @@ export function renderFlipper(item, isSelected) {
   const baseRadius = item.base_radius ?? FLIPPER_DEFAULTS.base_radius;
   const endRadius = item.end_radius ?? FLIPPER_DEFAULTS.end_radius;
   const flipperRadius = item.flipper_radius_max ?? FLIPPER_DEFAULTS.flipper_radius_max;
+  const rubberThickness = item.rubber_thickness ?? FLIPPER_DEFAULTS.rubber_thickness;
+
+  const br = baseRadius * scale;
+  const er = endRadius * scale;
+  const len = flipperRadius * scale;
+  const rubThick = rubberThickness * scale;
+
+  return { angleRad, angleRad2, br, er, len, rubThick, startAngleVal, endAngleVal };
+}
+
+export function uiRenderPass1(item, isSelected) {
+  const { center } = item;
+  if (!center) return;
+
+  if (!state.viewSolid) return;
 
   const { x: cx, y: cy } = toScreen(center.x, center.y);
-  const br = baseRadius * state.zoom;
-  const er = endRadius * state.zoom;
-  const len = flipperRadius * state.zoom;
+  const { angleRad, br, er, len, rubThick } = getFlipperParams(item, state.zoom);
 
   const verts = setFlipperVertices(cx, cy, angleRad, len, br, er);
   const { endCenter, rgv } = verts;
 
-  if (state.viewSolid) {
-    elements.ctx.fillStyle = state.editorColors?.elementFill || '#b1cfb3';
-    elements.ctx.beginPath();
-    elements.ctx.arc(cx, cy, br, 0, Math.PI * 2);
-    elements.ctx.fill();
-    elements.ctx.beginPath();
-    elements.ctx.arc(endCenter.x, endCenter.y, er, 0, Math.PI * 2);
-    elements.ctx.fill();
+  const fillColor = state.editorColors?.elementFill || '#b1cfb3';
 
-    elements.ctx.beginPath();
-    elements.ctx.moveTo(rgv[0].x, rgv[0].y);
-    elements.ctx.lineTo(rgv[1].x, rgv[1].y);
-    elements.ctx.lineTo(rgv[2].x, rgv[2].y);
-    elements.ctx.lineTo(rgv[3].x, rgv[3].y);
-    elements.ctx.closePath();
-    elements.ctx.fill();
-  }
-
-  const rubThick = (rubber_thickness ?? FLIPPER_DEFAULTS.rubber_thickness) * state.zoom;
-  const rubBr = br - rubThick;
-  const rubEr = er - rubThick;
-
-  if (rubBr > 0 && rubEr > 0) {
-    const rubVerts = setFlipperVertices(cx, cy, angleRad, len, rubBr, rubEr);
-    elements.ctx.strokeStyle = getStrokeStyle(item, isSelected);
-    elements.ctx.lineWidth = getLineWidth(isSelected);
-
-    elements.ctx.beginPath();
-    elements.ctx.moveTo(rubVerts.rgv[0].x, rubVerts.rgv[0].y);
-    elements.ctx.lineTo(rubVerts.rgv[1].x, rubVerts.rgv[1].y);
-    elements.ctx.lineTo(rubVerts.rgv[2].x, rubVerts.rgv[2].y);
-    elements.ctx.lineTo(rubVerts.rgv[3].x, rubVerts.rgv[3].y);
-    elements.ctx.closePath();
-    elements.ctx.stroke();
-
-    elements.ctx.beginPath();
-    elements.ctx.arc(cx, cy, rubBr, 0, Math.PI * 2);
-    elements.ctx.stroke();
-    elements.ctx.beginPath();
-    elements.ctx.arc(rubVerts.endCenter.x, rubVerts.endCenter.y, rubEr, 0, Math.PI * 2);
-    elements.ctx.stroke();
-  }
-
-  elements.ctx.strokeStyle = getStrokeStyle(item, isSelected);
-  elements.ctx.lineWidth = getLineWidth(isSelected);
+  elements.ctx.fillStyle = fillColor;
+  elements.ctx.beginPath();
+  elements.ctx.arc(cx, cy, br, 0, Math.PI * 2);
+  elements.ctx.fill();
+  elements.ctx.beginPath();
+  elements.ctx.arc(endCenter.x, endCenter.y, er, 0, Math.PI * 2);
+  elements.ctx.fill();
 
   elements.ctx.beginPath();
   elements.ctx.moveTo(rgv[0].x, rgv[0].y);
@@ -203,34 +222,60 @@ export function renderFlipper(item, isSelected) {
   elements.ctx.lineTo(rgv[2].x, rgv[2].y);
   elements.ctx.lineTo(rgv[3].x, rgv[3].y);
   elements.ctx.closePath();
-  elements.ctx.stroke();
+  elements.ctx.fill();
 
-  elements.ctx.beginPath();
-  elements.ctx.arc(cx, cy, br, 0, Math.PI * 2);
-  elements.ctx.stroke();
-  elements.ctx.beginPath();
-  elements.ctx.arc(endCenter.x, endCenter.y, er, 0, Math.PI * 2);
-  elements.ctx.stroke();
+  const rubBr = br - rubThick;
+  const rubEr = er - rubThick;
 
-  elements.ctx.strokeStyle = '#808080';
+  if (rubBr > 0 && rubEr > 0) {
+    const rubVerts = setFlipperVertices(cx, cy, angleRad, len, rubBr, rubEr);
+
+    elements.ctx.beginPath();
+    elements.ctx.arc(cx, cy, rubBr, 0, Math.PI * 2);
+    elements.ctx.fill();
+    elements.ctx.beginPath();
+    elements.ctx.arc(rubVerts.endCenter.x, rubVerts.endCenter.y, rubEr, 0, Math.PI * 2);
+    elements.ctx.fill();
+
+    elements.ctx.beginPath();
+    elements.ctx.moveTo(rubVerts.rgv[0].x, rubVerts.rgv[0].y);
+    elements.ctx.lineTo(rubVerts.rgv[1].x, rubVerts.rgv[1].y);
+    elements.ctx.lineTo(rubVerts.rgv[2].x, rubVerts.rgv[2].y);
+    elements.ctx.lineTo(rubVerts.rgv[3].x, rubVerts.rgv[3].y);
+    elements.ctx.closePath();
+    elements.ctx.fill();
+  }
+}
+
+export function uiRenderPass2(item, isSelected) {
+  const { center } = item;
+  if (!center) return;
+
+  const { x: cx, y: cy } = toScreen(center.x, center.y);
+  const { angleRad, angleRad2, br, er, len, rubThick, endAngleVal, startAngleVal } = getFlipperParams(item, state.zoom);
+
+  const verts = setFlipperVertices(cx, cy, angleRad, len, br, er);
+
+  const rubBr = br - rubThick;
+  const rubEr = er - rubThick;
+
+  if (rubBr > 0 && rubEr > 0) {
+    const rubVerts = setFlipperVertices(cx, cy, angleRad, len, rubBr, rubEr);
+    elements.ctx.strokeStyle = getStrokeStyle(item, isSelected);
+    elements.ctx.lineWidth = getLineWidth(isSelected);
+    drawFlipperShapeStroke(elements.ctx, cx, cy, rubVerts, rubBr, rubEr);
+  }
+
+  elements.ctx.strokeStyle = getStrokeStyle(item, isSelected);
+  elements.ctx.lineWidth = getLineWidth(isSelected);
+  drawFlipperShapeStroke(elements.ctx, cx, cy, verts, br, er);
+
+  elements.ctx.strokeStyle = RENDER_COLOR_GRAY;
   elements.ctx.lineWidth = 1;
   elements.ctx.setLineDash([4, 4]);
 
   const verts2 = setFlipperVertices(cx, cy, angleRad2, len, br, er);
-  const { endCenter: endCenter2, rgv: rgv2 } = verts2;
-
-  elements.ctx.beginPath();
-  elements.ctx.moveTo(rgv2[0].x, rgv2[0].y);
-  elements.ctx.lineTo(rgv2[1].x, rgv2[1].y);
-  elements.ctx.stroke();
-
-  elements.ctx.beginPath();
-  elements.ctx.moveTo(rgv2[2].x, rgv2[2].y);
-  elements.ctx.lineTo(rgv2[3].x, rgv2[3].y);
-  elements.ctx.stroke();
-
-  arcFromPoints(elements.ctx, cx, cy, br, rgv2[0].x, rgv2[0].y, rgv2[3].x, rgv2[3].y);
-  arcFromPoints(elements.ctx, endCenter2.x, endCenter2.y, er, rgv2[2].x, rgv2[2].y, rgv2[1].x, rgv2[1].y);
+  drawFlipperShapeStroke(elements.ctx, cx, cy, verts2, br, er);
 
   const sweepRadius = len + er;
   const tip1x = cx + Math.sin(angleRad) * sweepRadius;
@@ -245,6 +290,54 @@ export function renderFlipper(item, isSelected) {
   }
 
   elements.ctx.setLineDash([]);
+}
+
+export function renderBlueprint(ctx, item, scale, solid) {
+  const { center } = item;
+  if (!center) return;
+
+  const cx = center.x * scale;
+  const cy = center.y * scale;
+  const { angleRad, angleRad2, br, er, len, rubThick, endAngleVal, startAngleVal } = getFlipperParams(item, scale);
+
+  const verts = setFlipperVertices(cx, cy, angleRad, len, br, er);
+
+  ctx.strokeStyle = RENDER_COLOR_BLACK;
+  ctx.lineWidth = 1;
+  drawFlipperOutline(ctx, cx, cy, verts, br, er);
+
+  const rubBr = br - rubThick;
+  const rubEr = er - rubThick;
+
+  if (rubBr > 0 && rubEr > 0) {
+    const rubVerts = setFlipperVertices(cx, cy, angleRad, len, rubBr, rubEr);
+    drawFlipperOutline(ctx, cx, cy, rubVerts, rubBr, rubEr);
+  }
+
+  ctx.strokeStyle = RENDER_COLOR_GRAY;
+  ctx.setLineDash([4, 4]);
+
+  const verts2 = setFlipperVertices(cx, cy, angleRad2, len, br, er);
+  drawFlipperOutline(ctx, cx, cy, verts2, br, er);
+
+  const sweepRadius = len + er;
+  const tip1x = cx + Math.sin(angleRad) * sweepRadius;
+  const tip1y = cy - Math.cos(angleRad) * sweepRadius;
+  const tip2x = cx + Math.sin(angleRad2) * sweepRadius;
+  const tip2y = cy - Math.cos(angleRad2) * sweepRadius;
+
+  if (endAngleVal < startAngleVal) {
+    arcFromPoints(ctx, cx, cy, sweepRadius, tip1x, tip1y, tip2x, tip2y);
+  } else {
+    arcFromPoints(ctx, cx, cy, sweepRadius, tip2x, tip2y, tip1x, tip1y);
+  }
+
+  ctx.setLineDash([]);
+}
+
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
 }
 
 export function hitTestFlipper(item, worldX, worldY, center, distFromCenter) {

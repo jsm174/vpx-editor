@@ -1,59 +1,116 @@
 import { state, elements } from '../state.js';
-import { toScreen, getLineWidth } from '../utils.js';
+import { toScreen, getLineWidth, getStrokeStyle } from '../utils.js';
 import { imageOptions, soundOptions } from '../../shared/options-generators.js';
 import { REEL_DEFAULTS } from '../../shared/object-defaults.js';
+import { RENDER_COLOR_BLACK, RENDER_COLOR_BLUE, BLUEPRINT_SOLID_COLOR } from '../../shared/constants.js';
 
-export function renderReel(item, isSelected) {
-  const v1 = item.ver1 || { x: 0, y: 0 };
-
+function getReelGeometry(item) {
   const reelCount = Math.min(item.reel_count ?? REEL_DEFAULTS.reel_count, 32);
   const reelWidth = item.width ?? REEL_DEFAULTS.width;
   const reelHeight = item.height ?? REEL_DEFAULTS.height;
   const spacing = item.reel_spacing ?? REEL_DEFAULTS.reel_spacing;
-
   const boxWidth = reelCount * (reelWidth + spacing) + spacing;
   const boxHeight = reelHeight + spacing * 2;
+  return { reelCount, reelWidth, reelHeight, spacing, boxWidth, boxHeight };
+}
 
+function drawReel(ctx, item, x1, y1, scale, backFillStyle, reelFillStyle, strokeStyle, lineWidth) {
+  const { reelCount, reelWidth, reelHeight, spacing, boxWidth, boxHeight } = getReelGeometry(item);
+
+  const screenBoxW = boxWidth * scale;
+  const screenBoxH = boxHeight * scale;
+
+  if (backFillStyle) {
+    ctx.fillStyle = backFillStyle;
+    ctx.fillRect(x1, y1, screenBoxW, screenBoxH);
+  }
+
+  if (reelFillStyle) {
+    ctx.fillStyle = reelFillStyle;
+    for (let i = 0; i < reelCount; i++) {
+      const sx = x1 + (i * (reelWidth + spacing) + spacing) * scale;
+      const sy = y1 + spacing * scale;
+      const sw = reelWidth * scale;
+      const sh = reelHeight * scale;
+      ctx.fillRect(sx, sy, sw, sh);
+    }
+  }
+
+  if (strokeStyle) {
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = lineWidth;
+    ctx.strokeRect(x1, y1, screenBoxW, screenBoxH);
+
+    for (let i = 0; i < reelCount; i++) {
+      const sx = x1 + (i * (reelWidth + spacing) + spacing) * scale;
+      const sy = y1 + spacing * scale;
+      const sw = reelWidth * scale;
+      const sh = reelHeight * scale;
+      ctx.strokeRect(sx, sy, sw, sh);
+    }
+  }
+}
+
+export function uiRenderPass1(item, isSelected) {
+  const v1 = item.ver1 || { x: 0, y: 0 };
   const { x: x1, y: y1 } = toScreen(v1.x, v1.y);
-  const screenBoxW = boxWidth * state.zoom;
-  const screenBoxH = boxHeight * state.zoom;
+  drawReel(
+    elements.ctx,
+    item,
+    x1,
+    y1,
+    state.zoom,
+    item.back_color || REEL_DEFAULTS.back_color,
+    RENDER_COLOR_BLUE,
+    null,
+    0
+  );
+}
 
-  elements.ctx.fillStyle = item.back_color || REEL_DEFAULTS.back_color;
-  elements.ctx.fillRect(x1, y1, screenBoxW, screenBoxH);
+export function uiRenderPass2(item, isSelected) {
+  const v1 = item.ver1 || { x: 0, y: 0 };
+  const { x: x1, y: y1 } = toScreen(v1.x, v1.y);
+  drawReel(
+    elements.ctx,
+    item,
+    x1,
+    y1,
+    state.zoom,
+    null,
+    null,
+    getStrokeStyle(item, isSelected),
+    isSelected ? 4 : getLineWidth(isSelected)
+  );
+}
 
-  elements.ctx.fillStyle = 'rgb(0, 0, 255)';
-  for (let i = 0; i < reelCount; i++) {
-    const rx = v1.x + i * (reelWidth + spacing) + spacing;
-    const ry = v1.y + spacing;
-    const { x: sx, y: sy } = toScreen(rx, ry);
-    const sw = reelWidth * state.zoom;
-    const sh = reelHeight * state.zoom;
-    elements.ctx.fillRect(sx, sy, sw, sh);
-  }
+export function renderBlueprint(ctx, item, scale, solid) {
+  const v1 = item.ver1 || { x: 0, y: 0 };
+  drawReel(
+    ctx,
+    item,
+    v1.x * scale,
+    v1.y * scale,
+    scale,
+    solid ? BLUEPRINT_SOLID_COLOR : null,
+    null,
+    RENDER_COLOR_BLACK,
+    1
+  );
+}
 
-  elements.ctx.strokeStyle = isSelected ? '#0000ff' : '#000000';
-  elements.ctx.lineWidth = isSelected ? 4 : getLineWidth(isSelected);
-  elements.ctx.strokeRect(x1, y1, screenBoxW, screenBoxH);
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
+}
 
-  for (let i = 0; i < reelCount; i++) {
-    const rx = v1.x + i * (reelWidth + spacing) + spacing;
-    const ry = v1.y + spacing;
-    const { x: sx, y: sy } = toScreen(rx, ry);
-    const sw = reelWidth * state.zoom;
-    const sh = reelHeight * state.zoom;
-    elements.ctx.strokeRect(sx, sy, sw, sh);
-  }
+export function renderReel(item, isSelected) {
+  render(item, isSelected);
 }
 
 export function hitTestReel(item, worldX, worldY) {
   const v1 = item.ver1 || { x: 0, y: 0 };
-  const reelCount = Math.min(item.reel_count ?? REEL_DEFAULTS.reel_count, 32);
-  const reelWidth = item.width ?? REEL_DEFAULTS.width;
-  const reelHeight = item.height ?? REEL_DEFAULTS.height;
-  const spacing = item.reel_spacing ?? REEL_DEFAULTS.reel_spacing;
-  const boxW = reelCount * (reelWidth + spacing) + spacing;
-  const boxH = reelHeight + spacing * 2;
-  return worldX >= v1.x && worldX <= v1.x + boxW && worldY >= v1.y && worldY <= v1.y + boxH;
+  const { boxWidth, boxHeight } = getReelGeometry(item);
+  return worldX >= v1.x && worldX <= v1.x + boxWidth && worldY >= v1.y && worldY <= v1.y + boxHeight;
 }
 
 export function reelProperties(item) {

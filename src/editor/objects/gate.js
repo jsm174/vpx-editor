@@ -14,6 +14,7 @@ import {
   propTabContent,
   timerTab,
 } from '../../shared/property-templates.js';
+import { RENDER_COLOR_BLACK } from '../../shared/constants.js';
 
 import gateBracketMesh from '../meshes/gateBracket.json';
 import gateWireMesh from '../meshes/gateWire.json';
@@ -68,13 +69,22 @@ export function createGate3DMesh(item) {
   return group;
 }
 
-export function renderGate(item, isSelected) {
-  const { center, length, rotation, two_way } = item;
+function getGateGeometry(item, scale) {
+  const halfLen = (item.length ?? GATE_DEFAULTS.length) * 0.5 * scale;
+  const rad = ((item.rotation ?? GATE_DEFAULTS.rotation) * Math.PI) / 180;
+  const len1 = halfLen * 0.5;
+  const len2 = len1 * 0.5;
+  return { halfLen, rad, len1, len2 };
+}
+
+export function uiRenderPass1(item, isSelected) {}
+
+export function uiRenderPass2(item, isSelected) {
+  const { center, two_way } = item;
   if (!center) return;
 
   const { x: cx, y: cy } = toScreen(center.x, center.y);
-  const halfLen = (item.length ?? GATE_DEFAULTS.length) * 0.5 * state.zoom;
-  const rad = ((item.rotation ?? GATE_DEFAULTS.rotation) * Math.PI) / 180;
+  const { halfLen, rad, len1, len2 } = getGateGeometry(item, state.zoom);
 
   elements.ctx.strokeStyle = getStrokeStyle(item, isSelected);
   elements.ctx.lineWidth = getLineWidth(isSelected);
@@ -88,13 +98,10 @@ export function renderGate(item, isSelected) {
   elements.ctx.lineTo(cx - Math.cos(rad) * halfLen, cy - Math.sin(rad) * halfLen);
   elements.ctx.stroke();
 
-  const len1 = halfLen * 0.5;
-  const len2 = len1 * 0.5;
-
   const tipX = cx + Math.sin(rad) * len1;
   const tipY = cy - Math.cos(rad) * len1;
 
-  elements.ctx.strokeStyle = '#000000';
+  elements.ctx.strokeStyle = RENDER_COLOR_BLACK;
   elements.ctx.lineWidth = 1;
 
   elements.ctx.beginPath();
@@ -126,6 +133,17 @@ export function renderGate(item, isSelected) {
     elements.ctx.lineTo(cx + Math.sin(rad2 - 0.6) * len2, cy - Math.cos(rad2 - 0.6) * len2);
     elements.ctx.stroke();
   }
+}
+
+export function renderBlueprint(ctx, item, scale, solid) {}
+
+export function render(item, isSelected) {
+  uiRenderPass1(item, isSelected);
+  uiRenderPass2(item, isSelected);
+}
+
+export function renderGate(item, isSelected) {
+  render(item, isSelected);
 }
 
 const gateTypeOptions = [
