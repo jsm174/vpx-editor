@@ -18,6 +18,7 @@ import {
   BLUEPRINT_SOLID_COLOR,
   PATH_SMOOTHING_ACCURACY,
 } from '../../shared/constants.js';
+import { convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { registerEditable, IEditable, Point } from './registry.js';
 import { getDragPointCoords } from '../../types/game-objects.js';
 
@@ -385,11 +386,11 @@ export function triggerProperties(item: TriggerItem): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Wire Thickness</label>
-          <input type="number" class="prop-input" data-prop="wire_thickness" value="${(item.wire_thickness ?? TRIGGER_DEFAULTS.wire_thickness).toFixed(2)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="wire_thickness" data-convert-units value="${convertToUnit(item.wire_thickness ?? TRIGGER_DEFAULTS.wire_thickness).toFixed(2)}" step="${convertToUnit(0.5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Star Radius</label>
-          <input type="number" class="prop-input" data-prop="radius" value="${(item.radius ?? TRIGGER_DEFAULTS.radius).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="radius" data-convert-units value="${convertToUnit(item.radius ?? TRIGGER_DEFAULTS.radius).toFixed(1)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Rotation</label>
@@ -408,11 +409,11 @@ export function triggerProperties(item: TriggerItem): string {
         <div class="prop-group-title">Position</div>
         <div class="prop-row">
           <label class="prop-label">X</label>
-          <input type="number" class="prop-input" data-prop="center.x" value="${(item.center?.x ?? 0).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="center.x" data-convert-units value="${convertToUnit(item.center?.x ?? 0).toFixed(1)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Y</label>
-          <input type="number" class="prop-input" data-prop="center.y" value="${(item.center?.y ?? 0).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="center.y" data-convert-units value="${convertToUnit(item.center?.y ?? 0).toFixed(1)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Surface</label>
@@ -429,7 +430,7 @@ export function triggerProperties(item: TriggerItem): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Hit Height</label>
-          <input type="number" class="prop-input" data-prop="hit_height" value="${(item.hit_height ?? TRIGGER_DEFAULTS.hit_height).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="hit_height" data-convert-units value="${convertToUnit(item.hit_height ?? TRIGGER_DEFAULTS.hit_height).toFixed(1)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
       </div>
     </div>

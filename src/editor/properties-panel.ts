@@ -2,6 +2,7 @@ import { state, elements, undoManager, PartGroup, SelectedNodeInfo } from './sta
 import { getItemNameFromFileName, getFileNameFromItemName } from '../shared/gameitem-utils.js';
 import { getDragPointCoords } from '../types/game-objects.js';
 import { VIEW_MODE_3D } from '../shared/constants.js';
+import { convertFromUnit, convertToUnit, getUnitSuffixHtml } from './utils.js';
 import { getCollectionNameForItem, renameItemInAllCollections, saveCollections } from './collections.js';
 import { render } from './canvas-renderer.js';
 import { refresh3DScene, render3D, is3DInitialized, invalidateItem } from './canvas-renderer-3d.js';
@@ -638,17 +639,19 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
       `;
     }
 
+    const stepValue = convertToUnit(1).toFixed(4);
+
     html += `
       </div>
       <div class="prop-group">
         <div class="prop-group-title">Position</div>
         <div class="prop-row">
           <label class="prop-label">X</label>
-          <input type="number" class="prop-input" data-prop="drag_points.${nodeIndex}.${pt.vertex ? 'vertex.x' : 'x'}" value="${v.x.toFixed(4)}" step="1">
+          <input type="number" class="prop-input" data-prop="drag_points.${nodeIndex}.${pt.vertex ? 'vertex.x' : 'x'}" data-convert-units value="${convertToUnit(v.x).toFixed(4)}" step="${stepValue}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Y</label>
-          <input type="number" class="prop-input" data-prop="drag_points.${nodeIndex}.${pt.vertex ? 'vertex.y' : 'y'}" value="${v.y.toFixed(4)}" step="1">
+          <input type="number" class="prop-input" data-prop="drag_points.${nodeIndex}.${pt.vertex ? 'vertex.y' : 'y'}" data-convert-units value="${convertToUnit(v.y).toFixed(4)}" step="${stepValue}">${getUnitSuffixHtml()}
         </div>
     `;
 
@@ -663,11 +666,11 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
       html += `
         <div class="prop-row">
           <label class="prop-label">Height Offset</label>
-          <input type="number" class="prop-input" data-prop="drag_points.${nodeIndex}.${pt.vertex ? 'vertex.z' : 'z'}" value="${heightOffset.toFixed(4)}" step="1">
+          <input type="number" class="prop-input" data-prop="drag_points.${nodeIndex}.${pt.vertex ? 'vertex.z' : 'z'}" data-convert-units value="${convertToUnit(heightOffset).toFixed(4)}" step="${stepValue}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Real Height</label>
-          <input type="number" class="prop-input" value="${calcHeight.toFixed(4)}" readonly style="background: transparent;">
+          <input type="number" class="prop-input" value="${convertToUnit(calcHeight).toFixed(4)}" readonly style="background: transparent;">${getUnitSuffixHtml()}
         </div>
       `;
     }
@@ -695,6 +698,9 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
           value = target.value;
         } else {
           value = parseFloat(target.value);
+          if ('convertUnits' in target.dataset) {
+            value = convertFromUnit(value);
+          }
         }
         await updateItemProperty(state.primarySelectedItem!, prop, value);
       });
@@ -832,6 +838,9 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
           }
         } else {
           value = parseFloat(target.value);
+          if ('convertUnits' in (target as HTMLInputElement).dataset) {
+            value = convertFromUnit(value);
+          }
         }
         if ((target as HTMLInputElement).type === 'color') {
           applyColorGradient(target as HTMLInputElement);

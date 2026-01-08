@@ -146,7 +146,7 @@ export interface EditorState {
   editorColors: EditorColors;
   alwaysDrawDragPoints: boolean;
   drawLightCenters: boolean;
-  unitConversion: number;
+  unitConversion: string;
   backglassView: boolean;
   backglassViewMode: string;
   ctrlZoomHandled: boolean;

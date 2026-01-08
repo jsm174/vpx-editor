@@ -8,6 +8,8 @@ import {
   getFillColorWithAlpha,
   pointInPolygon,
   drawPolygon,
+  convertToUnit,
+  getUnitSuffixHtml,
 } from '../utils.js';
 import { loadTexture } from '../texture-loader.js';
 import { imageOptions } from '../../shared/options-generators.js';
@@ -324,15 +326,15 @@ export function flasherProperties(item: Flasher): string {
         <div class="prop-group-title">Position</div>
         <div class="prop-row">
           <label class="prop-label">X</label>
-          <input type="number" class="prop-input" data-prop="pos_x" value="${(item.pos_x || 0).toFixed(2)}" step="1">
+          <input type="number" class="prop-input" data-prop="pos_x" data-convert-units value="${convertToUnit(item.pos_x || 0).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Y</label>
-          <input type="number" class="prop-input" data-prop="pos_y" value="${(item.pos_y || 0).toFixed(2)}" step="1">
+          <input type="number" class="prop-input" data-prop="pos_y" data-convert-units value="${convertToUnit(item.pos_y || 0).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Height</label>
-          <input type="number" class="prop-input" data-prop="height" value="${(item.height ?? FLASHER_DEFAULTS.height).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="height" data-convert-units value="${convertToUnit(item.height ?? FLASHER_DEFAULTS.height).toFixed(2)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">RotX</label>

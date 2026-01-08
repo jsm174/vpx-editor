@@ -5,6 +5,7 @@ import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions, surfaceOptions } from '../../shared/options-generators.js';
 import { FLIPPER_DEFAULTS } from '../../shared/object-defaults.js';
 import { RENDER_COLOR_BLACK, RENDER_COLOR_GRAY } from '../../shared/constants.js';
+import { convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { registerEditable, IEditable, Point } from './registry.js';
 
 import flipperBaseMesh from '../meshes/flipperBase.json';
@@ -499,15 +500,15 @@ export function flipperProperties(item: FlipperItem): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Rubber Thickness</label>
-          <input type="number" class="prop-input" data-prop="rubber_thickness" value="${(item.rubber_thickness ?? FLIPPER_DEFAULTS.rubber_thickness).toFixed(2)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="rubber_thickness" data-convert-units value="${convertToUnit(item.rubber_thickness ?? FLIPPER_DEFAULTS.rubber_thickness).toFixed(2)}" step="${convertToUnit(0.5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Rubber Offset Height</label>
-          <input type="number" class="prop-input" data-prop="rubber_height" value="${(item.rubber_height ?? FLIPPER_DEFAULTS.rubber_height).toFixed(2)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="rubber_height" data-convert-units value="${convertToUnit(item.rubber_height ?? FLIPPER_DEFAULTS.rubber_height).toFixed(2)}" step="${convertToUnit(0.5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Rubber Width</label>
-          <input type="number" class="prop-input" data-prop="rubber_width" value="${(item.rubber_width ?? FLIPPER_DEFAULTS.rubber_width).toFixed(2)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="rubber_width" data-convert-units value="${convertToUnit(item.rubber_width ?? FLIPPER_DEFAULTS.rubber_width).toFixed(2)}" step="${convertToUnit(0.5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Visible</label>
@@ -526,23 +527,23 @@ export function flipperProperties(item: FlipperItem): string {
         <div class="prop-group-title">Position</div>
         <div class="prop-row">
           <label class="prop-label">X</label>
-          <input type="number" class="prop-input" data-prop="center.x" value="${(item.center?.x ?? 0).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="center.x" data-convert-units value="${convertToUnit(item.center?.x ?? 0).toFixed(1)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Y</label>
-          <input type="number" class="prop-input" data-prop="center.y" value="${(item.center?.y ?? 0).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="center.y" data-convert-units value="${convertToUnit(item.center?.y ?? 0).toFixed(1)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Base Radius</label>
-          <input type="number" class="prop-input" data-prop="base_radius" value="${(item.base_radius ?? FLIPPER_DEFAULTS.base_radius).toFixed(2)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="base_radius" data-convert-units value="${convertToUnit(item.base_radius ?? FLIPPER_DEFAULTS.base_radius).toFixed(2)}" step="${convertToUnit(0.5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">End Radius</label>
-          <input type="number" class="prop-input" data-prop="end_radius" value="${(item.end_radius ?? FLIPPER_DEFAULTS.end_radius).toFixed(2)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="end_radius" data-convert-units value="${convertToUnit(item.end_radius ?? FLIPPER_DEFAULTS.end_radius).toFixed(2)}" step="${convertToUnit(0.5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Length</label>
-          <input type="number" class="prop-input" data-prop="flipper_radius_max" value="${(item.flipper_radius_max ?? FLIPPER_DEFAULTS.flipper_radius_max).toFixed(2)}" step="1">
+          <input type="number" class="prop-input" data-prop="flipper_radius_max" data-convert-units value="${convertToUnit(item.flipper_radius_max ?? FLIPPER_DEFAULTS.flipper_radius_max).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Start Angle</label>
@@ -554,11 +555,11 @@ export function flipperProperties(item: FlipperItem): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Height</label>
-          <input type="number" class="prop-input" data-prop="height" value="${(item.height ?? FLIPPER_DEFAULTS.height).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="height" data-convert-units value="${convertToUnit(item.height ?? FLIPPER_DEFAULTS.height).toFixed(1)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Max.Difficulty Length</label>
-          <input type="number" class="prop-input" data-prop="flipper_radius_min" value="${(item.flipper_radius_min ?? FLIPPER_DEFAULTS.flipper_radius_min).toFixed(2)}" step="1">
+          <input type="number" class="prop-input" data-prop="flipper_radius_min" data-convert-units value="${convertToUnit(item.flipper_radius_min ?? FLIPPER_DEFAULTS.flipper_radius_min).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Surface</label>

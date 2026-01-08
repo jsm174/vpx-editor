@@ -13,6 +13,7 @@ import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
 import { RUBBER_DEFAULTS } from '../../shared/object-defaults.js';
 import { RENDER_COLOR_BLACK, BLUEPRINT_SOLID_COLOR } from '../../shared/constants.js';
+import { convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { registerEditable, IEditable, Point } from './registry.js';
 import { getDragPointCoords } from '../../types/game-objects.js';
 
@@ -338,11 +339,11 @@ export function rubberProperties(item: unknown): string {
         <div class="prop-group-title">Position</div>
         <div class="prop-row">
           <label class="prop-label">Height</label>
-          <input type="number" class="prop-input" data-prop="height" value="${(rubberItem.height ?? RUBBER_DEFAULTS.height).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="height" data-convert-units value="${convertToUnit(rubberItem.height ?? RUBBER_DEFAULTS.height).toFixed(1)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Thickness</label>
-          <input type="number" class="prop-input" data-prop="thickness" value="${rubberItem.thickness ?? RUBBER_DEFAULTS.thickness}" step="1">
+          <input type="number" class="prop-input" data-prop="thickness" data-convert-units value="${convertToUnit(rubberItem.thickness ?? RUBBER_DEFAULTS.thickness).toFixed(1)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
       </div>
       <div class="prop-group">
@@ -394,7 +395,7 @@ export function rubberProperties(item: unknown): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Hit Height</label>
-          <input type="number" class="prop-input" data-prop="hit_height" value="${(rubberItem.hit_height ?? RUBBER_DEFAULTS.hit_height).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="hit_height" data-convert-units value="${convertToUnit(rubberItem.hit_height ?? RUBBER_DEFAULTS.hit_height).toFixed(1)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Collidable</label>

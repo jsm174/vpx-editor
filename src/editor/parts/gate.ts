@@ -226,10 +226,10 @@ export function gateProperties(item: GateItem): string {
       `)}
       ${propGroup(
         `
-        ${numberInput('X', 'center.x', item.center?.x ?? 0, 1)}
-        ${numberInput('Y', 'center.y', item.center?.y ?? 0, 1)}
-        ${numberInput('Length', 'length', item.length ?? GATE_DEFAULTS.length, 5)}
-        ${numberInput('Height', 'height', item.height ?? GATE_DEFAULTS.height, 5)}
+        ${numberInput('X', 'center.x', item.center?.x ?? 0, 1, { convertUnits: true })}
+        ${numberInput('Y', 'center.y', item.center?.y ?? 0, 1, { convertUnits: true })}
+        ${numberInput('Length', 'length', item.length ?? GATE_DEFAULTS.length, 5, { convertUnits: true })}
+        ${numberInput('Height', 'height', item.height ?? GATE_DEFAULTS.height, 5, { convertUnits: true })}
         ${numberInput('Rotation', 'rotation', item.rotation ?? GATE_DEFAULTS.rotation, 5)}
         ${numberInput('Open Angle', 'angle_max', openAngleDeg, 5)}
         ${numberInput('Close Angle', 'angle_min', closeAngleDeg, 5)}

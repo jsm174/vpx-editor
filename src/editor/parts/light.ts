@@ -12,6 +12,7 @@ import {
   RENDER_COLOR_BLUE,
   PATH_SMOOTHING_ACCURACY,
 } from '../../shared/constants.js';
+import { convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { registerEditable, IEditable, Point } from './registry.js';
 import { getDragPointCoords } from '../../types/game-objects.js';
 
@@ -382,7 +383,7 @@ export function lightProperties(item: unknown): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Falloff Range</label>
-          <input type="number" class="prop-input" data-prop="falloff_radius" value="${falloff.toFixed(2)}" step="5">
+          <input type="number" class="prop-input" data-prop="falloff_radius" data-convert-units value="${convertToUnit(falloff).toFixed(2)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Falloff Power</label>
@@ -409,7 +410,7 @@ export function lightProperties(item: unknown): string {
         </div>
         <div class="prop-row render-mode-field halo-only"${!isHalo ? ' style="display:none"' : ''}>
           <label class="prop-label">Halo Height</label>
-          <input type="number" class="prop-input" data-prop="bulb_halo_height" value="${(lightItem.bulb_halo_height ?? LIGHT_DEFAULTS.bulb_halo_height).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="bulb_halo_height" data-convert-units value="${convertToUnit(lightItem.bulb_halo_height ?? LIGHT_DEFAULTS.bulb_halo_height).toFixed(1)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row render-mode-field halo-only"${!isHalo ? ' style="display:none"' : ''}>
           <label class="prop-label">Modulate (0..1)</label>
@@ -440,7 +441,7 @@ export function lightProperties(item: unknown): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Bulb Size</label>
-          <input type="number" class="prop-input" data-prop="mesh_radius" value="${(lightItem.mesh_radius ?? LIGHT_DEFAULTS.mesh_radius).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="mesh_radius" data-convert-units value="${convertToUnit(lightItem.mesh_radius ?? LIGHT_DEFAULTS.mesh_radius).toFixed(1)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
       </div>
       <div class="prop-group">
@@ -458,15 +459,15 @@ export function lightProperties(item: unknown): string {
         <div class="prop-group-title">Position</div>
         <div class="prop-row">
           <label class="prop-label">X</label>
-          <input type="number" class="prop-input" data-prop="center.x" value="${(lightItem.center?.x ?? 0).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="center.x" data-convert-units value="${convertToUnit(lightItem.center?.x ?? 0).toFixed(1)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Y</label>
-          <input type="number" class="prop-input" data-prop="center.y" value="${(lightItem.center?.y ?? 0).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="center.y" data-convert-units value="${convertToUnit(lightItem.center?.y ?? 0).toFixed(1)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Z</label>
-          <input type="number" class="prop-input" data-prop="height" value="${(lightItem.height ?? 0).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="height" data-convert-units value="${convertToUnit(lightItem.height ?? 0).toFixed(1)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Surface</label>

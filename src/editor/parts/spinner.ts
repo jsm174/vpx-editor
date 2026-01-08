@@ -154,10 +154,10 @@ export function spinnerProperties(item: SpinnerItem): string {
       `)}
       ${propGroup(
         `
-        ${numberInput('X', 'center.x', item.center?.x ?? 0, 1)}
-        ${numberInput('Y', 'center.y', item.center?.y ?? 0, 1)}
-        ${numberInput('Length', 'length', item.length ?? SPINNER_DEFAULTS.length, 5)}
-        ${numberInput('Height', 'height', item.height ?? SPINNER_DEFAULTS.height, 5)}
+        ${numberInput('X', 'center.x', item.center?.x ?? 0, 1, { convertUnits: true })}
+        ${numberInput('Y', 'center.y', item.center?.y ?? 0, 1, { convertUnits: true })}
+        ${numberInput('Length', 'length', item.length ?? SPINNER_DEFAULTS.length, 5, { convertUnits: true })}
+        ${numberInput('Height', 'height', item.height ?? SPINNER_DEFAULTS.height, 5, { convertUnits: true })}
         ${numberInput('Rotation', 'rotation', item.rotation ?? SPINNER_DEFAULTS.rotation, 5)}
         ${numberInput('Angle Max', 'angle_max', item.angle_max ?? SPINNER_DEFAULTS.angle_max, 5)}
         ${numberInput('Angle Min', 'angle_min', item.angle_min ?? SPINNER_DEFAULTS.angle_min, 5)}

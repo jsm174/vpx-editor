@@ -2908,7 +2908,7 @@ ipcMain.handle(
       theme?: string;
       gridSize?: number;
       textureQuality?: number;
-      unitConversion?: number;
+      unitConversion?: string;
       vpinballPath?: string;
       useEmbeddedVpxtool?: boolean;
       vpxtoolPath?: string;
@@ -2927,7 +2927,7 @@ ipcMain.handle(
 
     settings.gridSize = newGridSize;
     settings.textureQuality = newTextureQuality;
-    settings.unitConversion = String(newUnitConversion);
+    settings.unitConversion = newUnitConversion;
     settings.vpinballPath = newSettings.vpinballPath ?? '';
     settings.useEmbeddedVpxtool = newSettings.useEmbeddedVpxtool ?? true;
     settings.vpxtoolPath = newSettings.vpxtoolPath ?? '';
@@ -2974,7 +2974,7 @@ ipcMain.handle(
         editorColors: settings.editorColors,
         alwaysDrawDragPoints: settings.alwaysDrawDragPoints,
         drawLightCenters: settings.drawLightCenters,
-        unitConversion: settings.unitConversion,
+        unitConversion: settings.unitConversion ?? DEFAULT_UNIT_CONVERSION,
       });
     });
     return { success: true };

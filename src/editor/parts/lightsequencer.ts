@@ -1,5 +1,5 @@
 import { state, elements } from '../state.js';
-import { toScreen, getSelectColor } from '../utils.js';
+import { toScreen, getSelectColor, convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { collectionOptions } from '../../shared/options-generators.js';
 import { LIGHTSEQUENCER_DEFAULTS } from '../../shared/object-defaults.js';
 import { RENDER_COLOR_BLACK, RENDER_COLOR_RED, RENDER_COLOR_DARK_RED } from '../../shared/constants.js';
@@ -146,11 +146,11 @@ export function lightSequencerProperties(item: LightSequencer): string {
       <div class="prop-group">
         <div class="prop-row">
           <label class="prop-label">Table X Center</label>
-          <input type="number" class="prop-input" data-prop="pos_x" value="${(item.pos_x ?? LIGHTSEQUENCER_DEFAULTS.pos_x).toFixed(1)}" step="10">
+          <input type="number" class="prop-input" data-prop="pos_x" data-convert-units value="${convertToUnit(item.pos_x ?? LIGHTSEQUENCER_DEFAULTS.pos_x).toFixed(2)}" step="${convertToUnit(10).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Table Y Center</label>
-          <input type="number" class="prop-input" data-prop="pos_y" value="${(item.pos_y ?? LIGHTSEQUENCER_DEFAULTS.pos_y).toFixed(1)}" step="10">
+          <input type="number" class="prop-input" data-prop="pos_y" data-convert-units value="${convertToUnit(item.pos_y ?? LIGHTSEQUENCER_DEFAULTS.pos_y).toFixed(2)}" step="${convertToUnit(10).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Collection</label>

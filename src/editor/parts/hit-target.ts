@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { state, elements } from '../state.js';
-import { toScreen, getStrokeStyle, getLineWidth } from '../utils.js';
+import { toScreen, getStrokeStyle, getLineWidth, convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
 import { HITTARGET_DEFAULTS } from '../../shared/object-defaults.js';
@@ -358,15 +358,15 @@ export function hitTargetProperties(item: HitTargetItem): string {
         <div class="prop-group-title">Position</div>
         <div class="prop-row">
           <label class="prop-label">X</label>
-          <input type="number" class="prop-input" data-prop="position.x" value="${pos.x.toFixed(2)}" step="1">
+          <input type="number" class="prop-input" data-prop="position.x" data-convert-units value="${convertToUnit(pos.x).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Y</label>
-          <input type="number" class="prop-input" data-prop="position.y" value="${pos.y.toFixed(2)}" step="1">
+          <input type="number" class="prop-input" data-prop="position.y" data-convert-units value="${convertToUnit(pos.y).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Z</label>
-          <input type="number" class="prop-input" data-prop="position.z" value="${pos.z.toFixed(2)}" step="1">
+          <input type="number" class="prop-input" data-prop="position.z" data-convert-units value="${convertToUnit(pos.z).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Scale X</label>

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { state, elements } from '../state.js';
-import { toScreen, getStrokeStyle, getLineWidth } from '../utils.js';
+import { toScreen, getStrokeStyle, getLineWidth, convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { imageOptions } from '../../shared/options-generators.js';
 import { BALL_DEFAULTS } from '../../shared/object-defaults.js';
 import { loadTexture } from '../texture-loader.js';
@@ -168,19 +168,19 @@ export function ballProperties(item: BallItem): string {
         <div class="prop-group-title">Position</div>
         <div class="prop-row">
           <label class="prop-label">X</label>
-          <input type="number" class="prop-input" data-prop="pos.x" value="${pos.x.toFixed(2)}" step="1">
+          <input type="number" class="prop-input" data-prop="pos.x" data-convert-units value="${convertToUnit(pos.x).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Y</label>
-          <input type="number" class="prop-input" data-prop="pos.y" value="${pos.y.toFixed(2)}" step="1">
+          <input type="number" class="prop-input" data-prop="pos.y" data-convert-units value="${convertToUnit(pos.y).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Z</label>
-          <input type="number" class="prop-input" data-prop="pos.z" value="${(pos.z ?? BALL_DEFAULTS.radius).toFixed(2)}" step="1">
+          <input type="number" class="prop-input" data-prop="pos.z" data-convert-units value="${convertToUnit(pos.z ?? BALL_DEFAULTS.radius).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Radius</label>
-          <input type="number" class="prop-input" data-prop="radius" value="${(item.radius ?? BALL_DEFAULTS.radius).toFixed(2)}" step="1" min="1">
+          <input type="number" class="prop-input" data-prop="radius" data-convert-units value="${convertToUnit(item.radius ?? BALL_DEFAULTS.radius).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}" min="1">${getUnitSuffixHtml()}
         </div>
       </div>
     </div>

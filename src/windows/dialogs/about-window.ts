@@ -2,11 +2,9 @@ import { setupThemeListener, setupKeyboardShortcuts } from '../../shared/window-
 
 interface AboutData {
   version: string;
-  iconPath?: string;
 }
 
 const versionEl = document.getElementById('about-version') as HTMLElement;
-const iconEl = document.getElementById('about-icon') as HTMLImageElement;
 
 setupThemeListener();
 
@@ -17,7 +15,4 @@ setupKeyboardShortcuts({
 
 window.vpxEditor.onInitAbout?.((data: AboutData) => {
   versionEl.textContent = `Version ${data.version}`;
-  if (data.iconPath) {
-    iconEl.src = data.iconPath;
-  }
 });

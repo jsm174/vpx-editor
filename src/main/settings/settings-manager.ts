@@ -5,6 +5,7 @@ import {
   DEFAULT_THEME,
   DEFAULT_GRID_SIZE,
   DEFAULT_TEXTURE_QUALITY,
+  DEFAULT_UNIT_CONVERSION,
   DEFAULT_VPINBALL_PATH_MACOS,
   DEFAULT_MATERIAL_COLOR,
   DEFAULT_ELEMENT_SELECT_COLOR,
@@ -95,6 +96,7 @@ let settings: Settings = {
   lastTableFolder: null,
   lastObjFolder: null,
   windowBounds: {},
+  unitConversion: DEFAULT_UNIT_CONVERSION,
 };
 
 function getSettingsPath(): string {
@@ -105,7 +107,7 @@ function loadSettings(): void {
   try {
     const data = fs.readFileSync(getSettingsPath(), 'utf-8');
     const saved = JSON.parse(data) as Partial<Settings>;
-    settings = { ...settings, ...saved } as Settings;
+    Object.assign(settings, saved);
     settings.recentFiles = (settings.recentFiles || []).filter(f => fs.existsSync(f));
     if (!settings.editorColors) {
       settings.editorColors = { ...DEFAULT_EDITOR_COLORS };

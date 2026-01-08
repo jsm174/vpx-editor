@@ -735,6 +735,12 @@ button:focus {
   flex: none;
 }
 
+.prop-unit {
+  margin-left: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
 .prop-input[type="checkbox"] {
   flex: none;
   width: auto;

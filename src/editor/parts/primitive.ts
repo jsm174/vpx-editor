@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { state, elements } from '../state.js';
-import { toScreen, getStrokeStyle, getLineWidth } from '../utils.js';
+import { toScreen, getStrokeStyle, getLineWidth, convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions, lightOptions, renderProbeOptions } from '../../shared/options-generators.js';
 import { PRIMITIVE_DEFAULTS } from '../../shared/object-defaults.js';
@@ -860,15 +860,15 @@ export function primitiveProperties(item: PrimitiveItem): string {
         <div class="prop-group-title">Base Position / Size</div>
         <div class="prop-row">
           <label class="prop-label">X</label>
-          <input type="number" class="prop-input" data-prop="position.x" value="${pos.x.toFixed(2)}" step="1">
+          <input type="number" class="prop-input" data-prop="position.x" data-convert-units value="${convertToUnit(pos.x).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Y</label>
-          <input type="number" class="prop-input" data-prop="position.y" value="${pos.y.toFixed(2)}" step="1">
+          <input type="number" class="prop-input" data-prop="position.y" data-convert-units value="${convertToUnit(pos.y).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Z</label>
-          <input type="number" class="prop-input" data-prop="position.z" value="${pos.z.toFixed(2)}" step="1">
+          <input type="number" class="prop-input" data-prop="position.z" data-convert-units value="${convertToUnit(pos.z).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">XSize</label>
@@ -899,15 +899,15 @@ export function primitiveProperties(item: PrimitiveItem): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">TransX</label>
-          <input type="number" class="prop-input" data-prop="rot_and_tra.3" value="${rot[3].toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="rot_and_tra.3" data-convert-units value="${convertToUnit(rot[3]).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">TransY</label>
-          <input type="number" class="prop-input" data-prop="rot_and_tra.4" value="${rot[4].toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="rot_and_tra.4" data-convert-units value="${convertToUnit(rot[4]).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">TransZ</label>
-          <input type="number" class="prop-input" data-prop="rot_and_tra.5" value="${rot[5].toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="rot_and_tra.5" data-convert-units value="${convertToUnit(rot[5]).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">ObjRotX</label>

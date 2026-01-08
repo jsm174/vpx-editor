@@ -608,16 +608,6 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     return ctx;
   }
 
-  function getAboutIconPath(): string {
-    if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-      return `${MAIN_WINDOW_VITE_DEV_SERVER_URL}/about-icon.png`;
-    }
-    if (app.isPackaged) {
-      return `file://${path.join(process.resourcesPath, 'about-icon.png')}`;
-    }
-    return `file://${path.join(__dirname, '../renderer/main_window/about-icon.png')}`;
-  }
-
   function showAboutDialog(): void {
     if (aboutWindow) {
       aboutWindow.focus();
@@ -674,7 +664,6 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     aboutWindow.webContents.on('did-finish-load', () => {
       aboutWindow!.webContents.send('init-about', {
         version: getVersionString(),
-        iconPath: getAboutIconPath(),
       });
       aboutWindow!.show();
     });

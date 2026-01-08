@@ -1,5 +1,5 @@
 import { state, elements } from '../state.js';
-import { toScreen, getLineWidth, getStrokeStyle, drawPolygon } from '../utils.js';
+import { toScreen, getLineWidth, getStrokeStyle, drawPolygon, convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { materialOptions, imageOptions, surfaceOptions } from '../../shared/options-generators.js';
 import { DECAL_DEFAULTS } from '../../shared/object-defaults.js';
 import { RENDER_COLOR_BLACK, RENDER_COLOR_BLUE, BLUEPRINT_SOLID_COLOR } from '../../shared/constants.js';
@@ -143,19 +143,19 @@ export function decalProperties(item: Decal): string {
         <div class="prop-group-title">Position</div>
         <div class="prop-row">
           <label class="prop-label">X</label>
-          <input type="number" class="prop-input" data-prop="center.x" value="${center.x.toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="center.x" data-convert-units value="${convertToUnit(center.x).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Y</label>
-          <input type="number" class="prop-input" data-prop="center.y" value="${center.y.toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="center.y" data-convert-units value="${convertToUnit(center.y).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Width</label>
-          <input type="number" class="prop-input" data-prop="width" value="${(item.width ?? DECAL_DEFAULTS.width).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="width" data-convert-units value="${convertToUnit(item.width ?? DECAL_DEFAULTS.width).toFixed(2)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Height</label>
-          <input type="number" class="prop-input" data-prop="height" value="${(item.height ?? DECAL_DEFAULTS.height).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="height" data-convert-units value="${convertToUnit(item.height ?? DECAL_DEFAULTS.height).toFixed(2)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Rotation</label>

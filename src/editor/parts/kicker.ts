@@ -6,6 +6,7 @@ import { materialOptions, surfaceOptions } from '../../shared/options-generators
 import { KICKER_DEFAULTS } from '../../shared/object-defaults.js';
 import { createMeshGeometry } from '../../shared/mesh-utils.js';
 import { RENDER_COLOR_RED, RENDER_COLOR_BLACK } from '../../shared/constants.js';
+import { convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { registerEditable, IEditable, Point } from './registry.js';
 
 const KICKER_ARROW_HALF_LENGTH = 50.0;
@@ -228,7 +229,7 @@ export function kickerProperties(item: unknown): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Radius</label>
-          <input type="number" class="prop-input" data-prop="radius" value="${(kickerItem.radius ?? KICKER_DEFAULTS.radius).toFixed(2)}" step="1">
+          <input type="number" class="prop-input" data-prop="radius" data-convert-units value="${convertToUnit(kickerItem.radius ?? KICKER_DEFAULTS.radius).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Orientation</label>
@@ -239,11 +240,11 @@ export function kickerProperties(item: unknown): string {
         <div class="prop-group-title">Position</div>
         <div class="prop-row">
           <label class="prop-label">X</label>
-          <input type="number" class="prop-input" data-prop="center.x" value="${(kickerItem.center?.x ?? 0).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="center.x" data-convert-units value="${convertToUnit(kickerItem.center?.x ?? 0).toFixed(1)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Y</label>
-          <input type="number" class="prop-input" data-prop="center.y" value="${(kickerItem.center?.y ?? 0).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="center.y" data-convert-units value="${convertToUnit(kickerItem.center?.y ?? 0).toFixed(1)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Surface</label>
@@ -276,7 +277,7 @@ export function kickerProperties(item: unknown): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Hit Height</label>
-          <input type="number" class="prop-input" data-prop="hit_height" value="${(kickerItem.hit_height ?? KICKER_DEFAULTS.hit_height).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="hit_height" data-convert-units value="${convertToUnit(kickerItem.hit_height ?? KICKER_DEFAULTS.hit_height).toFixed(1)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
       </div>
     </div>

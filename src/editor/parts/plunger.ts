@@ -1,5 +1,5 @@
 import { state, elements } from '../state.js';
-import { toScreen, getStrokeStyle, getLineWidth } from '../utils.js';
+import { toScreen, getStrokeStyle, getLineWidth, convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { materialOptions, imageOptions, surfaceOptions } from '../../shared/options-generators.js';
 import { PLUNGER_DEFAULTS } from '../../shared/object-defaults.js';
 import { RENDER_COLOR_GRAY, RENDER_COLOR_BLACK } from '../../shared/constants.js';
@@ -160,7 +160,7 @@ export function plungerProperties(item: PlungerItem): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Width</label>
-          <input type="number" class="prop-input" data-prop="width" value="${(item.width ?? PLUNGER_DEFAULTS.width).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="width" data-convert-units value="${convertToUnit(item.width ?? PLUNGER_DEFAULTS.width).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Z Adjustment</label>
@@ -175,7 +175,7 @@ export function plungerProperties(item: PlungerItem): string {
         <div class="prop-group-title">Custom Settings</div>
         <div class="prop-row">
           <label class="prop-label">Rod Diameter</label>
-          <input type="number" class="prop-input" data-prop="rod_diam" value="${(item.rod_diam ?? PLUNGER_DEFAULTS.rod_diam).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="rod_diam" data-convert-units value="${convertToUnit(item.rod_diam ?? PLUNGER_DEFAULTS.rod_diam).toFixed(2)}" step="${convertToUnit(0.1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Tip Shape</label>
@@ -183,42 +183,42 @@ export function plungerProperties(item: PlungerItem): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Ring Gap</label>
-          <input type="number" class="prop-input" data-prop="ring_gap" value="${(item.ring_gap ?? PLUNGER_DEFAULTS.ring_gap).toFixed(2)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="ring_gap" data-convert-units value="${convertToUnit(item.ring_gap ?? PLUNGER_DEFAULTS.ring_gap).toFixed(2)}" step="${convertToUnit(0.5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Ring Diam</label>
-          <input type="number" class="prop-input" data-prop="ring_diam" value="${(item.ring_diam ?? PLUNGER_DEFAULTS.ring_diam).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="ring_diam" data-convert-units value="${convertToUnit(item.ring_diam ?? PLUNGER_DEFAULTS.ring_diam).toFixed(2)}" step="${convertToUnit(0.1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Ring Width</label>
-          <input type="number" class="prop-input" data-prop="ring_width" value="${(item.ring_width ?? PLUNGER_DEFAULTS.ring_width).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="ring_width" data-convert-units value="${convertToUnit(item.ring_width ?? PLUNGER_DEFAULTS.ring_width).toFixed(2)}" step="${convertToUnit(0.1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Spring Diam</label>
-          <input type="number" class="prop-input" data-prop="spring_diam" value="${(item.spring_diam ?? PLUNGER_DEFAULTS.spring_diam).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="spring_diam" data-convert-units value="${convertToUnit(item.spring_diam ?? PLUNGER_DEFAULTS.spring_diam).toFixed(2)}" step="${convertToUnit(0.1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Spring Gauge</label>
-          <input type="number" class="prop-input" data-prop="spring_gauge" value="${(item.spring_gauge ?? PLUNGER_DEFAULTS.spring_gauge).toFixed(2)}" step="0.1">
+          <input type="number" class="prop-input" data-prop="spring_gauge" data-convert-units value="${convertToUnit(item.spring_gauge ?? PLUNGER_DEFAULTS.spring_gauge).toFixed(2)}" step="${convertToUnit(0.1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Spring Loops</label>
-          <input type="number" class="prop-input" data-prop="spring_loops" value="${(item.spring_loops ?? PLUNGER_DEFAULTS.spring_loops).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="spring_loops" data-convert-units value="${convertToUnit(item.spring_loops ?? PLUNGER_DEFAULTS.spring_loops).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">End Loops</label>
-          <input type="number" class="prop-input" data-prop="spring_end_loops" value="${(item.spring_end_loops ?? PLUNGER_DEFAULTS.spring_end_loops).toFixed(1)}" step="0.5">
+          <input type="number" class="prop-input" data-prop="spring_end_loops" data-convert-units value="${convertToUnit(item.spring_end_loops ?? PLUNGER_DEFAULTS.spring_end_loops).toFixed(2)}" step="${convertToUnit(0.5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
       </div>
       <div class="prop-group">
         <div class="prop-group-title">Position</div>
         <div class="prop-row">
           <label class="prop-label">X</label>
-          <input type="number" class="prop-input" data-prop="center.x" value="${(item.center?.x ?? 0).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="center.x" data-convert-units value="${convertToUnit(item.center?.x ?? 0).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Y</label>
-          <input type="number" class="prop-input" data-prop="center.y" value="${(item.center?.y ?? 0).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="center.y" data-convert-units value="${convertToUnit(item.center?.y ?? 0).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Surface</label>
@@ -239,7 +239,7 @@ export function plungerProperties(item: PlungerItem): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Stroke Length</label>
-          <input type="number" class="prop-input" data-prop="stroke" value="${(item.stroke ?? PLUNGER_DEFAULTS.stroke).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="stroke" data-convert-units value="${convertToUnit(item.stroke ?? PLUNGER_DEFAULTS.stroke).toFixed(2)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Scatter Velocity</label>

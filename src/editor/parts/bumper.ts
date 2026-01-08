@@ -276,7 +276,7 @@ export function bumperProperties(item: Bumper): string {
         ${select('Base Material', 'base_material', materialOptions(item.base_material))}
         ${select('Skirt Material', 'socket_material', materialOptions(item.socket_material))}
         ${select('Ring Material', 'ring_material', materialOptions(item.ring_material))}
-        ${numberInput('Radius', 'radius', item.radius ?? BUMPER_DEFAULTS.radius, 1)}
+        ${numberInput('Radius', 'radius', item.radius ?? BUMPER_DEFAULTS.radius, 1, { convertUnits: true })}
         ${numberInput('Height Scale', 'height_scale', item.height_scale ?? BUMPER_DEFAULTS.height_scale, 5)}
         ${numberInput('Orientation', 'orientation', item.orientation ?? BUMPER_DEFAULTS.orientation, 5)}
         ${numberInput('Ring Speed', 'ring_speed', item.ring_speed ?? BUMPER_DEFAULTS.ring_speed, 0.1)}
@@ -289,8 +289,8 @@ export function bumperProperties(item: Bumper): string {
       `)}
       ${propGroup(
         `
-        ${numberInput('X', 'center.x', item.center?.x ?? 0, 1)}
-        ${numberInput('Y', 'center.y', item.center?.y ?? 0, 1)}
+        ${numberInput('X', 'center.x', item.center?.x ?? 0, 1, { convertUnits: true })}
+        ${numberInput('Y', 'center.y', item.center?.y ?? 0, 1, { convertUnits: true })}
         ${select('Surface', 'surface', surfaceOptions(item.surface))}
       `,
         'Position'

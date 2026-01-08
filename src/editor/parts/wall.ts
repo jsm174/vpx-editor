@@ -13,6 +13,7 @@ import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
 import { WALL_DEFAULTS } from '../../shared/object-defaults.js';
 import { RENDER_COLOR_BLACK, BLUEPRINT_SOLID_COLOR, PATH_SMOOTHING_ACCURACY } from '../../shared/constants.js';
+import { convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { registerEditable, IEditable, Point } from './registry.js';
 import type { Wall, DragPoint } from '../../types/game-objects.js';
 import { getDragPointCoords } from '../../types/game-objects.js';
@@ -259,11 +260,11 @@ export function wallProperties(item: WallItem): string {
       <div class="prop-group">
         <div class="prop-row">
           <label class="prop-label">Top Height</label>
-          <input type="number" class="prop-input" data-prop="height_top" value="${(item.height_top ?? WALL_DEFAULTS.height_top).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="height_top" data-convert-units value="${convertToUnit(item.height_top ?? WALL_DEFAULTS.height_top).toFixed(1)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Bottom Height</label>
-          <input type="number" class="prop-input" data-prop="height_bottom" value="${(item.height_bottom ?? WALL_DEFAULTS.height_bottom).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="height_bottom" data-convert-units value="${convertToUnit(item.height_bottom ?? WALL_DEFAULTS.height_bottom).toFixed(1)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
       </div>
     </div>

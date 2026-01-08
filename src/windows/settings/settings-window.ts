@@ -111,9 +111,7 @@ window.vpxEditor.onInitSettings?.(data => {
   gridSizeInput.value = String(settingsData.gridSize || DEFAULT_GRID_SIZE);
   themeSelect.value = settingsData.theme || DEFAULT_THEME;
   textureQualitySelect.value = String(settingsData.textureQuality || DEFAULT_TEXTURE_QUALITY);
-  unitConversionSelect.value = String(
-    settingsData.unitConversion !== undefined ? settingsData.unitConversion : DEFAULT_UNIT_CONVERSION
-  );
+  unitConversionSelect.value = settingsData.unitConversion || DEFAULT_UNIT_CONVERSION;
 
   originalTheme = settingsData.theme || DEFAULT_THEME;
 
@@ -174,7 +172,7 @@ okBtn.onclick = async (): Promise<void> => {
     alwaysDrawDragPoints: drawDragpoints.checked,
     drawLightCenters: drawLightcenters.checked,
     textureQuality: parseInt(textureQualitySelect.value, 10),
-    unitConversion: parseInt(unitConversionSelect.value, 10),
+    unitConversion: unitConversionSelect.value,
     editorColors: {
       defaultMaterial: colorMaterial.value,
       elementSelect: colorSelect.value,

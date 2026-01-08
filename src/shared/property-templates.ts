@@ -1,3 +1,5 @@
+import { convertToUnit, getUnitSuffixHtml } from '../editor/utils';
+
 export function propRow(label: string, content: string): string {
   return `<div class="prop-row">
   <label class="prop-label">${label}</label>
@@ -9,6 +11,7 @@ export interface NumberInputOptions {
   min?: number;
   max?: number;
   readonly?: boolean;
+  convertUnits?: boolean;
 }
 
 export function numberInput(
@@ -18,19 +21,33 @@ export function numberInput(
   step: number = 1,
   options: NumberInputOptions = {}
 ): string {
-  const { min, max, readonly } = options;
+  const { min, max, readonly, convertUnits } = options;
+
+  let displayValue = value;
+  let displayStep = step;
+  let convertAttr = '';
+  let unitSuffix = '';
+
+  if (convertUnits && typeof value === 'number') {
+    displayValue = convertToUnit(value);
+    displayStep = convertToUnit(step);
+    convertAttr = ' data-convert-units';
+    unitSuffix = getUnitSuffixHtml();
+  }
+
+  const decimals = displayStep < 1 ? Math.max(1, -Math.floor(Math.log10(displayStep))) : 0;
   const attrs = [
     `type="number"`,
     `class="prop-input${readonly ? ' readonly' : ''}"`,
     `data-prop="${prop}"`,
-    `value="${typeof value === 'number' ? value.toFixed(step < 1 ? Math.max(1, -Math.floor(Math.log10(step))) : 0) : value}"`,
-    `step="${step}"`,
+    `value="${typeof displayValue === 'number' ? displayValue.toFixed(decimals) : displayValue}"`,
+    `step="${displayStep}"`,
   ];
   if (min !== undefined) attrs.push(`min="${min}"`);
   if (max !== undefined) attrs.push(`max="${max}"`);
   if (readonly) attrs.push('readonly');
 
-  return propRow(label, `<input ${attrs.join(' ')}>`);
+  return propRow(label, `<input ${attrs.join(' ')}${convertAttr}>${unitSuffix}`);
 }
 
 export function checkbox(label: string, prop: string, checked: boolean | undefined): string {
@@ -121,7 +138,8 @@ export function positionGroup(item: PositionItem, fields: ('x' | 'y')[] = ['x', 
       'X',
       item.center ? 'center.x' : item.pos ? 'pos.x' : item.position ? 'position.x' : 'vCenter.x',
       x,
-      1
+      1,
+      { convertUnits: true }
     );
   }
   if (fields.includes('y')) {
@@ -130,7 +148,8 @@ export function positionGroup(item: PositionItem, fields: ('x' | 'y')[] = ['x', 
       'Y',
       item.center ? 'center.y' : item.pos ? 'pos.y' : item.position ? 'position.y' : 'vCenter.y',
       y,
-      1
+      1,
+      { convertUnits: true }
     );
   }
 

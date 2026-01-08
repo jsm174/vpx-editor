@@ -6,7 +6,7 @@ import {
   ZOOM_FACTOR,
   VIEW_MODE_2D,
   VIEW_MODE_3D,
-  UNIT_CONVERSION_NONE,
+  UNIT_CONVERSION_VPU,
 } from '../shared/constants.js';
 import {
   updateZoomDisplay,
@@ -101,8 +101,8 @@ import {
 import { initConsole, consoleOutput } from './console-panel.js';
 
 function updateStatusBarUnits(): void {
-  if (elements.statusBlank && state.lastMousePosition) {
-    if (state.unitConversion !== UNIT_CONVERSION_NONE) {
+  if (elements.statusBlank && state.gamedata && state.lastMousePosition) {
+    if (state.unitConversion !== UNIT_CONVERSION_VPU) {
       const x = convertToUnit(state.lastMousePosition.x);
       const y = convertToUnit(state.lastMousePosition.y);
       const suffix = getUnitSuffix();
@@ -485,7 +485,7 @@ elements.canvas!.addEventListener('mousemove', e => {
       elements.statusMouse.textContent = `${world.x.toFixed(4)}, ${world.y.toFixed(4)}`;
     }
     if (elements.statusBlank) {
-      if (state.unitConversion !== UNIT_CONVERSION_NONE) {
+      if (state.unitConversion !== UNIT_CONVERSION_VPU) {
         const x = convertToUnit(world.x);
         const y = convertToUnit(world.y);
         const suffix = getUnitSuffix();
@@ -1614,6 +1614,7 @@ window.vpxEditor.onEditorSettingsChanged?.(settings => {
     state.unitConversion = settings.unitConversion;
   }
   updateStatusBarUnits();
+  updatePropertiesPanel();
   renderCurrentView();
 });
 

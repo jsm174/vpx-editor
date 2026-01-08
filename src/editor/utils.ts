@@ -441,12 +441,31 @@ export function vpUnitsToMillimeters(value: number): number {
   return value * ((25.4 * 1.0625) / 50);
 }
 
+export function inchesToVpUnits(value: number): number {
+  return value * (50 / 1.0625);
+}
+
+export function millimetersToVpUnits(value: number): number {
+  return value * (50 / (25.4 * 1.0625));
+}
+
 export function convertToUnit(value: number): number {
   switch (state.unitConversion) {
-    case 0:
+    case 'inches':
       return vpUnitsToInches(value);
-    case 1:
+    case 'mm':
       return vpUnitsToMillimeters(value);
+    default:
+      return value;
+  }
+}
+
+export function convertFromUnit(value: number): number {
+  switch (state.unitConversion) {
+    case 'inches':
+      return inchesToVpUnits(value);
+    case 'mm':
+      return millimetersToVpUnits(value);
     default:
       return value;
   }
@@ -454,13 +473,31 @@ export function convertToUnit(value: number): number {
 
 export function getUnitSuffix(): string {
   switch (state.unitConversion) {
-    case 0:
+    case 'inches':
       return ' (inch)';
-    case 1:
+    case 'mm':
       return ' (mm)';
     default:
       return '';
   }
+}
+
+export function getUnitLabel(): string {
+  switch (state.unitConversion) {
+    case 'inches':
+      return 'in';
+    case 'mm':
+      return 'mm';
+    default:
+      return 'vpu';
+  }
+}
+
+export function getUnitSuffixHtml(): string {
+  if (state.unitConversion === 'vpu') {
+    return '';
+  }
+  return `<span class="prop-unit">(${getUnitLabel()})</span>`;
 }
 
 export function updateZoomDisplay(): void {

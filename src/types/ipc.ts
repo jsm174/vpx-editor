@@ -29,7 +29,7 @@ export interface EditorSettings {
   elementFillColor?: string;
   tableBackgroundColor?: string;
   defaultMaterialColor?: string;
-  unitConversion?: number;
+  unitConversion?: string;
   gridSize?: number;
   editorColors?: {
     defaultMaterial?: string;

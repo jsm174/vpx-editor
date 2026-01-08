@@ -22,7 +22,7 @@ interface PackagerConfig {
 const packagerConfig: PackagerConfig = {
   asar: true,
   executableName: 'vpx-editor',
-  extraResource: ['resources/vpxtool', 'resources/templates', 'resources/about-icon.png'],
+  extraResource: ['resources/vpxtool', 'resources/templates'],
   icon: './resources/icon',
 };
 

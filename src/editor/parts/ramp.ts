@@ -8,6 +8,8 @@ import {
   getLineWidth,
   getFillColorWithAlpha,
   pointInPolygon,
+  convertToUnit,
+  getUnitSuffixHtml,
 } from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
@@ -615,45 +617,45 @@ export function rampProperties(item: RampItem): string {
         <div class="prop-group-title">Position</div>
         <div class="prop-row">
           <label class="prop-label">Top Height</label>
-          <input type="number" class="prop-input" data-prop="height_top" value="${(item.height_top ?? RAMP_DEFAULTS.height_top).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="height_top" data-convert-units value="${convertToUnit(item.height_top ?? RAMP_DEFAULTS.height_top).toFixed(2)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Bottom Height</label>
-          <input type="number" class="prop-input" data-prop="height_bottom" value="${(item.height_bottom ?? RAMP_DEFAULTS.height_bottom).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="height_bottom" data-convert-units value="${convertToUnit(item.height_bottom ?? RAMP_DEFAULTS.height_bottom).toFixed(2)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Top Width</label>
-          <input type="number" class="prop-input" data-prop="width_top" value="${(item.width_top ?? RAMP_DEFAULTS.width_top).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="width_top" data-convert-units value="${convertToUnit(item.width_top ?? RAMP_DEFAULTS.width_top).toFixed(2)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Bottom Width</label>
-          <input type="number" class="prop-input" data-prop="width_bottom" value="${(item.width_bottom ?? RAMP_DEFAULTS.width_bottom).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="width_bottom" data-convert-units value="${convertToUnit(item.width_bottom ?? RAMP_DEFAULTS.width_bottom).toFixed(2)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
       </div>
       <div class="prop-group">
         <div class="prop-group-title">Visible Wall</div>
         <div class="prop-row">
           <label class="prop-label">Left Wall</label>
-          <input type="number" class="prop-input" data-prop="left_wall_height_visible" value="${(item.left_wall_height_visible ?? RAMP_DEFAULTS.left_wall_height_visible).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="left_wall_height_visible" data-convert-units value="${convertToUnit(item.left_wall_height_visible ?? RAMP_DEFAULTS.left_wall_height_visible).toFixed(2)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Right Wall</label>
-          <input type="number" class="prop-input" data-prop="right_wall_height_visible" value="${(item.right_wall_height_visible ?? RAMP_DEFAULTS.right_wall_height_visible).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="right_wall_height_visible" data-convert-units value="${convertToUnit(item.right_wall_height_visible ?? RAMP_DEFAULTS.right_wall_height_visible).toFixed(2)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
       </div>
       <div class="prop-group">
         <div class="prop-group-title">Wire Ramp</div>
         <div class="prop-row">
           <label class="prop-label">Diameter</label>
-          <input type="number" class="prop-input" data-prop="wire_diameter" value="${(item.wire_diameter ?? RAMP_DEFAULTS.wire_diameter).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="wire_diameter" data-convert-units value="${convertToUnit(item.wire_diameter ?? RAMP_DEFAULTS.wire_diameter).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">DistanceX</label>
-          <input type="number" class="prop-input" data-prop="wire_distance_x" value="${(item.wire_distance_x ?? RAMP_DEFAULTS.wire_distance_x).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="wire_distance_x" data-convert-units value="${convertToUnit(item.wire_distance_x ?? RAMP_DEFAULTS.wire_distance_x).toFixed(2)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">DistanceY</label>
-          <input type="number" class="prop-input" data-prop="wire_distance_y" value="${(item.wire_distance_y ?? RAMP_DEFAULTS.wire_distance_y).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="wire_distance_y" data-convert-units value="${convertToUnit(item.wire_distance_y ?? RAMP_DEFAULTS.wire_distance_y).toFixed(2)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
       </div>
     </div>
@@ -673,11 +675,11 @@ export function rampProperties(item: RampItem): string {
         <div class="prop-group-title">Physical Wall</div>
         <div class="prop-row">
           <label class="prop-label">Left Wall</label>
-          <input type="number" class="prop-input" data-prop="left_wall_height" value="${(item.left_wall_height ?? RAMP_DEFAULTS.left_wall_height).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="left_wall_height" data-convert-units value="${convertToUnit(item.left_wall_height ?? RAMP_DEFAULTS.left_wall_height).toFixed(2)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Right Wall</label>
-          <input type="number" class="prop-input" data-prop="right_wall_height" value="${(item.right_wall_height ?? RAMP_DEFAULTS.right_wall_height).toFixed(1)}" step="5">
+          <input type="number" class="prop-input" data-prop="right_wall_height" data-convert-units value="${convertToUnit(item.right_wall_height ?? RAMP_DEFAULTS.right_wall_height).toFixed(2)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
       </div>
       <div class="prop-group">
