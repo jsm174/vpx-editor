@@ -332,26 +332,26 @@ function tableProperties(gamedata: GameData): string {
         </div>
       </div>
       <div class="prop-group">
-        <div class="prop-group-title">Dimensions (inches)</div>
+        <div class="prop-group-title">Dimensions</div>
         <div class="prop-row">
           <label class="prop-label">Playfield Width</label>
-          <input type="number" class="prop-input" data-prop="right" value="${(gamedata.right ?? 952).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="right" data-convert-units value="${convertToUnit(gamedata.right ?? 952).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Playfield Length</label>
-          <input type="number" class="prop-input" data-prop="bottom" value="${(gamedata.bottom ?? 2162).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="bottom" data-convert-units value="${convertToUnit(gamedata.bottom ?? 2162).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Top Glass Height</label>
-          <input type="number" class="prop-input" data-prop="glass_top_height" value="${(gamedata.glass_top_height ?? 400).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="glass_top_height" data-convert-units value="${convertToUnit(gamedata.glass_top_height ?? 400).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Bottom Glass Height</label>
-          <input type="number" class="prop-input" data-prop="glass_bottom_height" value="${(gamedata.glass_bottom_height ?? 0).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="glass_bottom_height" data-convert-units value="${convertToUnit(gamedata.glass_bottom_height ?? 0).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Lockbar Height</label>
-          <input type="number" class="prop-input" data-prop="ground_to_lockbar_height" value="${(gamedata.ground_to_lockbar_height ?? 0).toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="ground_to_lockbar_height" data-convert-units value="${convertToUnit(gamedata.ground_to_lockbar_height ?? 0).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
       </div>
       <div class="prop-group">
@@ -1135,7 +1135,9 @@ function setupTablePropertyHandlers(): void {
           }
         } else {
           value = parseFloat(target.value);
-          if (prop === 'playfield_reflection_strength') {
+          if ('convertUnits' in (target as HTMLInputElement).dataset) {
+            value = convertFromUnit(value);
+          } else if (prop === 'playfield_reflection_strength') {
             value = value / 100;
           } else if (prop === 'global_difficulty') {
             value = value / 100;
