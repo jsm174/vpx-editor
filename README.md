@@ -3,16 +3,22 @@
 A cross-platform editor for Visual Pinball X (.vpx) table files.
 
 <p align="center">
-  <img src="docs/screenshots/screenshot-2d.png" alt="2D Editor View">
+  <img src="docs/screenshots/screenshot-1.webp" alt="2D Editor">
 </p>
 <p align="center">
-  <img src="docs/screenshots/screenshot-3d.png" alt="3D Preview">
+  <img src="docs/screenshots/screenshot-2.webp" alt="3D Desktop Preview">
 </p>
 <p align="center">
-  <img src="docs/screenshots/screenshot-vr.png" alt="VR Preview">
+  <img src="docs/screenshots/screenshot-3.webp" alt="3D VR Preview">
 </p>
 <p align="center">
-  <img src="docs/screenshots/screenshot-script-editor.png" alt="Script Editor">
+  <img src="docs/screenshots/screenshot-4.webp" alt="Script Editor">
+</p>
+<p align="center">
+  <img src="docs/screenshots/screenshot-5.webp" alt="Settings">
+</p>
+<p align="center">
+  <img src="docs/screenshots/screenshot-6.webp" alt="Image Manager">
 </p>
 
 ## Overview
@@ -36,29 +42,32 @@ Port of the Windows VPX 2D editor:
 - Multi-select and transform operations
 
 ### Managers
-- **Sound Manager** - Manage audio assets
-- **Image Manager** - Import, export, and manage table images
-- **Material Manager** - Edit PBR material properties
-- **Dimension Manager** - Reference real pinball machine dimensions
-- **Collection Manager** - Organize objects into named groups
-- **Render Probe Manager** - Configure reflection probes
+- Sound Manager
+- Image Manager
+- Material Manager
+- Dimension Manager
+- Collection Manager
+- Render Probe Manager
 
 ### Script Editor
 - Monaco-based VBScript editor
 - Syntax highlighting
+- Function creation
 
 ### 3D Preview
 - Real-time 3D rendering with Three.js
 - Blender-style controls
 - Material and texture preview
 - Wireframe mode
-
-### VR Preview
-- 3D VR cabinet view
+- Play Mode preview (Desktop, FSS, Cabinet, Mixed Reality, VR)
 
 ### Quick Play
 - Configure VPinball executable path in settings
 - Launch and test tables directly from the editor
+
+### Themes
+- Light and dark mode
+- System theme detection
 
 ## 3D Controls
 
@@ -75,12 +84,19 @@ Blender-style navigation:
 | Ctrl + Numpad | Opposite views |
 | Alt (hold) | Temporary orbit mode |
 
-## Requirements
+## Installation
 
-- **Node.js** 20+
+Download the latest release for your platform from the [Releases](https://github.com/vpinball/vpx-editor/releases) page.
+
 - **VPinball 10.8.1+** - Required only for playing tables from the editor
 
-## Getting Started
+## Development
+
+### Requirements
+
+- **Node.js** 20+
+
+### Getting Started
 
 ```bash
 npm install
@@ -104,9 +120,9 @@ Creates distributable packages for the current platform:
 
 | Platform | Format | Architecture |
 |----------|--------|--------------|
-| macOS | DMG | arm64 |
+| macOS | DMG, ZIP | arm64 |
 | Linux | DEB, RPM, Flatpak, ZIP | x64 |
-| Windows | Squirrel Installer | x64 |
+| Windows | Squirrel Installer, ZIP | x64 |
 
 #### Flatpak issues
 
@@ -138,14 +154,22 @@ npm run format
 
 ```
 src/
-├── main/           # Electron main process
-├── preload/        # IPC bridges for windows
-├── editor/         # 2D canvas and 3D WebGL rendering
-│   └── objects/    # Per-type renderers
-├── shared/         # Constants, utilities, helpers
-└── windows/        # Manager windows and dialogs
+├── main/
+│   ├── menu/
+│   ├── settings/
+│   └── vpx/
+├── preload/
+├── editor/
+│   ├── components/
+│   ├── meshes/
+│   ├── parts/
+│   └── undo/
+├── types/
+└── windows/
     ├── dialogs/
     ├── managers/
+    ├── script-editor/
+    ├── search-select/
     └── settings/
 ```
 
