@@ -1,0 +1,342 @@
+.material-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.material-modal.hidden {
+  display: none;
+}
+
+.material-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.material-modal-window {
+  position: relative;
+  width: 95vw;
+  height: 85vh;
+  max-width: 900px;
+  max-height: 700px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.material-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 8px 8px 0 0;
+}
+
+.material-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.material-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 8px;
+  line-height: 1;
+}
+
+.material-close:hover {
+  color: var(--text-primary);
+}
+
+.material-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.material-toolbar input[type="text"] {
+  padding: 6px 10px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+  width: 200px;
+}
+
+.material-toolbar input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.material-toolbar-spacer {
+  flex: 1;
+}
+
+.material-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.material-list-container {
+  width: 280px;
+  flex-shrink: 0;
+  overflow: auto;
+  border-right: 1px solid var(--border-color);
+}
+
+.material-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.material-list-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--bg-toolbar);
+  z-index: 1;
+}
+
+.material-list-table th {
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.material-list-table th:hover {
+  color: var(--text-primary);
+}
+
+.material-list-table th.sort-asc::after {
+  content: ' ▲';
+  font-size: 9px;
+}
+
+.material-list-table th.sort-desc::after {
+  content: ' ▼';
+  font-size: 9px;
+}
+
+.material-list-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.material-list-table tbody tr {
+  cursor: pointer;
+}
+
+.material-list-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.material-list-table tbody tr.selected {
+  background: var(--accent);
+  color: white;
+}
+
+.material-color-swatch,
+.material-modal .color-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.material-modal .used-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.material-modal .used-badge.yes {
+  background: rgba(46, 160, 67, 0.2);
+  color: #3fb950;
+}
+
+.material-modal .used-badge.no {
+  background: rgba(139, 148, 158, 0.2);
+  color: #8b949e;
+}
+
+.material-list-table tbody tr.selected .used-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.material-props-panel {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg-panel);
+}
+
+.material-empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.material-status {
+  padding: 4px 12px;
+  background: var(--bg-toolbar);
+  border-top: 1px solid var(--border-color);
+  font-size: 11px;
+  color: var(--text-secondary);
+  border-radius: 0 0 8px 8px;
+}
+
+.material-edit-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2001;
+}
+
+.material-edit-overlay.hidden {
+  display: none;
+}
+
+.material-edit-dialog {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  min-width: 350px;
+  max-width: 400px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.material-edit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 8px 8px 0 0;
+}
+
+.material-edit-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.material-edit-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.material-edit-close:hover {
+  color: var(--text-primary);
+}
+
+.material-edit-content {
+  padding: 16px;
+}
+
+.material-edit-error {
+  color: #f44336;
+  font-size: 11px;
+  min-height: 16px;
+  margin-top: 4px;
+}
+
+.material-edit-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+.material-context-menu {
+  position: fixed;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 4px 0;
+  min-width: 120px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 2002;
+}
+
+.material-context-menu.hidden {
+  display: none;
+}
+
+.material-context-menu-item {
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.material-context-menu-item:hover {
+  background: var(--accent);
+  color: white;
+}
+
+.material-context-menu-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}
+
+.material-used-by-item,
+.material-modal .used-by-item {
+  padding: 4px 8px;
+  margin-bottom: 2px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.material-used-by-item:hover,
+.material-modal .used-by-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}

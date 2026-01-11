@@ -1,6 +1,6 @@
-import { state, elements, isItemVisible, isItemSelected, dragRect } from './state.js';
+import { state, elements, isItemVisible, isItemSelected, dragRect, getItem, getItemByFileName } from './state.js';
 import type { GameItem, DragPoint } from './state.js';
-import { toScreen, updateZoomDisplay, getItemNameFromFileName, initHitTestHandlers, HitTestHandler } from './utils.js';
+import { toScreen, updateZoomDisplay, initHitTestHandlers, HitTestHandler } from './utils.js';
 import { objectTypes } from './object-types.js';
 import {
   BACKGLASS_WIDTH,
@@ -12,6 +12,7 @@ import {
   CAMERA_DEFAULT_FOV,
 } from '../shared/constants.js';
 import { getDragPointCoords } from '../types/game-objects.js';
+import type { GameData } from '../types/data.js';
 import {
   getEditable,
   hitTestBumper,
@@ -27,16 +28,6 @@ import {
   hitTestTrigger,
   hitTestWall,
 } from './parts/index.js';
-
-interface GameData {
-  left?: number;
-  top?: number;
-  right: number;
-  bottom: number;
-  glass_top_height?: number;
-  glass_bottom_height?: number;
-  [key: string]: unknown;
-}
 
 initHitTestHandlers({
   hitTestBumper: hitTestBumper as HitTestHandler,
@@ -105,8 +96,8 @@ function render3DProjection(ctx: CanvasRenderingContext2D): void {
 
   const glassTopHeight = gd.glass_top_height ?? 210;
   const glassBottomHeight = gd.glass_bottom_height ?? 210;
-  const tableWidth = gd.right - (gd.left ?? 0);
-  const tableHeight = gd.bottom - (gd.top ?? 0);
+  const tableWidth = (gd.right ?? 0) - (gd.left ?? 0);
+  const tableHeight = (gd.bottom ?? 0) - (gd.top ?? 0);
   const tableCenterX = tableWidth / 2;
 
   const fovRad = (cam.fov * Math.PI) / 180;
@@ -188,8 +179,8 @@ export function fitToView(): void {
   if (!state.gamedata || !elements.canvas) return;
   const gd = state.gamedata as GameData;
 
-  const playWidth = state.backglassView ? BACKGLASS_WIDTH : gd.right - (gd.left ?? 0);
-  const playHeight = state.backglassView ? BACKGLASS_HEIGHT : gd.bottom - (gd.top ?? 0);
+  const playWidth = state.backglassView ? BACKGLASS_WIDTH : (gd.right ?? 0) - (gd.left ?? 0);
+  const playHeight = state.backglassView ? BACKGLASS_HEIGHT : (gd.bottom ?? 0) - (gd.top ?? 0);
 
   const scaleX = (elements.canvas.width - 40) / playWidth;
   const scaleY = (elements.canvas.height - 40) / playHeight;
@@ -226,8 +217,8 @@ export function render(): void {
   if (!state.gamedata) return;
   const gd = state.gamedata as GameData;
 
-  const playWidth = state.backglassView ? BACKGLASS_WIDTH : gd.right - (gd.left ?? 0);
-  const playHeight = state.backglassView ? BACKGLASS_HEIGHT : gd.bottom - (gd.top ?? 0);
+  const playWidth = state.backglassView ? BACKGLASS_WIDTH : (gd.right ?? 0) - (gd.left ?? 0);
+  const playHeight = state.backglassView ? BACKGLASS_HEIGHT : (gd.bottom ?? 0) - (gd.top ?? 0);
   const { x: px, y: py } = toScreen(0, 0);
 
   ctx.fillStyle = state.editorColors?.tableBackground || '#8d8d8d';
@@ -251,9 +242,10 @@ export function render(): void {
 
   for (const gi of state.gameitems) {
     if (!gi.file_name) continue;
-    const name = getItemNameFromFileName(gi.file_name);
-    const item = state.items[name];
-    if (!item || !isItemVisible(item, name)) continue;
+    const item = getItemByFileName(gi.file_name);
+    if (!item) continue;
+    const name = item.name || gi.file_name;
+    if (!isItemVisible(item, name)) continue;
     renderItem(name, item);
   }
 
@@ -266,7 +258,7 @@ export function render(): void {
     }
   } else if (state.selectedItems.length > 0) {
     for (const itemName of state.selectedItems) {
-      const item = state.items[itemName];
+      const item = getItem(itemName);
       if (item && item.drag_points && item.drag_points.length > 0 && isItemVisible(item, itemName)) {
         renderControlPoints(item, itemName);
       }

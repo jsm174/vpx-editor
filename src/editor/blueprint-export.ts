@@ -1,14 +1,7 @@
-import { state, GameItem } from './state.js';
+import { state, GameItem, getItemByFileName } from './state.js';
 import { BLUEPRINT_BACKGROUND_COLOR, BLUEPRINT_MAX_DIMENSION } from '../shared/constants.js';
-import { getItemNameFromFileName } from '../shared/gameitem-utils.js';
 import { getEditable } from './parts/index.js';
-
-interface GameData {
-  left: number;
-  right: number;
-  top: number;
-  bottom: number;
-}
+import type { GameData } from '../types/data.js';
 
 interface Dimensions {
   width: number;
@@ -51,8 +44,8 @@ export async function exportBlueprint(solid: boolean, isBackglass: boolean): Pro
     tableWidth = BACKGLASS_WIDTH;
     tableHeight = BACKGLASS_HEIGHT;
   } else {
-    tableWidth = gd.right - gd.left;
-    tableHeight = gd.bottom - gd.top;
+    tableWidth = (gd.right ?? 0) - (gd.left ?? 0);
+    tableHeight = (gd.bottom ?? 0) - (gd.top ?? 0);
   }
 
   const { width: bmwidth, height: bmheight } = calculateDimensions(tableWidth, tableHeight);
@@ -69,8 +62,7 @@ export async function exportBlueprint(solid: boolean, isBackglass: boolean): Pro
   for (const gi of state.gameitems) {
     if (!gi.file_name) continue;
 
-    const name = getItemNameFromFileName(gi.file_name);
-    const item = state.items[name] as GameItem | undefined;
+    const item = getItemByFileName(gi.file_name);
     if (!item) continue;
 
     const type = item._type || 'Unknown';

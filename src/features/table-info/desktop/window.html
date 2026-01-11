@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Table Info</title>
+  <script>
+    var theme = new URLSearchParams(window.location.search).get('theme');
+    if (theme) document.documentElement.setAttribute('data-theme', theme);
+  </script>
+  <link rel="stylesheet" href="../../../shared/window-base.css">
+  <link rel="stylesheet" href="../shared/styles.css">
+  <link rel="stylesheet" href="window.css">
+</head>
+<body>
+  <div class="table-info-container">
+    <div class="table-info-scroll">
+      <div class="table-info-group">
+        <div class="table-info-group-title">General</div>
+        <div class="table-info-row">
+          <label class="table-info-label">Name</label>
+          <input type="text" id="table-info-name" class="win-input table-info-input">
+        </div>
+        <div class="table-info-row">
+          <label class="table-info-label">Author</label>
+          <input type="text" id="table-info-author" class="win-input table-info-input">
+        </div>
+        <div class="table-info-row">
+          <label class="table-info-label">Version</label>
+          <input type="text" id="table-info-version" class="win-input table-info-input">
+        </div>
+        <div class="table-info-row">
+          <label class="table-info-label">Release</label>
+          <input type="text" id="table-info-release" class="win-input table-info-input">
+        </div>
+        <div class="table-info-row">
+          <label class="table-info-label">Date Saved</label>
+          <input type="text" id="table-info-date-saved" class="win-input table-info-input readonly" readonly>
+        </div>
+      </div>
+
+      <div class="table-info-group">
+        <div class="table-info-group-title">Contact</div>
+        <div class="table-info-row">
+          <label class="table-info-label">E-Mail</label>
+          <input type="text" id="table-info-email" class="win-input table-info-input">
+        </div>
+        <div class="table-info-row">
+          <label class="table-info-label">Web Site</label>
+          <input type="text" id="table-info-website" class="win-input table-info-input">
+        </div>
+      </div>
+
+      <div class="table-info-group">
+        <div class="table-info-group-title">Details</div>
+        <div class="table-info-row">
+          <label class="table-info-label">Screenshot</label>
+          <select id="table-info-screenshot" class="win-select">
+            <option value="">(none)</option>
+          </select>
+        </div>
+        <div class="table-info-row">
+          <label class="table-info-label">Blurb</label>
+          <textarea id="table-info-blurb" class="win-input table-info-input" rows="2"></textarea>
+        </div>
+        <div class="table-info-row">
+          <label class="table-info-label">Description</label>
+          <textarea id="table-info-description" class="win-input table-info-input" rows="3"></textarea>
+        </div>
+        <div class="table-info-row">
+          <label class="table-info-label">Rules</label>
+          <textarea id="table-info-rules" class="win-input table-info-input" rows="4"></textarea>
+        </div>
+      </div>
+
+      <div class="table-info-group">
+        <div class="table-info-group-title">Custom Info</div>
+        <div id="table-info-custom-container" class="table-info-custom-container">
+          <table id="table-info-custom-table" class="table-info-custom-table">
+            <thead>
+              <tr>
+                <th data-sort="name">Name</th>
+                <th data-sort="value">Value</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-info-custom-buttons">
+          <button class="win-btn" id="table-info-add-btn">Add</button>
+          <button class="win-btn" id="table-info-delete-btn">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-info-footer">
+      <button class="win-btn" id="table-info-cancel">Cancel</button>
+      <button class="win-btn primary" id="table-info-ok">OK</button>
+    </div>
+  </div>
+
+  <div id="table-info-custom-dialog" class="table-info-prompt-overlay hidden">
+    <div class="table-info-prompt-dialog">
+      <div class="table-info-prompt-title" id="table-info-dialog-title">Add Custom Property</div>
+      <div class="table-info-prompt-row">
+        <label class="table-info-prompt-label">Name</label>
+        <input type="text" id="table-info-dialog-name" class="win-input table-info-prompt-input">
+      </div>
+      <div class="table-info-prompt-row">
+        <label class="table-info-prompt-label">Value</label>
+        <input type="text" id="table-info-dialog-value" class="win-input table-info-prompt-input">
+      </div>
+      <div class="table-info-prompt-buttons">
+        <button class="win-btn" id="table-info-dialog-cancel">Cancel</button>
+        <button class="win-btn primary" id="table-info-dialog-ok">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./window.ts"></script>
+</body>
+</html>

@@ -11,7 +11,6 @@ import type {
   LoadingState,
   AboutData,
   TransformData,
-  WorkFolderConfig,
   DrawingOrderInitData,
   DrawingOrderSaveData,
   DrawingOrderItem,
@@ -73,6 +72,15 @@ const vpxEditorAPI: VpxEditorAPI = {
   onMaterialsChanged: (callback: () => void): void => {
     ipcRenderer.on('materials-changed', () => callback());
   },
+  refreshImageManager: (): void => {
+    ipcRenderer.send('refresh-image-manager');
+  },
+  refreshMaterialManager: (): void => {
+    ipcRenderer.send('refresh-material-manager');
+  },
+  refreshSoundManager: (): void => {
+    ipcRenderer.send('refresh-sound-manager');
+  },
   onSoundsChanged: (callback: () => void): void => {
     ipcRenderer.on('sounds-changed', () => callback());
   },
@@ -105,14 +113,6 @@ const vpxEditorAPI: VpxEditorAPI = {
   },
   closeConfirmResult: (result: boolean): void => {
     ipcRenderer.send('close-confirm-result', result);
-  },
-  onShowWorkFolderModal: (callback: (data: { workFolder: string }) => void): void => {
-    ipcRenderer.on('show-work-folder-modal', (_event: IpcRendererEvent, data: { workFolder: string }) =>
-      callback(data)
-    );
-  },
-  workFolderModalResult: (result: string | null): void => {
-    ipcRenderer.send('work-folder-modal-result', result);
   },
   onInsertItem: (callback: (itemType: string) => void): void => {
     ipcRenderer.on('insert-item', (_event: IpcRendererEvent, itemType: string) => callback(itemType));
@@ -204,6 +204,19 @@ const vpxEditorAPI: VpxEditorAPI = {
       (_event: IpcRendererEvent, materialName: string, materialData: unknown) => callback(materialName, materialData)
     );
   },
+  onUndoMarkSounds: (callback: () => void): void => {
+    ipcRenderer.on('undo-mark-sounds', () => callback());
+  },
+  onUndoMarkSoundCreate: (callback: (soundName: string) => void): void => {
+    ipcRenderer.on('undo-mark-sound-create', (_event: IpcRendererEvent, soundName: string) => callback(soundName));
+  },
+  onUndoMarkSoundDelete: (callback: (soundName: string, soundData: unknown, filePath: string) => void): void => {
+    ipcRenderer.on(
+      'undo-mark-sound-delete',
+      (_event: IpcRendererEvent, soundName: string, soundData: unknown, filePath: string) =>
+        callback(soundName, soundData, filePath)
+    );
+  },
   onUndoMarkRenderProbes: (callback: () => void): void => {
     ipcRenderer.on('undo-mark-renderprobes', () => callback());
   },
@@ -234,6 +247,8 @@ const vpxEditorAPI: VpxEditorAPI = {
   },
   getTheme: (): Promise<string> => ipcRenderer.invoke('get-theme'),
   getViewSettings: (): Promise<ViewSettings> => ipcRenderer.invoke('get-view-settings'),
+  saveViewSettings: (settings: Partial<ViewSettings>): Promise<void> =>
+    ipcRenderer.invoke('save-view-settings', settings),
   getPanelSettings: (): Promise<PanelSettings> => ipcRenderer.invoke('get-panel-settings'),
   savePanelSettings: (settings: PanelSettings): Promise<void> => ipcRenderer.invoke('save-panel-settings', settings),
   readFile: (filePath: string) => ipcRenderer.invoke('read-file', filePath),
@@ -262,7 +277,7 @@ const vpxEditorAPI: VpxEditorAPI = {
   previewTheme: (theme: string): void => {
     ipcRenderer.send('preview-theme', theme);
   },
-  restoreTheme: (theme: string): void => {
+  restoreTheme: (theme?: string): void => {
     ipcRenderer.send('restore-theme', theme);
   },
   onShowCollectionManager: (callback: () => void): void => {
@@ -323,7 +338,8 @@ const vpxEditorAPI: VpxEditorAPI = {
     ipcRenderer.send('undo-mark-gameitems-list');
   },
   browseExecutable: (name: string): Promise<string | null> => ipcRenderer.invoke('browse-executable', name),
-  checkFileExists: (filePath: string): Promise<boolean> => ipcRenderer.invoke('check-file-exists', filePath),
+  checkFileExists: (filePath: string): Promise<{ valid: boolean; error?: string }> =>
+    ipcRenderer.invoke('check-file-exists', filePath),
   saveSettings: (settings: EditorSettings): Promise<void> => ipcRenderer.invoke('save-settings', settings),
   resetWindowBounds: (): void => {
     ipcRenderer.send('reset-window-bounds');
@@ -335,7 +351,7 @@ const vpxEditorAPI: VpxEditorAPI = {
   onTextureQualityChanged: (callback: (quality: string) => void): void => {
     ipcRenderer.on('texture-quality-changed', (_event: IpcRendererEvent, quality: string) => callback(quality));
   },
-  getTextureQuality: (): Promise<string> => ipcRenderer.invoke('get-texture-quality'),
+  getTextureQuality: (): Promise<number> => ipcRenderer.invoke('get-texture-quality'),
   notifyBackglassViewChanged: (enabled: boolean): void => {
     ipcRenderer.send('backglass-view-changed', enabled);
   },
@@ -368,6 +384,24 @@ const vpxEditorAPI: VpxEditorAPI = {
   saveConsoleSettings: (settings: ConsoleSettings): Promise<void> =>
     ipcRenderer.invoke('save-console-settings', settings),
   getVersion: (): Promise<string> => ipcRenderer.invoke('get-version'),
+  isWeb: (): boolean => false,
+  isElectron: (): boolean => true,
+  getExtractedDir: (): Promise<string> => ipcRenderer.invoke('get-extracted-dir'),
+  getTableName: (): Promise<string> => ipcRenderer.invoke('get-table-name'),
+  saveTheme: (theme: string): Promise<void> => ipcRenderer.invoke('save-theme', theme),
+  writeBinaryFile: (filePath: string, content: Uint8Array): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke('write-binary-file', filePath, content),
+  getGamedata: (): Promise<GameData | null> => ipcRenderer.invoke('get-gamedata'),
+  saveGamedata: (gamedata: GameData): Promise<void> => ipcRenderer.invoke('save-gamedata', gamedata),
+  getInfo: (): Promise<TableInfo | null> => ipcRenderer.invoke('get-info'),
+  saveInfo: (info: TableInfo): Promise<void> => ipcRenderer.invoke('save-info', info),
+  getImages: (): Promise<{ name: string; path?: string }[]> => ipcRenderer.invoke('get-images'),
+  getMaterials: (): Promise<Record<string, unknown>> => ipcRenderer.invoke('get-materials'),
+  saveMaterials: (materials: Record<string, unknown>): Promise<void> => ipcRenderer.invoke('save-materials', materials),
+  getSounds: (): Promise<{ name: string; path?: string }[]> => ipcRenderer.invoke('get-sounds'),
+  getCollections: (): Promise<Collection[]> => ipcRenderer.invoke('get-collections'),
+  saveCollections: (collections: Collection[]): Promise<void> => ipcRenderer.invoke('save-collections', collections),
+  getGameitemsIndex: (): Promise<{ file_name: string }[]> => ipcRenderer.invoke('get-gameitems-index'),
   updateUndoState: (state: UndoState): void => {
     ipcRenderer.send('update-undo-state', state);
   },
@@ -392,21 +426,6 @@ const vpxEditorAPI: VpxEditorAPI = {
   setClipboardData: (data: ClipboardData): Promise<void> => ipcRenderer.invoke('set-clipboard-data', data),
   getClipboardData: (): Promise<ClipboardData | null> => ipcRenderer.invoke('get-clipboard-data'),
   hasClipboardData: (): Promise<boolean> => ipcRenderer.invoke('has-clipboard-data'),
-
-  showPrompt: (options: {
-    title: string;
-    message?: string;
-    placeholder?: string;
-    defaultValue?: string;
-    currentValue?: string;
-    existingNames?: string[];
-    maxLength?: number;
-    emptyError?: string;
-    existsError?: string;
-  }): Promise<string | null> => ipcRenderer.invoke('show-prompt', options),
-  showConfirm: (options: { title: string; message: string }): Promise<boolean> =>
-    ipcRenderer.invoke('show-confirm', options),
-  showInfo: (options: { title: string; message: string }): Promise<void> => ipcRenderer.invoke('show-info', options),
 
   collectionCreate: (name: string, items: string[]): void => {
     ipcRenderer.send('collection-create', name, items);
@@ -456,9 +475,11 @@ const vpxEditorAPI: VpxEditorAPI = {
       callback(data)
     );
   },
-  onCollectionsChanged: (callback: (collections: Collection[]) => void): void => {
-    ipcRenderer.on('collections-changed', (_event: IpcRendererEvent, collections: Collection[]) =>
-      callback(collections)
+  onCollectionsChanged: (callback: (collections: Collection[], selectCollection?: string) => void): void => {
+    ipcRenderer.on(
+      'collections-changed',
+      (_event: IpcRendererEvent, data: { collections: Collection[]; selectCollection?: string }) =>
+        callback(data.collections, data.selectCollection)
     );
   },
   onSetDisabled: (callback: (disabled: boolean) => void): void => {
@@ -472,6 +493,17 @@ const vpxEditorAPI: VpxEditorAPI = {
   },
   openCollectionPrompt: (mode: string, name: string | null): void => {
     ipcRenderer.send('open-collection-prompt', mode, name);
+  },
+  openMaterialEditor: (
+    material: Record<string, unknown>,
+    mode: 'new' | 'clone',
+    existingNames: string[],
+    originalName: string
+  ): void => {
+    ipcRenderer.send('open-material-editor', { material, mode, existingNames, originalName });
+  },
+  onMaterialEditorResult: (callback: (result: Record<string, unknown> | null) => void): void => {
+    ipcRenderer.on('material-editor-result', (_event: IpcRendererEvent, result) => callback(result));
   },
   collectionCreateFromSelection: (): void => {
     ipcRenderer.send('collection-create-from-selection');
@@ -514,55 +546,59 @@ const vpxEditorAPI: VpxEditorAPI = {
   promptResult: (result: string | null): void => {
     ipcRenderer.send('prompt-result', result);
   },
-  onInitConfirm: (callback: (data: { title: string; message: string }) => void): void => {
-    ipcRenderer.on('init-confirm', (_event: IpcRendererEvent, data: { title: string; message: string }) =>
-      callback(data)
-    );
-  },
-  confirmResult: (result: boolean): void => {
-    ipcRenderer.send('confirm-result', result);
-  },
   onInitInfo: (callback: (data: { title: string; message: string }) => void): void => {
     ipcRenderer.on('init-info', (_event: IpcRendererEvent, data: { title: string; message: string }) => callback(data));
   },
-  onInitWorkFolder: (callback: (data: WorkFolderConfig) => void): void => {
-    ipcRenderer.on('init-work-folder', (_event: IpcRendererEvent, data: WorkFolderConfig) => callback(data));
+  onInitCollectionEditor: (
+    callback: (data: {
+      collectionName: string;
+      includedItems: string[];
+      availableItems: string[];
+      existingNames: string[];
+      fireEvents: boolean;
+      stopSingle: boolean;
+      groupElements: boolean;
+    }) => void
+  ): void => {
+    ipcRenderer.on('init-collection-editor', (_event: IpcRendererEvent, data) => callback(data));
   },
-  workFolderResult: (result: string | null): void => {
-    ipcRenderer.send('work-folder-result', result);
-  },
-
-  onInitCollectionEditor: (callback: (data: { name: string; items: string[]; allItems: string[] }) => void): void => {
-    ipcRenderer.on(
-      'init-collection-editor',
-      (_event: IpcRendererEvent, data: { name: string; items: string[]; allItems: string[] }) => callback(data)
-    );
-  },
-  collectionEditorSave: (name: string, items: string[]): void => {
-    ipcRenderer.send('collection-editor-save', name, items);
+  collectionEditorSave: (data: {
+    originalName: string;
+    newName?: string;
+    items: string[];
+    fire_events: boolean;
+    stop_single_events: boolean;
+    group_elements: boolean;
+  }): void => {
+    ipcRenderer.send('collection-editor-save', data);
   },
   collectionEditorCancel: (): void => {
     ipcRenderer.send('collection-editor-cancel');
   },
 
-  onInitCollectionPrompt: (callback: (data: { mode: string; name: string | null }) => void): void => {
-    ipcRenderer.on('init-collection-prompt', (_event: IpcRendererEvent, data: { mode: string; name: string | null }) =>
-      callback(data)
-    );
+  onInitMaterialEditor: (
+    callback: (data: {
+      material: Record<string, unknown>;
+      mode: 'new' | 'clone';
+      existingNames: string[];
+      originalName: string;
+    }) => void
+  ): void => {
+    ipcRenderer.on('init-material-editor', (_event: IpcRendererEvent, data) => callback(data));
   },
-  collectionPromptResult: (result: string | null): void => {
-    ipcRenderer.send('collection-prompt-result', result);
+  materialEditorSave: (data: Record<string, unknown>): void => {
+    ipcRenderer.send('material-editor-save', data);
+  },
+  materialEditorCancel: (): void => {
+    ipcRenderer.send('material-editor-cancel');
   },
 
-  onInitRenamePrompt: (callback: (data: { currentName: string; type: string }) => void): void => {
-    ipcRenderer.on('init-rename-prompt', (_event: IpcRendererEvent, data: { currentName: string; type: string }) =>
-      callback(data)
-    );
-  },
-  renamePromptResult: (result: string | null): void => {
-    ipcRenderer.send('rename-prompt-result', result);
-  },
-  showRenameDialog: (data: { mode: 'table' | 'element'; currentName: string; existingNames: string[] }): void => {
+  showRenameDialog: (data: {
+    mode: 'table' | 'element' | 'partgroup';
+    currentName: string;
+    existingNames: string[];
+    elementType?: string;
+  }): void => {
     ipcRenderer.send('show-rename-dialog', data);
   },
 

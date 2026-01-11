@@ -32,6 +32,18 @@ export function colorToRgb(c: number | string | null | undefined): string {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
+export function colorToHexString(c: number | string | null | undefined, defaultColor = '#808080'): string {
+  if (c === null || c === undefined) return defaultColor;
+  if (typeof c === 'string') {
+    if (c.startsWith('#')) return c;
+    return defaultColor;
+  }
+  if (typeof c === 'number') {
+    return `#${(c & 0xffffff).toString(16).padStart(6, '0')}`;
+  }
+  return defaultColor;
+}
+
 export function colorToRgba(c: number | string | null | undefined, alpha: number = 1): string {
   const { r, g, b } = parseColor(c);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;

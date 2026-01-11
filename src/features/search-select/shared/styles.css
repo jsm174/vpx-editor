@@ -1,0 +1,128 @@
+.select-element-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.select-element-filter {
+  padding: 6px 10px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+  width: 250px;
+}
+
+.select-element-filter:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.select-element-filter::placeholder {
+  color: var(--text-secondary);
+}
+
+.select-element-spacer {
+  flex: 1;
+}
+
+.select-element-content {
+  flex: 1;
+  overflow: hidden;
+}
+
+.select-element-table-container {
+  height: 100%;
+  overflow: auto;
+}
+
+.select-element-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  table-layout: fixed;
+}
+
+.select-element-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--bg-toolbar);
+  z-index: 1;
+}
+
+.select-element-table th {
+  padding: 6px 8px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: none;
+  cursor: pointer;
+  position: relative;
+}
+
+.select-element-table th:hover {
+  color: var(--text-primary);
+  background: var(--bg-dark);
+}
+
+.select-element-table th.sort-asc::after {
+  content: ' ▲';
+  font-size: 8px;
+}
+
+.select-element-table th.sort-desc::after {
+  content: ' ▼';
+  font-size: 8px;
+}
+
+.select-element-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.select-element-table tbody tr {
+  cursor: pointer;
+}
+
+.select-element-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.select-element-table tbody tr.selected {
+  background: var(--accent);
+  color: white;
+}
+
+.select-element-status {
+  padding: 4px 12px;
+  background: var(--bg-toolbar);
+  border-top: 1px solid var(--border-color);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  cursor: col-resize;
+  background: transparent;
+}
+
+.resize-handle:hover,
+.resize-handle.resizing {
+  background: var(--accent);
+}

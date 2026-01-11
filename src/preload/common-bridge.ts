@@ -11,6 +11,8 @@ export interface CommonBridgeAPI {
   undoCancel: () => void;
   undoMarkForUndo: (itemName: string) => void;
   undoMarkGamedata: () => void;
+  showRenamePrompt: (entityType: string, currentName: string, existingNames: string[]) => void;
+  onRenameResult: (callback: (result: { oldName: string; newName: string }) => void) => void;
 }
 
 export function createCommonBridge(): CommonBridgeAPI {
@@ -42,6 +44,14 @@ export function createCommonBridge(): CommonBridgeAPI {
     },
     undoMarkGamedata: (): void => {
       ipcRenderer.send('undo-mark-gamedata');
+    },
+    showRenamePrompt: (entityType: string, currentName: string, existingNames: string[]): void => {
+      ipcRenderer.send('show-rename-prompt', entityType, currentName, existingNames);
+    },
+    onRenameResult: (callback: (result: { oldName: string; newName: string }) => void): void => {
+      ipcRenderer.on('rename-result', (_event: IpcRendererEvent, result: { oldName: string; newName: string }) =>
+        callback(result)
+      );
     },
   };
 }

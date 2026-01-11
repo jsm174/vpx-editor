@@ -1,0 +1,32 @@
+.sound-empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.sound-properties-panel {
+  overflow-y: auto;
+}
+
+.output-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.output-badge.table {
+  background: rgba(46, 160, 67, 0.2);
+  color: #3fb950;
+}
+
+.output-badge.backglass {
+  background: rgba(136, 87, 44, 0.3);
+  color: #d29922;
+}
+
+.manager-list tbody tr.selected .output-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}

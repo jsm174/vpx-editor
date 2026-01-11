@@ -1,0 +1,45 @@
+<div id="sound-manager-modal" class="manager-modal hidden" data-theme="dark">
+  <div class="manager-modal-backdrop"></div>
+  <div class="manager-modal-window">
+    <div class="manager-header">
+      <span class="manager-title">Sound Manager</span>
+      <button class="manager-close" id="sound-manager-close">&times;</button>
+    </div>
+    <div class="manager-toolbar">
+      <input type="text" id="sound-filter" placeholder="Filter...">
+      <div class="manager-toolbar-spacer"></div>
+      <button id="sound-import-btn" class="primary">Import</button>
+    </div>
+    <div class="manager-content">
+      <div class="manager-list" id="sound-list-container">
+        <table>
+          <thead>
+            <tr>
+              <th class="sortable" data-sort="name">Name</th>
+              <th class="sortable" data-sort="output" style="width: 100px;">Output</th>
+              <th class="sortable" data-sort="balance" style="width: 70px;">Balance</th>
+              <th class="sortable" data-sort="fade" style="width: 70px;">Fade</th>
+              <th class="sortable" data-sort="volume" style="width: 70px;">Volume</th>
+            </tr>
+          </thead>
+          <tbody id="sound-list-body"></tbody>
+        </table>
+      </div>
+      <div class="manager-preview sound-properties-panel">
+        <div class="sound-empty-state" id="sound-empty-state">Select a sound to view properties</div>
+        <div id="sound-properties-container" style="display: none;"></div>
+      </div>
+    </div>
+    <div class="manager-status" id="sound-manager-status">Ready</div>
+  </div>
+  <div id="sound-context-menu" class="context-menu hidden">
+    <div class="context-menu-item" data-action="play">Play</div>
+    <div class="context-menu-item" data-action="stop">Stop</div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="rename">Rename</div>
+    <div class="context-menu-item" data-action="export">Export</div>
+    <div class="context-menu-item" data-action="toggle-output">Toggle Output</div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="delete">Delete</div>
+  </div>
+</div>

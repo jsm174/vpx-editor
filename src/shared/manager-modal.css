@@ -1,0 +1,77 @@
+@import './manager-content.css';
+
+.manager-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.manager-modal.hidden {
+  display: none;
+}
+
+.manager-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.manager-modal-window {
+  position: relative;
+  width: 95vw;
+  height: 85vh;
+  max-width: 1200px;
+  max-height: 800px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.manager-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-toolbar);
+  border-radius: 8px 8px 0 0;
+}
+
+.manager-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.manager-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 8px;
+  line-height: 1;
+}
+
+.manager-close:hover {
+  color: var(--text-primary);
+}
+
+.manager-modal .manager-status {
+  border-radius: 0 0 8px 8px;
+}
+
+.manager-modal .prompt-overlay {
+  position: absolute;
+}

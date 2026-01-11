@@ -1,0 +1,30 @@
+.image-thumb {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.used-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.used-badge.yes {
+  background: rgba(46, 160, 67, 0.2);
+  color: #3fb950;
+}
+
+.used-badge.no {
+  background: rgba(139, 148, 158, 0.2);
+  color: #8b949e;
+}
+
+.manager-list tbody tr.selected .used-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}

@@ -1,0 +1,105 @@
+<div id="table-info-modal" class="table-info-modal hidden" data-theme="dark">
+  <div class="table-info-modal-backdrop"></div>
+  <div class="table-info-modal-window">
+    <div class="manager-header">
+      <span class="manager-title">Table Info</span>
+      <button class="manager-close" id="table-info-close">&times;</button>
+    </div>
+    <div class="table-info-scroll">
+      <div class="table-info-group">
+        <div class="table-info-group-title">General</div>
+        <div class="table-info-row">
+          <label class="table-info-label">Name</label>
+          <input type="text" id="table-info-name" class="table-info-input">
+        </div>
+        <div class="table-info-row">
+          <label class="table-info-label">Author</label>
+          <input type="text" id="table-info-author" class="table-info-input">
+        </div>
+        <div class="table-info-row">
+          <label class="table-info-label">Version</label>
+          <input type="text" id="table-info-version" class="table-info-input">
+        </div>
+        <div class="table-info-row">
+          <label class="table-info-label">Release</label>
+          <input type="text" id="table-info-release" class="table-info-input">
+        </div>
+        <div class="table-info-row">
+          <label class="table-info-label">Date Saved</label>
+          <input type="text" id="table-info-date-saved" class="table-info-input readonly" readonly>
+        </div>
+      </div>
+      <div class="table-info-group">
+        <div class="table-info-group-title">Contact</div>
+        <div class="table-info-row">
+          <label class="table-info-label">E-Mail</label>
+          <input type="text" id="table-info-email" class="table-info-input">
+        </div>
+        <div class="table-info-row">
+          <label class="table-info-label">Web Site</label>
+          <input type="text" id="table-info-website" class="table-info-input">
+        </div>
+      </div>
+      <div class="table-info-group">
+        <div class="table-info-group-title">Details</div>
+        <div class="table-info-row">
+          <label class="table-info-label">Screenshot</label>
+          <select id="table-info-screenshot" class="table-info-input">
+            <option value="">(none)</option>
+          </select>
+        </div>
+        <div class="table-info-row">
+          <label class="table-info-label">Blurb</label>
+          <textarea id="table-info-blurb" class="table-info-input" rows="2"></textarea>
+        </div>
+        <div class="table-info-row">
+          <label class="table-info-label">Description</label>
+          <textarea id="table-info-description" class="table-info-input" rows="3"></textarea>
+        </div>
+        <div class="table-info-row">
+          <label class="table-info-label">Rules</label>
+          <textarea id="table-info-rules" class="table-info-input" rows="4"></textarea>
+        </div>
+      </div>
+      <div class="table-info-group">
+        <div class="table-info-group-title">Custom Info</div>
+        <div class="table-info-custom-container">
+          <table class="table-info-custom-table">
+            <thead>
+              <tr>
+                <th data-sort="name">Name</th>
+                <th data-sort="value">Value</th>
+              </tr>
+            </thead>
+            <tbody id="table-info-custom-tbody"></tbody>
+          </table>
+        </div>
+        <div class="table-info-custom-buttons">
+          <button class="win-btn" id="table-info-add-btn">Add</button>
+          <button class="win-btn" id="table-info-delete-btn">Delete</button>
+        </div>
+      </div>
+    </div>
+    <div class="table-info-footer">
+      <button class="win-btn" id="table-info-cancel">Cancel</button>
+      <button class="win-btn primary" id="table-info-ok">OK</button>
+    </div>
+  </div>
+  <div id="table-info-custom-dialog" class="table-info-prompt-overlay hidden">
+    <div class="table-info-prompt-dialog">
+      <div class="table-info-prompt-title" id="table-info-dialog-title">Add Custom Property</div>
+      <div class="table-info-prompt-row">
+        <label class="table-info-prompt-label">Name</label>
+        <input type="text" id="table-info-dialog-name" class="table-info-prompt-input">
+      </div>
+      <div class="table-info-prompt-row">
+        <label class="table-info-prompt-label">Value</label>
+        <input type="text" id="table-info-dialog-value" class="table-info-prompt-input">
+      </div>
+      <div class="table-info-prompt-buttons">
+        <button class="win-btn" id="table-info-dialog-cancel">Cancel</button>
+        <button class="win-btn primary" id="table-info-dialog-ok">OK</button>
+      </div>
+    </div>
+  </div>
+</div>

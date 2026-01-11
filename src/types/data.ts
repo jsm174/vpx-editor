@@ -1,19 +1,23 @@
 import type { Point } from './game-objects.js';
 
 export interface GameData {
+  name?: string;
   screen_shot?: string;
-  locked: number;
+  locked?: number;
   left?: number;
   top?: number;
-  right: number;
-  bottom: number;
-  glass_top_height: number;
-  glass_bottom_height: number;
+  right?: number;
+  bottom?: number;
+  glass_top_height?: number;
+  glass_bottom_height?: number;
+  ground_to_lockbar_height?: number;
   image?: string;
   playfield_material?: string;
   ball_image?: string;
+  ball_image_front?: string;
   ball_image_front_decal?: string;
-  ball_decal_mode?: number;
+  ball_spherical_mapping?: boolean;
+  ball_decal_mode?: number | boolean;
   environment_image?: string;
   notes?: string;
   screen_shot_front?: string;
@@ -47,15 +51,23 @@ export interface GameData {
   stereo_offset?: number;
   overwrite_global_stereo3d?: boolean;
   bloom_strength?: number;
+  exposure?: number;
   ssao?: number;
+  use_ao?: number;
+  use_ssr?: number;
   tone_mapper?: number;
   color_grade_image?: string;
+  image_color_grade?: string;
   difficulty?: number;
-  light_ambient?: number;
+  light_ambient?: number | string;
   light_height?: number;
   light_range?: number;
   light_emission_scale?: number;
+  light0_emission?: string;
   environment_emission_scale?: number;
+  env_image?: string;
+  env_emission_scale?: number;
+  global_emission_scale?: number;
   global_alpha_acc?: number;
   ao_scale?: number;
   ssr_scale?: number;
@@ -64,6 +76,11 @@ export interface GameData {
   ball_reflection?: number;
   playfield_reflection?: number;
   global_difficulty?: number;
+  backdrop_color?: string;
+  image_backdrop_night_day?: boolean;
+  backglass_image_full_desktop?: string;
+  backglass_image_full_fullscreen?: string;
+  backglass_image_full_single_screen?: string;
   [key: string]: unknown;
 }
 

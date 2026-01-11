@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Image Manager</title>
+  <link rel="stylesheet" href="../../../shared/window-base.css">
+  <link rel="stylesheet" href="../../../shared/manager-content.css">
+  <link rel="stylesheet" href="../../prompt/shared/styles.css">
+  <link rel="stylesheet" href="./window.css">
+  <script>
+    var theme = new URLSearchParams(window.location.search).get('theme');
+    if (theme) document.documentElement.setAttribute('data-theme', theme);
+  </script>
+</head>
+<body>
+  <div id="app">
+    <div class="manager-toolbar">
+      <input type="text" id="filter" placeholder="Filter...">
+      <div class="manager-toolbar-spacer"></div>
+      <button id="btn-import" class="primary">Import</button>
+    </div>
+
+    <div class="manager-content">
+      <div class="manager-list" id="image-list-container">
+        <table id="image-list">
+          <thead>
+            <tr>
+              <th style="width: 48px;"></th>
+              <th class="sortable" data-sort="name">Name</th>
+              <th class="sortable" data-sort="size" style="width: 90px;">Size</th>
+              <th class="sortable" data-sort="format" style="width: 70px;">Format</th>
+              <th class="sortable" data-sort="used" style="width: 60px;">Used</th>
+            </tr>
+          </thead>
+          <tbody id="image-list-body"></tbody>
+        </table>
+      </div>
+
+      <div class="manager-preview" id="preview-panel">
+        <div class="manager-preview-container" id="preview-container">
+          <img id="preview-image" alt="Preview">
+          <div id="preview-placeholder">Select an image</div>
+        </div>
+        <div class="manager-details" id="details">
+          <div class="manager-detail-row">
+            <span class="manager-detail-label">Name:</span>
+            <span class="manager-detail-value" id="detail-name">-</span>
+          </div>
+          <div class="manager-detail-row">
+            <span class="manager-detail-label">Dimensions:</span>
+            <span class="manager-detail-value" id="detail-dimensions">-</span>
+          </div>
+          <div class="manager-detail-row">
+            <span class="manager-detail-label">Format:</span>
+            <span class="manager-detail-value" id="detail-format">-</span>
+          </div>
+          <div class="manager-detail-row">
+            <span class="manager-detail-label">Alpha:</span>
+            <span class="manager-detail-value" id="detail-alpha">-</span>
+          </div>
+          <div class="manager-used-by" id="used-by-section">
+            <div class="manager-detail-label">Used by:</div>
+            <div id="used-by-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="manager-status" id="status-bar">Ready</div>
+
+    <div id="rename-overlay" class="prompt-overlay hidden">
+      <div class="prompt-dialog">
+        <div class="prompt-header">
+          <span class="prompt-title">Rename</span>
+          <button class="prompt-close" id="rename-close">&times;</button>
+        </div>
+        <input type="text" id="rename-input" class="prompt-input" style="margin-bottom: 4px;">
+        <div id="rename-error" class="prompt-error"></div>
+        <div class="prompt-buttons">
+          <button id="rename-cancel" class="prompt-btn">Cancel</button>
+          <button id="rename-ok" class="prompt-btn primary">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="context-menu" class="context-menu hidden">
+      <div class="context-menu-item" data-action="rename">Rename</div>
+      <div class="context-menu-item" data-action="export">Export</div>
+      <div class="context-menu-divider"></div>
+      <div class="context-menu-item" data-action="delete">Delete</div>
+    </div>
+
+  </div>
+
+  <script type="module" src="./window.ts"></script>
+</body>
+</html>

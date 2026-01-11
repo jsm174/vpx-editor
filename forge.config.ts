@@ -22,7 +22,7 @@ interface PackagerConfig {
 const packagerConfig: PackagerConfig = {
   asar: true,
   executableName: 'vpx-editor',
-  extraResource: ['resources/vpxtool', 'resources/templates'],
+  extraResource: ['public/templates', 'public/assets'],
   icon: './resources/icon',
 };
 
@@ -123,7 +123,7 @@ const config: ForgeConfig = {
     new VitePlugin({
       build: [
         {
-          entry: 'src/main/main.ts',
+          entry: 'src/desktop/main.ts',
           config: 'vite.main.config.ts',
           target: 'main',
         },
@@ -133,37 +133,42 @@ const config: ForgeConfig = {
           target: 'preload',
         },
         {
-          entry: 'src/preload/image-manager.ts',
+          entry: 'src/features/image-manager/desktop/image-manager.ts',
           config: 'vite.preload.config.ts',
           target: 'preload',
         },
         {
-          entry: 'src/preload/script-editor.ts',
+          entry: 'src/features/script-editor/desktop/script-editor.ts',
           config: 'vite.preload.config.ts',
           target: 'preload',
         },
         {
-          entry: 'src/preload/material-manager.ts',
+          entry: 'src/features/material-manager/desktop/material-manager.ts',
           config: 'vite.preload.config.ts',
           target: 'preload',
         },
         {
-          entry: 'src/preload/sound-manager.ts',
+          entry: 'src/features/sound-manager/desktop/sound-manager.ts',
           config: 'vite.preload.config.ts',
           target: 'preload',
         },
         {
-          entry: 'src/preload/render-probe-manager.ts',
+          entry: 'src/features/render-probe-manager/desktop/render-probe-manager.ts',
           config: 'vite.preload.config.ts',
           target: 'preload',
         },
         {
-          entry: 'src/preload/search-select.ts',
+          entry: 'src/features/search-select/desktop/search-select.ts',
           config: 'vite.preload.config.ts',
           target: 'preload',
         },
         {
-          entry: 'src/preload/dimensions-manager.ts',
+          entry: 'src/features/dimensions-manager/desktop/dimensions-manager.ts',
+          config: 'vite.preload.config.ts',
+          target: 'preload',
+        },
+        {
+          entry: 'src/features/prompt/desktop/prompt.ts',
           config: 'vite.preload.config.ts',
           target: 'preload',
         },

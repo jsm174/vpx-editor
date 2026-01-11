@@ -1,4 +1,4 @@
-import { state, Collection, DragPoint } from './state.js';
+import { state, Collection, DragPoint, getItem } from './state.js';
 import { hasClipboard } from './clipboard.js';
 import { toggleItemInCollection, isItemInCollection } from './collections.js';
 import '../types/ipc.js';
@@ -32,7 +32,6 @@ interface ObjectContextMenuCallbacks {
   onDrawInFront?: (itemName: string) => void;
   onDrawInBack?: (itemName: string) => void;
   onAssignToLayer?: (itemName: string, groupName: string | null) => void;
-  onAssignToSelectedLayer?: (itemName: string) => void;
   onToggleLock?: (itemName: string) => void;
   onDelete?: (itemName: string) => void;
   onSelectElement?: (elementName: string) => void;
@@ -58,7 +57,6 @@ interface ItemsPanelContextMenuCallbacks {
   onDrawInFront?: (itemName: string) => void;
   onDrawInBack?: (itemName: string) => void;
   onAssignToLayer?: (itemName: string, groupName: string | null) => void;
-  onAssignToSelectedLayer?: (itemName: string) => void;
   onToggleLock?: (itemName: string) => void;
 }
 
@@ -228,7 +226,7 @@ export function showNodeContextMenu(
 ): void {
   hideContextMenu();
 
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item || !item.drag_points) return;
   if (!EDITABLE_DRAG_POINT_TYPES.includes(item._type)) return;
 
@@ -279,7 +277,7 @@ export async function showObjectContextMenu(
 ): Promise<void> {
   hideContextMenu();
 
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item) return;
 
   const canEditPoints = item.drag_points && EDITABLE_DRAG_POINT_TYPES.includes(item._type);
@@ -290,7 +288,7 @@ export async function showObjectContextMenu(
 
   let allSelectedLocked = true;
   for (const name of state.selectedItems) {
-    const selectedItem = state.items[name];
+    const selectedItem = getItem(name);
     if (selectedItem && !selectedItem.is_locked) {
       allSelectedLocked = false;
       break;
@@ -360,10 +358,6 @@ export async function showObjectContextMenu(
 
     menu.appendChild(createSubmenuItem('Assign to layer', layerItems));
   }
-
-  menu.appendChild(
-    createMenuItem('Assign to selected layer', () => callbacks.onAssignToSelectedLayer?.(itemName), isTableLocked)
-  );
 
   if (!isTableLocked && state.collections && state.collections.length > 0) {
     const collectionItems: SubmenuItem[] = state.collections.map((collection: Collection) => ({
@@ -485,7 +479,7 @@ export async function showItemsPanelContextMenu(
 ): Promise<void> {
   hideContextMenu();
 
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item) return;
 
   const canEditPoints = item.drag_points && EDITABLE_DRAG_POINT_TYPES.includes(item._type);
@@ -550,10 +544,6 @@ export async function showItemsPanelContextMenu(
 
     menu.appendChild(createSubmenuItem('Assign to layer', layerItems));
   }
-
-  menu.appendChild(
-    createMenuItem('Assign to selected layer', () => callbacks.onAssignToSelectedLayer?.(itemName), isTableLocked)
-  );
 
   if (!isTableLocked && state.collections && state.collections.length > 0) {
     const collectionItems: SubmenuItem[] = state.collections.map((collection: Collection) => ({

@@ -1,7 +1,7 @@
-import { state, undoManager } from './state.js';
+import { state, undoManager, getItem, setItem, deleteItem, hasItem } from './state.js';
 import { GameItem, GameItemEntry, Point, DragPoint } from './state.js';
 import { objectTypes, getObjectDefaults, hasObjectDragPoints } from './object-types.js';
-import { getFileNameFromItemName } from '../shared/gameitem-utils.js';
+import { generateUniqueFileName } from '../shared/gameitem-utils.js';
 
 interface BackglassPropertyMap {
   [key: string]: string;
@@ -37,7 +37,7 @@ export function generateUniqueName(baseName: string): string {
     const suffix = counter < 10 ? `00${counter}` : counter < 100 ? `0${counter}` : `${counter}`;
     name = `${baseName}${suffix}`;
     counter++;
-  } while (state.items[name] && counter < 1000);
+  } while (hasItem(name) && counter < 1000);
   return name;
 }
 
@@ -93,7 +93,8 @@ export function createObject(type: string, position: Point): GameItem | null {
   }
 
   obj._type = type;
-  obj._fileName = `gameitems/${getFileNameFromItemName(type, name)}`;
+  const existingFileNames = state.gameitems.map(gi => gi.file_name);
+  obj._fileName = `gameitems/${generateUniqueFileName(type, name, existingFileNames)}`;
   obj._layer = 0;
   obj.is_locked = false;
 
@@ -125,11 +126,12 @@ async function saveNewObjectInternal(obj: GameItem): Promise<boolean> {
   const gameitemsPath = `${state.extractedDir}/gameitems.json`;
   const gameitemsResult = await vpxEditor.readFile(gameitemsPath);
 
+  const baseFileName = obj._fileName!.replace('gameitems/', '');
   if (gameitemsResult.success) {
     try {
       const gameitems: GameItemEntry[] = JSON.parse(gameitemsResult.content!);
       gameitems.push({
-        file_name: getFileNameFromItemName(type, obj.name as string),
+        file_name: baseFileName,
         is_locked: false,
         editor_layer: obj._layer || 0,
       });
@@ -139,7 +141,7 @@ async function saveNewObjectInternal(obj: GameItem): Promise<boolean> {
       console.error('Failed to parse gameitems.json:', parseError);
       console.error('Using in-memory gameitems instead');
       state.gameitems.push({
-        file_name: getFileNameFromItemName(type, obj.name as string),
+        file_name: baseFileName,
         is_locked: false,
         editor_layer: obj._layer || 0,
       });
@@ -147,7 +149,7 @@ async function saveNewObjectInternal(obj: GameItem): Promise<boolean> {
     }
   }
 
-  state.items[obj.name as string] = obj;
+  setItem(obj.name as string, obj, baseFileName);
   return true;
 }
 
@@ -169,11 +171,11 @@ export async function saveNewObject(obj: GameItem, skipUndo: boolean = false): P
 
 async function deleteObjectInternal(name: string): Promise<boolean> {
   const vpxEditor = window.vpxEditor;
-  const item = state.items[name];
-  if (!item) return false;
+  const item = getItem(name);
+  if (!item || !item._fileName) return false;
 
-  const filename = getFileNameFromItemName(item._type, name);
-  const filePath = `${state.extractedDir}/gameitems/${filename}`;
+  const filePath = `${state.extractedDir}/${item._fileName}`;
+  const baseFileName = item._fileName.replace('gameitems/', '');
   const gameitemsPath = `${state.extractedDir}/gameitems.json`;
 
   await vpxEditor.deleteFile(filePath);
@@ -183,7 +185,7 @@ async function deleteObjectInternal(name: string): Promise<boolean> {
   if (gameitemsResult.success) {
     try {
       const gameitems: GameItemEntry[] = JSON.parse(gameitemsResult.content!);
-      const index = gameitems.findIndex((i: GameItemEntry) => i.file_name === filename);
+      const index = gameitems.findIndex((i: GameItemEntry) => i.file_name === baseFileName);
       if (index >= 0) {
         gameitems.splice(index, 1);
         await vpxEditor.writeFile(gameitemsPath, JSON.stringify(gameitems, null, 2));
@@ -191,7 +193,7 @@ async function deleteObjectInternal(name: string): Promise<boolean> {
       }
     } catch (parseError) {
       console.error('Failed to parse gameitems.json:', parseError);
-      const index = state.gameitems.findIndex((i: GameItemEntry) => i.file_name === filename);
+      const index = state.gameitems.findIndex((i: GameItemEntry) => i.file_name === baseFileName);
       if (index >= 0) {
         state.gameitems.splice(index, 1);
         await vpxEditor.writeFile(gameitemsPath, JSON.stringify(state.gameitems, null, 2));
@@ -199,12 +201,12 @@ async function deleteObjectInternal(name: string): Promise<boolean> {
     }
   }
 
-  delete state.items[name];
+  deleteItem(name);
   return true;
 }
 
 export async function deleteObject(name: string, skipUndo: boolean = false): Promise<boolean> {
-  const item = state.items[name];
+  const item = getItem(name);
   if (!item) return false;
 
   if (skipUndo) {

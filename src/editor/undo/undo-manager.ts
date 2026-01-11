@@ -1,6 +1,5 @@
-import { UndoRecord, ItemSnapshot, RenameEntry, DeletedImageInfo } from './undo-record.js';
-import { state, elements } from '../state.js';
-import { getItemNameFromFileName } from '../utils.js';
+import { UndoRecord, ItemSnapshot, RenameEntry, DeletedImageInfo, DeletedSoundInfo } from './undo-record.js';
+import { state, elements, getItem, setItem, deleteItem, setPartGroup, deletePartGroup } from '../state.js';
 
 interface EditorItem {
   _type: string;
@@ -30,6 +29,9 @@ type OnChangeCallback = () => void;
 interface UndoRedoResult {
   success: boolean;
   selectItems?: string[];
+  imagesChanged?: boolean;
+  materialsChanged?: boolean;
+  soundsChanged?: boolean;
 }
 
 class UndoManager {
@@ -81,7 +83,7 @@ class UndoManager {
     if (this.currentRecord.snapshots.has(itemName)) return;
     if (this.currentRecord.createdItems.includes(itemName)) return;
 
-    const item = (state.items as Record<string, EditorItem>)[itemName];
+    const item = getItem(itemName) as EditorItem | undefined;
     if (!item) return;
 
     this.currentRecord.snapshots.set(itemName, {
@@ -99,7 +101,7 @@ class UndoManager {
   markForDelete(itemName: string): void {
     if (!this.enabled || !this.currentRecord) return;
 
-    const item = (state.items as Record<string, EditorItem>)[itemName];
+    const item = getItem(itemName) as EditorItem | undefined;
     if (!item) return;
 
     this.currentRecord.deletedItems.set(itemName, this._createItemSnapshot(item, itemName));
@@ -164,6 +166,25 @@ class UndoManager {
     this.markMaterialsForUndo();
   }
 
+  markSoundsForUndo(): void {
+    if (!this.enabled || !this.currentRecord) return;
+    if (this.currentRecord.soundsBefore !== null) return;
+
+    this.currentRecord.soundsBefore = JSON.parse(JSON.stringify(state.sounds));
+  }
+
+  markSoundForCreate(soundName: string): void {
+    if (!this.enabled || !this.currentRecord) return;
+    this.currentRecord.createdSounds.push(soundName);
+    this.markSoundsForUndo();
+  }
+
+  markSoundForDelete(soundName: string, soundData: unknown, filePath: string): void {
+    if (!this.enabled || !this.currentRecord) return;
+    this.currentRecord.deletedSounds.set(soundName, { data: soundData, filePath });
+    this.markSoundsForUndo();
+  }
+
   markRenderProbesForUndo(): void {
     if (!this.enabled || !this.currentRecord) return;
     if (this.currentRecord.renderProbesBefore !== null) return;
@@ -214,16 +235,16 @@ class UndoManager {
     this.currentRecord.hiddenItemsBefore = state.hiddenItems ? Array.from(state.hiddenItems as Set<string>) : [];
   }
 
-  recordScriptChange(before: string, after: string): void {
+  async recordScriptChange(before: string, after: string): Promise<void> {
     this.beginUndo('Edit Script');
     if (this.currentRecord) {
       this.currentRecord.scriptBefore = before;
       this.currentRecord.scriptAfter = after;
     }
-    this.endUndo();
+    await this.endUndo();
   }
 
-  endUndo(): void {
+  async endUndo(): Promise<void> {
     if (!this.enabled) return;
     if (this.transactionDepth <= 0) return;
 
@@ -231,14 +252,14 @@ class UndoManager {
 
     if (this.transactionDepth === 0 && this.currentRecord) {
       for (const [itemName, entry] of this.currentRecord.snapshots) {
-        const item = (state.items as Record<string, EditorItem>)[itemName];
+        const item = getItem(itemName) as EditorItem | undefined;
         if (item) {
           entry.after = this._createItemSnapshot(item, itemName);
         }
       }
 
       for (const itemName of this.currentRecord.createdItems) {
-        const item = (state.items as Record<string, EditorItem>)[itemName];
+        const item = getItem(itemName) as EditorItem | undefined;
         if (item) {
           this.currentRecord.snapshots.set(itemName, {
             before: null,
@@ -256,11 +277,18 @@ class UndoManager {
       }
 
       if (this.currentRecord.imagesBefore) {
+        await this._reloadImages();
         this.currentRecord.imagesAfter = JSON.parse(JSON.stringify(state.images));
       }
 
       if (this.currentRecord.materialsBefore) {
+        await this._reloadMaterials();
         this.currentRecord.materialsAfter = JSON.parse(JSON.stringify(state.materials));
+      }
+
+      if (this.currentRecord.soundsBefore) {
+        await this._reloadSounds();
+        this.currentRecord.soundsAfter = JSON.parse(JSON.stringify(state.sounds));
       }
 
       if (this.currentRecord.renderProbesBefore) {
@@ -378,6 +406,27 @@ class UndoManager {
         await this._saveMaterials();
       }
 
+      if (record.soundsBefore) {
+        (state as { sounds: unknown[] }).sounds = record.soundsBefore as unknown[];
+        (state as { soundNames: string[] }).soundNames = (state.sounds as { name: string }[])
+          .map(s => s.name)
+          .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+        await this._saveSounds();
+      } else if (record.createdSounds.length > 0 || record.deletedSounds.size > 0) {
+        for (const soundName of record.createdSounds) {
+          await this._removeSound(soundName);
+        }
+
+        for (const [, soundInfo] of record.deletedSounds) {
+          await this._restoreSound(soundInfo);
+        }
+
+        (state as { soundNames: string[] }).soundNames = (state.sounds as { name: string }[])
+          .map(s => s.name)
+          .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+        await this._saveSounds();
+      }
+
       if (record.renderProbesBefore) {
         (state as { renderProbes: Record<string, unknown> }).renderProbes = record.renderProbesBefore as Record<
           string,
@@ -441,7 +490,14 @@ class UndoManager {
         selectItems = [];
       }
 
-      return { success: true, selectItems };
+      const imagesChanged =
+        record.imagesBefore !== null || record.createdImages.length > 0 || record.deletedImages.size > 0;
+      const materialsChanged =
+        record.materialsBefore !== null || record.createdMaterials.length > 0 || record.deletedMaterials.size > 0;
+      const soundsChanged =
+        record.soundsBefore !== null || record.createdSounds.length > 0 || record.deletedSounds.size > 0;
+
+      return { success: true, selectItems, imagesChanged, materialsChanged, soundsChanged };
     } catch (error: unknown) {
       console.error('Undo failed:', error);
       this._updateStatusBar(`Undo failed: ${(error as Error).message}`);
@@ -517,6 +573,23 @@ class UndoManager {
         await this._saveMaterials();
       }
 
+      if (record.soundsAfter) {
+        (state as { sounds: unknown[] }).sounds = record.soundsAfter as unknown[];
+        (state as { soundNames: string[] }).soundNames = (state.sounds as { name: string }[])
+          .map(s => s.name)
+          .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+        await this._saveSounds();
+      } else if (record.createdSounds.length > 0 || record.deletedSounds.size > 0) {
+        for (const [, soundInfo] of record.deletedSounds) {
+          await this._removeSound((soundInfo.data as { name: string }).name);
+        }
+
+        (state as { soundNames: string[] }).soundNames = (state.sounds as { name: string }[])
+          .map(s => s.name)
+          .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+        await this._saveSounds();
+      }
+
       if (record.renderProbesAfter) {
         (state as { renderProbes: Record<string, unknown> }).renderProbes = record.renderProbesAfter as Record<
           string,
@@ -563,7 +636,14 @@ class UndoManager {
         selectItems = [];
       }
 
-      return { success: true, selectItems };
+      const imagesChanged =
+        record.imagesAfter !== null || record.createdImages.length > 0 || record.deletedImages.size > 0;
+      const materialsChanged =
+        record.materialsAfter !== null || record.createdMaterials.length > 0 || record.deletedMaterials.size > 0;
+      const soundsChanged =
+        record.soundsAfter !== null || record.createdSounds.length > 0 || record.deletedSounds.size > 0;
+
+      return { success: true, selectItems, imagesChanged, materialsChanged, soundsChanged };
     } catch (error: unknown) {
       console.error('Redo failed:', error);
       this._updateStatusBar(`Redo failed: ${(error as Error).message}`);
@@ -642,10 +722,11 @@ class UndoManager {
       _layer: snapshot.layer,
     };
 
-    (state.items as Record<string, EditorItem>)[snapshot.itemName] = item;
+    const baseFileName = snapshot.fileName.replace('gameitems/', '');
+    setItem(snapshot.itemName, item as import('../state.js').GameItem, baseFileName);
 
     if (snapshot.type === 'PartGroup') {
-      (state.partGroups as Record<string, EditorItem>)[snapshot.itemName] = item;
+      setPartGroup(snapshot.itemName, item as import('../state.js').PartGroup);
     }
 
     const saveData: Record<string, Record<string, unknown>> = { [snapshot.type]: {} };
@@ -664,19 +745,18 @@ class UndoManager {
   }
 
   async _removeItem(itemName: string): Promise<void> {
-    const item = (state.items as Record<string, EditorItem>)[itemName];
+    const item = getItem(itemName) as EditorItem | undefined;
     if (!item) return;
 
     if (item._type === 'PartGroup') {
-      delete (state.partGroups as Record<string, EditorItem>)[itemName];
+      deletePartGroup(itemName);
     }
 
-    delete (state.items as Record<string, EditorItem>)[itemName];
+    deleteItem(itemName);
 
     const fileNameOnly = item._fileName?.replace('gameitems/', '');
-    const index = (state.gameitems as GameitemEntry[]).findIndex(
-      gi => gi.file_name === fileNameOnly || (gi.file_name && getItemNameFromFileName(gi.file_name) === itemName)
-    );
+    if (!fileNameOnly) return;
+    const index = (state.gameitems as GameitemEntry[]).findIndex(gi => gi.file_name === fileNameOnly);
     if (index >= 0) {
       (state.gameitems as GameitemEntry[]).splice(index, 1);
       await this._saveGameitemsList();
@@ -684,19 +764,20 @@ class UndoManager {
   }
 
   async _undoRename(rename: RenameEntry): Promise<void> {
-    const item = (state.items as Record<string, EditorItem>)[rename.newName];
+    const item = getItem(rename.newName) as EditorItem | undefined;
     if (!item) return;
 
-    delete (state.items as Record<string, EditorItem>)[rename.newName];
+    deleteItem(rename.newName);
     if (item._type === 'PartGroup') {
-      delete (state.partGroups as Record<string, EditorItem>)[rename.newName];
+      deletePartGroup(rename.newName);
     }
 
     item.name = rename.oldName;
     item._fileName = rename.oldFileName;
-    (state.items as Record<string, EditorItem>)[rename.oldName] = item;
+    const oldBaseFileName = rename.oldFileName.replace('gameitems/', '');
+    setItem(rename.oldName, item as import('../state.js').GameItem, oldBaseFileName);
     if (item._type === 'PartGroup') {
-      (state.partGroups as Record<string, EditorItem>)[rename.oldName] = item;
+      setPartGroup(rename.oldName, item as import('../state.js').PartGroup);
       for (const [itemName, refItem] of Object.entries(state.items as Record<string, EditorItem>)) {
         if (refItem.part_group_name === rename.newName) {
           refItem.part_group_name = rename.oldName;
@@ -720,19 +801,20 @@ class UndoManager {
   }
 
   async _redoRename(rename: RenameEntry): Promise<void> {
-    const item = (state.items as Record<string, EditorItem>)[rename.oldName];
+    const item = getItem(rename.oldName) as EditorItem | undefined;
     if (!item) return;
 
-    delete (state.items as Record<string, EditorItem>)[rename.oldName];
+    deleteItem(rename.oldName);
     if (item._type === 'PartGroup') {
-      delete (state.partGroups as Record<string, EditorItem>)[rename.oldName];
+      deletePartGroup(rename.oldName);
     }
 
     item.name = rename.newName;
     item._fileName = rename.newFileName;
-    (state.items as Record<string, EditorItem>)[rename.newName] = item;
+    const newBaseFileName = rename.newFileName.replace('gameitems/', '');
+    setItem(rename.newName, item as import('../state.js').GameItem, newBaseFileName);
     if (item._type === 'PartGroup') {
-      (state.partGroups as Record<string, EditorItem>)[rename.newName] = item;
+      setPartGroup(rename.newName, item as import('../state.js').PartGroup);
       for (const [itemName, refItem] of Object.entries(state.items as Record<string, EditorItem>)) {
         if (refItem.part_group_name === rename.oldName) {
           refItem.part_group_name = rename.newName;
@@ -834,6 +916,61 @@ class UndoManager {
       a.toLowerCase().localeCompare(b.toLowerCase())
     );
     await this._saveImages();
+  }
+
+  async _saveSounds(): Promise<void> {
+    await window.vpxEditor.writeFile(`${state.extractedDir}/sounds.json`, JSON.stringify(state.sounds, null, 2));
+  }
+
+  async _removeSound(soundName: string): Promise<void> {
+    const soundIndex = (state.sounds as { name: string; path?: string }[]).findIndex(
+      s => s.name.toLowerCase() === soundName.toLowerCase()
+    );
+    if (soundIndex !== -1) {
+      (state.sounds as unknown[]).splice(soundIndex, 1);
+      (state as { soundNames: string[] }).soundNames = (state.sounds as { name: string }[])
+        .map(s => s.name)
+        .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+    }
+    await this._saveSounds();
+  }
+
+  async _restoreSound(soundInfo: DeletedSoundInfo): Promise<void> {
+    (state.sounds as unknown[]).push(soundInfo.data);
+    (state as { soundNames: string[] }).soundNames = (state.sounds as { name: string }[])
+      .map(s => s.name)
+      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+    await this._saveSounds();
+  }
+
+  async _reloadImages(): Promise<void> {
+    const result = await window.vpxEditor.readFile(`${state.extractedDir}/images.json`);
+    if (result.success && result.content) {
+      (state as { images: Record<string, unknown> }).images = JSON.parse(result.content);
+      (state as { imageNames: string[] }).imageNames = Object.keys(state.images).sort((a, b) =>
+        a.toLowerCase().localeCompare(b.toLowerCase())
+      );
+    }
+  }
+
+  async _reloadMaterials(): Promise<void> {
+    const result = await window.vpxEditor.readFile(`${state.extractedDir}/materials.json`);
+    if (result.success && result.content) {
+      (state as { materials: Record<string, unknown> }).materials = JSON.parse(result.content);
+      (state as { materialNames: string[] }).materialNames = Object.keys(state.materials).sort((a, b) =>
+        a.toLowerCase().localeCompare(b.toLowerCase())
+      );
+    }
+  }
+
+  async _reloadSounds(): Promise<void> {
+    const result = await window.vpxEditor.readFile(`${state.extractedDir}/sounds.json`);
+    if (result.success && result.content) {
+      (state as { sounds: unknown[] }).sounds = JSON.parse(result.content);
+      (state as { soundNames: string[] }).soundNames = (state.sounds as { name: string }[])
+        .map(s => s.name)
+        .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+    }
   }
 
   _updateStatusBar(message: string): void {

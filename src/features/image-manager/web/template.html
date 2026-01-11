@@ -1,0 +1,61 @@
+<div id="image-manager-modal" class="manager-modal hidden" data-theme="dark">
+  <div class="manager-modal-backdrop"></div>
+  <div class="manager-modal-window">
+    <div class="manager-header">
+      <span class="manager-title">Image Manager</span>
+      <button class="manager-close" id="image-manager-close">&times;</button>
+    </div>
+    <div class="manager-toolbar">
+      <input type="text" id="image-filter" placeholder="Filter...">
+      <div class="manager-toolbar-spacer"></div>
+      <button id="image-import-btn" class="primary">Import</button>
+    </div>
+    <div class="manager-content">
+      <div class="manager-list" id="image-list-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 48px;"></th>
+              <th class="sortable" data-sort="name">Name</th>
+              <th class="sortable" data-sort="size" style="width: 90px;">Size</th>
+              <th class="sortable" data-sort="format" style="width: 70px;">Format</th>
+              <th class="sortable" data-sort="used" style="width: 60px;">Used</th>
+            </tr>
+          </thead>
+          <tbody id="image-list-body"></tbody>
+        </table>
+      </div>
+      <div class="manager-preview">
+        <div class="manager-preview-container">
+          <img id="image-preview" alt="Preview" style="display: none;">
+          <span id="image-preview-placeholder">Select an image</span>
+        </div>
+        <div class="manager-details">
+          <div class="manager-detail-row">
+            <span class="manager-detail-label">Name:</span>
+            <span class="manager-detail-value" id="image-detail-name">-</span>
+          </div>
+          <div class="manager-detail-row">
+            <span class="manager-detail-label">Dimensions:</span>
+            <span class="manager-detail-value" id="image-detail-dims">-</span>
+          </div>
+          <div class="manager-detail-row">
+            <span class="manager-detail-label">Format:</span>
+            <span class="manager-detail-value" id="image-detail-format">-</span>
+          </div>
+          <div class="manager-used-by">
+            <div class="manager-detail-label">Used by:</div>
+            <div id="image-used-by-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="manager-status" id="image-manager-status">Ready</div>
+  </div>
+  <div id="image-context-menu" class="context-menu hidden">
+    <div class="context-menu-item" data-action="rename">Rename</div>
+    <div class="context-menu-item" data-action="export">Export</div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" data-action="delete">Delete</div>
+  </div>
+</div>

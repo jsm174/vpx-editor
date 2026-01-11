@@ -162,7 +162,8 @@ async function initConsole(): Promise<void> {
   }
 
   const version: string = await window.vpxEditor.getVersion();
-  appendConsoleLine(`VPX Editor ${version}`, 'info');
+  const platform = window.vpxEditor.isWeb() ? 'Web' : 'Desktop';
+  appendConsoleLine(`VPX Editor ${version} [${platform}]`, 'info');
 }
 
 export { clearConsole, showConsole, hideConsole, appendConsoleLine, initConsole, consoleOutput };

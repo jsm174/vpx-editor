@@ -1,0 +1,90 @@
+@import '../shared/styles.css';
+
+.collection-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.collection-modal.hidden {
+  display: none;
+}
+
+.collection-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.collection-modal-window {
+  position: relative;
+  width: 450px;
+  height: 400px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.collection-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 8px 8px 0 0;
+}
+
+.collection-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.collection-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 8px;
+  line-height: 1;
+}
+
+.collection-close:hover {
+  color: var(--text-primary);
+}
+
+.collection-body {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.collection-modal .overlay {
+  position: fixed;
+  z-index: 2001;
+}
+
+.collection-modal .editor-dialog {
+  width: 800px;
+}
+
+.collection-modal .editor-options {
+  margin: 12px 0 0 0;
+  padding: 0;
+  background: transparent;
+}

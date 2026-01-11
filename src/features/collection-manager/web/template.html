@@ -1,0 +1,79 @@
+<div id="collection-modal" class="collection-modal hidden" data-theme="dark">
+  <div class="collection-modal-backdrop"></div>
+  <div class="collection-modal-window">
+    <div class="collection-header">
+      <span class="collection-title">Collection Manager</span>
+      <button class="collection-close" id="collection-close">&times;</button>
+    </div>
+    <div class="collection-body">
+      <div class="collection-list-container">
+        <div id="collection-list" class="collection-list"></div>
+      </div>
+      <div class="collection-buttons">
+        <button class="win-btn" id="collection-new-btn">New</button>
+        <button class="win-btn" id="collection-from-selection-btn">From Selection</button>
+        <button class="win-btn" id="collection-edit-btn">Edit</button>
+        <button class="win-btn" id="collection-rename-btn">Rename</button>
+        <button class="win-btn" id="collection-delete-btn">Delete</button>
+        <button class="win-btn" id="collection-up-btn">Up</button>
+        <button class="win-btn" id="collection-down-btn">Down</button>
+      </div>
+    </div>
+    <div id="collection-editor-overlay" class="overlay hidden">
+      <div class="editor-dialog">
+        <div class="editor-header">
+          <span class="editor-title">Edit Collection</span>
+          <button class="editor-close" id="collection-editor-close">&times;</button>
+        </div>
+        <div class="editor-name-row">
+          <label>Name:</label>
+          <input type="text" id="collection-editor-name" class="win-input">
+        </div>
+        <div class="editor-body">
+          <div class="editor-panel">
+            <div class="editor-label">Not Included</div>
+            <input type="text" id="collection-editor-available-filter" class="win-input editor-filter" placeholder="Filter...">
+            <div id="collection-editor-available" class="editor-list"></div>
+          </div>
+          <div class="editor-transfer">
+            <button class="win-btn" id="collection-editor-add">▶</button>
+            <button class="win-btn" id="collection-editor-remove">◀</button>
+            <button class="win-btn" id="collection-editor-up">▲</button>
+            <button class="win-btn" id="collection-editor-down">▼</button>
+          </div>
+          <div class="editor-panel">
+            <div class="editor-label">Included</div>
+            <input type="text" id="collection-editor-included-filter" class="win-input editor-filter" placeholder="Filter...">
+            <div id="collection-editor-included" class="editor-list"></div>
+          </div>
+        </div>
+        <div class="editor-options">
+          <label><input type="checkbox" id="collection-editor-fire-events"> Fire events for this collection</label>
+          <label><input type="checkbox" id="collection-editor-stop-single"> Suppress individual events for each member</label>
+          <label><input type="checkbox" id="collection-editor-group"> Group elements together</label>
+        </div>
+        <div id="collection-editor-error" class="prompt-error"></div>
+        <div class="editor-footer">
+          <button class="win-btn" id="collection-editor-cancel">Cancel</button>
+          <button class="win-btn primary" id="collection-editor-ok">OK</button>
+        </div>
+      </div>
+    </div>
+    <div id="collection-prompt-overlay" class="overlay hidden">
+      <div class="prompt-dialog">
+        <div class="prompt-header">
+          <span class="prompt-title" id="collection-prompt-title">New Collection</span>
+          <button class="prompt-close" id="collection-prompt-close">&times;</button>
+        </div>
+        <div class="prompt-body">
+          <input type="text" id="collection-prompt-input" class="win-input" placeholder="Enter collection name">
+          <div id="collection-prompt-error" class="prompt-error"></div>
+        </div>
+        <div class="prompt-footer">
+          <button class="win-btn" id="collection-prompt-cancel">Cancel</button>
+          <button class="win-btn primary" id="collection-prompt-ok">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

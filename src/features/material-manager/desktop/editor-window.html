@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>New Material</title>
+  <script>
+    var theme = new URLSearchParams(window.location.search).get('theme');
+    if (theme) document.documentElement.setAttribute('data-theme', theme);
+  </script>
+  <link rel="stylesheet" href="../../../shared/window-base.css">
+  <link rel="stylesheet" href="./editor-window.css">
+</head>
+<body>
+  <div id="app">
+    <div class="editor-content">
+      <div class="prop-group">
+        <div class="prop-row">
+          <label class="prop-label">Name</label>
+          <input type="text" class="prop-input" id="edit-name" value="">
+        </div>
+        <div class="prop-row">
+          <label class="prop-label">Type</label>
+          <select class="prop-select" id="edit-type">
+            <option value="basic">Basic</option>
+            <option value="metal">Metal</option>
+          </select>
+        </div>
+      </div>
+      <div class="prop-group">
+        <div class="prop-group-title">Physics</div>
+        <div class="prop-row">
+          <label class="prop-label">Elasticity</label>
+          <input type="number" class="prop-input" id="edit-elasticity" value="0.000" step="0.01">
+        </div>
+        <div class="prop-row">
+          <label class="prop-label">Elasticity Falloff</label>
+          <input type="number" class="prop-input" id="edit-elasticity-falloff" value="0.000" step="0.01">
+        </div>
+        <div class="prop-row">
+          <label class="prop-label">Friction</label>
+          <input type="number" class="prop-input" id="edit-friction" value="0.000" step="0.01">
+        </div>
+        <div class="prop-row">
+          <label class="prop-label">Scatter Angle</label>
+          <input type="number" class="prop-input" id="edit-scatter" value="0.00" step="0.5">
+        </div>
+      </div>
+      <div id="name-error" class="name-error"></div>
+    </div>
+    <div class="editor-footer">
+      <button class="win-btn" id="editor-cancel">Cancel</button>
+      <button class="win-btn primary" id="editor-ok">OK</button>
+    </div>
+  </div>
+
+  <script type="module" src="./editor-window.ts"></script>
+</body>
+</html>

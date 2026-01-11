@@ -1,4 +1,4 @@
-import { state, elements, isItemVisible, GameItem, Point, DragPoint } from './state.js';
+import { state, elements, isItemVisible, GameItem, Point, DragPoint, getItem, getItemByFileName } from './state.js';
 import {
   DEFAULT_ELEMENT_SELECT_COLOR,
   DEFAULT_ELEMENT_SELECT_LOCKED_COLOR,
@@ -8,9 +8,8 @@ import {
   BOUNDS_PADDING,
 } from '../shared/constants.js';
 import { getItemCenter } from '../shared/position-utils.js';
-import { getItemNameFromFileName } from '../shared/gameitem-utils.js';
 import { getDragPointCoords } from '../types/game-objects.js';
-export { getItemCenter, getItemNameFromFileName, getDragPointCoords };
+export { getItemCenter, getDragPointCoords };
 
 export interface Vertex {
   x: number;
@@ -622,7 +621,7 @@ export function zoomToFitItems(itemNames: string[], animate: boolean = true): vo
     maxY = -Infinity;
 
   for (const name of itemNames) {
-    const item = state.items[name];
+    const item = getItem(name);
     if (!item) continue;
     const bounds = getItemBounds(item);
     if (!bounds) continue;
@@ -749,14 +748,15 @@ export function hitTestItem(item: GameItem, worldX: number, worldY: number): boo
   return distFromCenter < 25;
 }
 
-export function findItemsAtPoint(items: Record<string, GameItem>, worldX: number, worldY: number): string[] {
+export function findItemsAtPoint(_items: Record<string, GameItem>, worldX: number, worldY: number): string[] {
   const hits: string[] = [];
   for (let i = state.gameitems.length - 1; i >= 0; i--) {
     const gi = state.gameitems[i];
     if (!gi.file_name) continue;
-    const name = getItemNameFromFileName(gi.file_name);
-    const item = items[name];
-    if (!item || !isItemVisible(item, name)) continue;
+    const item = getItemByFileName(gi.file_name);
+    if (!item) continue;
+    const name = item.name || gi.file_name;
+    if (!isItemVisible(item, name)) continue;
     if (hitTestItem(item, worldX, worldY)) {
       hits.push(name);
     }

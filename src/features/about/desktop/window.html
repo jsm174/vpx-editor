@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>About VPX Editor</title>
+  <script>
+    var theme = new URLSearchParams(window.location.search).get('theme');
+    if (theme) document.documentElement.setAttribute('data-theme', theme);
+  </script>
+  <link rel="stylesheet" href="../../../shared/window-base.css">
+  <link rel="stylesheet" href="../shared/component.css">
+  <link rel="stylesheet" href="window.css">
+</head>
+<body>
+  <div class="about-container">
+    <img class="about-icon" id="about-icon" src="/icons/about-icon.png" alt="VPX Editor">
+    <div class="about-name">VPX Editor</div>
+    <div class="about-version" id="about-version"></div>
+    <div class="about-thanks">
+      <div class="about-thanks-title">Special Thanks:</div>
+      <a href="https://github.com/vpinball/vpinball" target="_blank" rel="noopener">Visual Pinball</a>
+      <a href="https://github.com/francisdb/vpin" target="_blank" rel="noopener">vpin</a>
+      <a href="https://threejs.org/" target="_blank" rel="noopener">Three.js</a>
+      <a href="https://microsoft.github.io/monaco-editor/" target="_blank" rel="noopener">Monaco Editor</a>
+    </div>
+  </div>
+  <script type="module" src="./window.ts"></script>
+</body>
+</html>

@@ -23,6 +23,11 @@ export interface DeletedImageInfo {
   filePath: string;
 }
 
+export interface DeletedSoundInfo {
+  data: unknown;
+  filePath: string;
+}
+
 export interface UndoRecordJSON {
   id: number;
   timestamp: number;
@@ -44,6 +49,10 @@ export interface UndoRecordJSON {
   materialsAfter: Record<string, unknown> | null;
   createdMaterials: string[];
   deletedMaterials: [string, unknown][];
+  soundsBefore: unknown[] | null;
+  soundsAfter: unknown[] | null;
+  createdSounds: string[];
+  deletedSounds: [string, DeletedSoundInfo][];
   renderProbesBefore: Record<string, unknown> | null;
   renderProbesAfter: Record<string, unknown> | null;
   createdRenderProbes: string[];
@@ -79,6 +88,10 @@ export class UndoRecord {
   materialsAfter: Record<string, unknown> | null;
   createdMaterials: string[];
   deletedMaterials: Map<string, unknown>;
+  soundsBefore: unknown[] | null;
+  soundsAfter: unknown[] | null;
+  createdSounds: string[];
+  deletedSounds: Map<string, DeletedSoundInfo>;
   renderProbesBefore: Record<string, unknown> | null;
   renderProbesAfter: Record<string, unknown> | null;
   createdRenderProbes: string[];
@@ -119,6 +132,11 @@ export class UndoRecord {
     this.createdMaterials = [];
     this.deletedMaterials = new Map();
 
+    this.soundsBefore = null;
+    this.soundsAfter = null;
+    this.createdSounds = [];
+    this.deletedSounds = new Map();
+
     this.renderProbesBefore = null;
     this.renderProbesAfter = null;
     this.createdRenderProbes = [];
@@ -151,6 +169,9 @@ export class UndoRecord {
       this.materialsBefore !== null ||
       this.createdMaterials.length > 0 ||
       this.deletedMaterials.size > 0 ||
+      this.soundsBefore !== null ||
+      this.createdSounds.length > 0 ||
+      this.deletedSounds.size > 0 ||
       this.renderProbesBefore !== null ||
       this.createdRenderProbes.length > 0 ||
       this.deletedRenderProbes.size > 0 ||
@@ -183,6 +204,10 @@ export class UndoRecord {
       materialsAfter: this.materialsAfter,
       createdMaterials: this.createdMaterials,
       deletedMaterials: Array.from(this.deletedMaterials.entries()),
+      soundsBefore: this.soundsBefore,
+      soundsAfter: this.soundsAfter,
+      createdSounds: this.createdSounds,
+      deletedSounds: Array.from(this.deletedSounds.entries()),
       renderProbesBefore: this.renderProbesBefore,
       renderProbesAfter: this.renderProbesAfter,
       createdRenderProbes: this.createdRenderProbes,
@@ -219,6 +244,10 @@ export class UndoRecord {
     record.materialsAfter = json.materialsAfter;
     record.createdMaterials = json.createdMaterials;
     record.deletedMaterials = new Map(json.deletedMaterials);
+    record.soundsBefore = json.soundsBefore;
+    record.soundsAfter = json.soundsAfter;
+    record.createdSounds = json.createdSounds || [];
+    record.deletedSounds = new Map(json.deletedSounds || []);
     record.renderProbesBefore = json.renderProbesBefore;
     record.renderProbesAfter = json.renderProbesAfter;
     record.createdRenderProbes = json.createdRenderProbes || [];

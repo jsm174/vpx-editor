@@ -1,0 +1,104 @@
+<div id="dimensions-modal" class="dimensions-modal hidden" data-theme="dark">
+  <div class="dimensions-modal-backdrop"></div>
+  <div class="dimensions-modal-window">
+    <div class="dimensions-header">
+      <span class="dimensions-title">Dimensions Manager</span>
+      <button class="dimensions-close" id="dimensions-close">&times;</button>
+    </div>
+    <div class="dimensions-body">
+      <div class="dimensions-list-panel">
+        <div class="dimensions-list-container">
+          <table class="dimensions-table" id="dimensions-table">
+            <thead>
+              <tr>
+                <th data-sort="name">Manufacturer</th>
+                <th data-sort="width">Width</th>
+                <th data-sort="height">Height</th>
+                <th data-sort="glassBottom">Bot.</th>
+                <th data-sort="glassTop">Top</th>
+                <th data-sort="comment">Comment</th>
+              </tr>
+            </thead>
+            <tbody id="dimensions-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="dimensions-props-panel">
+        <div class="dimensions-prop-group">
+          <div class="dimensions-prop-title">Selected Reference</div>
+          <div class="dimensions-prop-section">Size in inches:</div>
+          <div class="dimensions-prop-row">
+            <span class="dimensions-prop-label">Width</span>
+            <input type="text" id="dim-ref-width-in" class="dimensions-prop-input" readonly>
+          </div>
+          <div class="dimensions-prop-row">
+            <span class="dimensions-prop-label">Height</span>
+            <input type="text" id="dim-ref-height-in" class="dimensions-prop-input" readonly>
+          </div>
+          <div class="dimensions-prop-section">Size in VP units:</div>
+          <div class="dimensions-prop-row">
+            <span class="dimensions-prop-label">Width</span>
+            <input type="text" id="dim-ref-width-vp" class="dimensions-prop-input" readonly>
+          </div>
+          <div class="dimensions-prop-row">
+            <span class="dimensions-prop-label">Height</span>
+            <input type="text" id="dim-ref-height-vp" class="dimensions-prop-input" readonly>
+          </div>
+          <div class="dimensions-prop-section">Glass pos. in inches:</div>
+          <div class="dimensions-prop-row">
+            <span class="dimensions-prop-label">Top</span>
+            <input type="text" id="dim-ref-glass-top" class="dimensions-prop-input" readonly>
+          </div>
+          <div class="dimensions-prop-row">
+            <span class="dimensions-prop-label">Bottom</span>
+            <input type="text" id="dim-ref-glass-bottom" class="dimensions-prop-input" readonly>
+          </div>
+          <div class="dimensions-prop-row">
+            <span class="dimensions-prop-label">Aspect Ratio</span>
+            <span class="dimensions-prop-value" id="dim-ref-aspect-ratio">-</span>
+          </div>
+        </div>
+        <div class="dimensions-prop-group">
+          <div class="dimensions-prop-title">Edited Table</div>
+          <div class="dimensions-prop-section">Size in inches:</div>
+          <div class="dimensions-prop-row">
+            <span class="dimensions-prop-label">Width</span>
+            <input type="text" id="dim-cur-width-in" class="dimensions-prop-input editable">
+          </div>
+          <div class="dimensions-prop-row">
+            <span class="dimensions-prop-label">Height</span>
+            <input type="text" id="dim-cur-height-in" class="dimensions-prop-input editable">
+          </div>
+          <div class="dimensions-prop-section">Size in VP units:</div>
+          <div class="dimensions-prop-row">
+            <span class="dimensions-prop-label">Width</span>
+            <input type="text" id="dim-cur-width-vp" class="dimensions-prop-input editable">
+          </div>
+          <div class="dimensions-prop-row">
+            <span class="dimensions-prop-label">Height</span>
+            <input type="text" id="dim-cur-height-vp" class="dimensions-prop-input editable">
+          </div>
+          <div class="dimensions-prop-section">Glass pos. in inches:</div>
+          <div class="dimensions-prop-row">
+            <span class="dimensions-prop-label">Top</span>
+            <input type="text" id="dim-cur-glass-top" class="dimensions-prop-input editable">
+          </div>
+          <div class="dimensions-prop-row">
+            <span class="dimensions-prop-label">Bottom</span>
+            <input type="text" id="dim-cur-glass-bottom" class="dimensions-prop-input editable">
+          </div>
+          <div class="dimensions-prop-row">
+            <span class="dimensions-prop-label">Aspect Ratio</span>
+            <span class="dimensions-prop-value" id="dim-cur-aspect-ratio">-</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dimensions-footer">
+      <button class="win-btn" id="dim-copy-btn" title="Copy selected reference to edited table">Copy</button>
+      <div class="dimensions-footer-spacer"></div>
+      <button class="win-btn" id="dim-close-btn">Close</button>
+      <button class="win-btn primary" id="dim-apply-btn" disabled>Apply</button>
+    </div>
+  </div>
+</div>

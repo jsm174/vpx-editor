@@ -1,0 +1,5 @@
+@import '../shared/styles.css';
+
+#prompt-overlay {
+  position: fixed;
+}

@@ -1,0 +1,27 @@
+@import '../shared/component.css';
+
+.about-modal-window {
+  position: relative;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  width: 300px;
+  max-width: 95vw;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.about-modal .manager-header {
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.about-modal .about-modal-content {
+  position: static;
+  border: none;
+  border-radius: 0;
+  width: 100%;
+  box-shadow: none;
+}

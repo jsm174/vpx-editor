@@ -1,0 +1,91 @@
+<div id="render-probe-modal" class="render-probe-modal hidden" data-theme="dark">
+  <div class="render-probe-modal-backdrop"></div>
+  <div class="render-probe-modal-window">
+    <div class="render-probe-header">
+      <span class="render-probe-title">Render Probe Manager</span>
+      <button class="render-probe-close" id="render-probe-close">&times;</button>
+    </div>
+    <div class="render-probe-toolbar">
+      <div class="render-probe-toolbar-spacer"></div>
+      <button class="win-btn primary" id="render-probe-new-btn">New</button>
+    </div>
+    <div class="render-probe-body">
+      <div class="render-probe-list-container">
+        <div id="render-probe-list"></div>
+      </div>
+      <div class="render-probe-props-panel">
+        <div class="render-probe-empty-state" id="render-probe-empty-state">Select a render probe to view properties</div>
+        <div id="render-probe-properties-container" style="display: none;">
+          <div class="prop-group">
+            <div class="prop-group-title">Type</div>
+            <div class="render-probe-radio-row">
+              <label>
+                <input type="radio" name="rp-probe-type" id="rp-type-plane" value="plane_reflection">
+                <span>Plane Reflection</span>
+              </label>
+            </div>
+            <div class="render-probe-radio-row">
+              <label>
+                <input type="radio" name="rp-probe-type" id="rp-type-screen" value="screen_space_transparency">
+                <span>Screen Space Transparency</span>
+              </label>
+            </div>
+          </div>
+          <div class="prop-group">
+            <div class="prop-group-title">Roughness</div>
+            <div class="render-probe-slider-row">
+              <input type="range" id="rp-roughness" min="0" max="12" step="1" value="0">
+              <span class="render-probe-slider-label" id="rp-roughness-label">Level: 0</span>
+            </div>
+          </div>
+          <div class="prop-group" id="rp-reflection-plane-group">
+            <div class="prop-group-title">Reflection Plane</div>
+            <div class="prop-row">
+              <label class="prop-label">Normal X</label>
+              <input type="number" class="prop-input" id="rp-plane-x" step="0.01">
+            </div>
+            <div class="prop-row">
+              <label class="prop-label">Normal Y</label>
+              <input type="number" class="prop-input" id="rp-plane-y" step="0.01">
+            </div>
+            <div class="prop-row">
+              <label class="prop-label">Normal Z</label>
+              <input type="number" class="prop-input" id="rp-plane-z" step="0.01">
+            </div>
+            <div class="prop-row">
+              <label class="prop-label">Distance</label>
+              <input type="number" class="prop-input" id="rp-plane-w" step="0.01">
+            </div>
+          </div>
+          <div class="prop-group" id="rp-reflection-mode-group">
+            <div class="prop-group-title">Reflection Mode</div>
+            <div class="prop-row">
+              <select id="rp-reflection-mode" class="prop-input" style="flex: 1;">
+                <option value="none">Disabled</option>
+                <option value="balls">Balls Only</option>
+                <option value="static">Static Only</option>
+                <option value="static_and_balls">Static & Balls</option>
+                <option value="static_and_dynamic">Static & Unsynced Dynamic</option>
+                <option value="dynamic">Dynamic</option>
+              </select>
+            </div>
+          </div>
+          <div class="prop-group" id="rp-lightmaps-group">
+            <div class="prop-row">
+              <label style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="rp-disable-lightmaps">
+                <span>Disable lightmaps in reflections</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="render-probe-status" id="render-probe-status">Ready</div>
+    <div id="render-probe-context-menu" class="render-probe-context-menu hidden">
+      <div class="context-menu-item" data-action="rename">Rename</div>
+      <div class="context-menu-divider"></div>
+      <div class="context-menu-item" data-action="delete">Delete</div>
+    </div>
+  </div>
+</div>

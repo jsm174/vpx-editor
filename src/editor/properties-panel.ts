@@ -1,5 +1,15 @@
-import { state, elements, undoManager, PartGroup, SelectedNodeInfo } from './state.js';
-import { getItemNameFromFileName, getFileNameFromItemName } from '../shared/gameitem-utils.js';
+import {
+  state,
+  elements,
+  undoManager,
+  PartGroup,
+  SelectedNodeInfo,
+  getItem,
+  getPartGroup,
+  setItem,
+  deleteItem,
+} from './state.js';
+import { generateUniqueFileName } from '../shared/gameitem-utils.js';
 import { getDragPointCoords } from '../types/game-objects.js';
 import { VIEW_MODE_3D } from '../shared/constants.js';
 import { convertFromUnit, convertToUnit, getUnitSuffixHtml } from './utils.js';
@@ -13,6 +23,7 @@ import { updateLayersList } from './layers-panel.js';
 import { getEditable } from './parts/index.js';
 import { partGroupProperties } from './parts/partgroup.js';
 import type { WriteResult } from '../types/ipc.js';
+import type { GameData } from '../types/data.js';
 import {
   materialOptions,
   imageOptions,
@@ -34,63 +45,6 @@ export {
   soundOptions,
   renderProbeOptions,
 };
-
-interface GameData {
-  name?: string;
-  tone_mapper?: number;
-  playfield_material?: string;
-  image?: string;
-  playfield_reflection_strength?: number;
-  ball_image?: string;
-  ball_spherical_mapping?: boolean;
-  ball_image_front?: string;
-  ball_decal_mode?: boolean;
-  ball_playfield_reflection_strength?: number;
-  default_bulb_intensity_scale_on_ball?: number;
-  use_ao?: number;
-  ao_scale?: number;
-  use_ssr?: number;
-  ssr_scale?: number;
-  bloom_strength?: number;
-  exposure?: number;
-  env_image?: string;
-  env_emission_scale?: number;
-  light0_emission?: string;
-  light_emission_scale?: number;
-  light_height?: number;
-  light_range?: number;
-  light_ambient?: string;
-  global_emission_scale?: number;
-  gravity?: number;
-  elasticity?: number;
-  elastic_falloff?: number;
-  friction?: number;
-  scatter?: number;
-  default_scatter?: number;
-  override_physics?: number;
-  override_physics_flipper?: boolean;
-  right?: number;
-  bottom?: number;
-  glass_top_height?: number;
-  glass_bottom_height?: number;
-  ground_to_lockbar_height?: number;
-  angle_tilt_min?: number;
-  angle_tilt_max?: number;
-  global_difficulty?: number;
-  nudge_time?: number;
-  physics_max_loops?: number;
-  table_sound_volume?: number;
-  table_music_volume?: number;
-  backdrop_color?: string;
-  image_backdrop_night_day?: boolean;
-  backglass_image_full_desktop?: string;
-  backglass_image_full_fullscreen?: string;
-  backglass_image_full_single_screen?: string;
-  image_color_grade?: string;
-  render_em_reels?: boolean;
-  render_decals?: boolean;
-  [key: string]: unknown;
-}
 
 interface BackglassCameraProps {
   rotation: number;
@@ -124,6 +78,12 @@ const POSITION_PROPS: string[] = [
   'vPosition.z',
 ];
 
+function isPositionProp(prop: string): boolean {
+  if (POSITION_PROPS.includes(prop)) return true;
+  if (prop.startsWith('drag_points.')) return true;
+  return false;
+}
+
 function applyColorGradient(input: HTMLInputElement): void {
   const color = input.value;
   const r = parseInt(color.slice(1, 3), 16);
@@ -152,10 +112,9 @@ function tableProperties(gamedata: GameData): string {
     <div class="prop-header-sticky">
       <div class="prop-row">
         <label class="prop-label">Name</label>
-        <img src="icons/${lockIcon}.png" class="prop-lock-icon" alt="${lockLabel}">
+        <img src="icons/${lockIcon}.png" class="prop-lock-icon prop-lock-icon-clickable" id="lock-table-icon" alt="${lockLabel}" title="Click to ${lockLabel.toLowerCase()}">
         <input type="text" class="prop-input" data-prop="name" value="${gamedata.name || 'Table1'}" readonly style="background: transparent; border-color: transparent; flex: 1;">
         <button class="rename-btn" id="rename-table-btn">Rename</button>
-        <button class="rename-btn" id="lock-table-btn">${lockLabel}</button>
       </div>
     </div>
 
@@ -446,10 +405,9 @@ function backglassProperties(gamedata: GameData): string {
     <div class="prop-header-sticky">
       <div class="prop-row">
         <label class="prop-label">Name</label>
-        <img src="icons/${lockIcon}.png" class="prop-lock-icon" alt="${lockLabel}">
+        <img src="icons/${lockIcon}.png" class="prop-lock-icon prop-lock-icon-clickable" id="lock-table-icon" alt="${lockLabel}" title="Click to ${lockLabel.toLowerCase()}">
         <input type="text" class="prop-input" data-prop="name" value="${gamedata.name || 'Table1'}" readonly style="background: transparent; border-color: transparent; flex: 1;">
         <button class="rename-btn" id="rename-table-btn">Rename</button>
-        <button class="rename-btn" id="lock-table-btn">${lockLabel}</button>
       </div>
     </div>
 
@@ -565,7 +523,7 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
     : (elements.propertiesContent?.querySelector('.prop-tab.active') as HTMLElement)?.dataset.tab;
 
   if (state.selectedPartGroup) {
-    const group = state.partGroups[state.selectedPartGroup];
+    const group = getPartGroup(state.selectedPartGroup);
     if (group) {
       elements.propertiesTitle!.textContent = 'GROUP';
       let html = `
@@ -603,7 +561,7 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
     return;
   }
 
-  const item = state.items[state.primarySelectedItem];
+  const item = state.primarySelectedItem ? getItem(state.primarySelectedItem) : undefined;
   if (!item) return;
 
   if (
@@ -712,7 +670,7 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
   const isMultiSelect = state.selectedItems.length > 1;
 
   if (isMultiSelect) {
-    const types = [...new Set(state.selectedItems.map(name => state.items[name]?._type).filter(Boolean))];
+    const types = [...new Set(state.selectedItems.map(name => getItem(name)?._type).filter(Boolean))];
     if (types.length > 1) {
       elements.propertiesTitle!.textContent = 'MULTIPLE SELECTION';
       elements.propertiesContent!.innerHTML =
@@ -738,14 +696,15 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
     nameValue = item.name || state.primarySelectedItem!;
   }
 
+  const lockLabel = isLocked ? 'Unlock' : 'Lock';
+  const canToggleLock = !state.isTableLocked;
   let html = `
     <div class="prop-header-sticky">
       <div class="prop-row">
         <label class="prop-label">Name</label>
-        <img src="icons/${isLocked ? 'locked' : 'unlocked'}.png" class="prop-lock-icon" alt="${isLocked ? 'Locked' : 'Unlocked'}">
+        <img src="icons/${isLocked ? 'locked' : 'unlocked'}.png" class="prop-lock-icon${canToggleLock ? ' prop-lock-icon-clickable' : ''}" id="lock-object-icon" alt="${isLocked ? 'Locked' : 'Unlocked'}" title="${canToggleLock ? `Click to ${lockLabel.toLowerCase()}` : 'Table is locked'}">
         <input type="text" class="prop-input" data-prop="name" value="${nameValue}" readonly style="background: transparent; border-color: transparent; flex: 1;">
         <button class="rename-btn" id="rename-object-btn"${isLocked || isMultiSelect ? ' disabled' : ''}>Rename</button>
-        <button class="rename-btn" id="lock-object-btn">${isLocked ? 'Unlock' : 'Lock'}</button>
       </div>
     </div>
   `;
@@ -803,7 +762,7 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
       .propertiesContent!.querySelectorAll<HTMLInputElement | HTMLSelectElement>('.prop-input, .prop-select')
       .forEach(input => {
         const prop = input.dataset.prop;
-        if (prop && POSITION_PROPS.includes(prop)) {
+        if (prop && isPositionProp(prop)) {
           input.disabled = true;
         }
       });
@@ -845,7 +804,7 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
         if ((target as HTMLInputElement).type === 'color') {
           applyColorGradient(target as HTMLInputElement);
         }
-        const primaryItem = state.items[state.primarySelectedItem!];
+        const primaryItem = state.primarySelectedItem ? getItem(state.primarySelectedItem) : undefined;
         const isLightRenderMode = prop === 'render_mode' && primaryItem?._type === 'Light';
         if (isLightRenderMode) {
           for (const itemName of state.selectedItems) {
@@ -959,50 +918,47 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
     }
     renameBtn.addEventListener('click', () => {
       if (state.isTableLocked) return;
-      showRenameModal(state.primarySelectedItem!);
+      const item = state.primarySelectedItem ? getItem(state.primarySelectedItem) : undefined;
+      showRenameModal(state.primarySelectedItem!, item?._type);
     });
   }
 
-  const lockBtn = elements.propertiesContent!.querySelector<HTMLButtonElement>('#lock-object-btn');
-  if (lockBtn) {
-    if (state.isTableLocked) {
-      lockBtn.disabled = true;
-    }
-    lockBtn.addEventListener('click', async () => {
-      if (state.isTableLocked) return;
-      const primaryItem = state.items[state.primarySelectedItem!];
-      if (!primaryItem) return;
+  async function toggleObjectLock(): Promise<void> {
+    if (state.isTableLocked) return;
+    const primaryItem = state.primarySelectedItem ? getItem(state.primarySelectedItem) : undefined;
+    if (!primaryItem) return;
 
-      const newLockState = !primaryItem.is_locked;
-      undoManager.beginUndo(newLockState ? 'Lock' : 'Unlock');
+    const newLockState = !primaryItem.is_locked;
+    undoManager.beginUndo(newLockState ? 'Lock' : 'Unlock');
 
-      for (const itemName of state.selectedItems) {
-        const item = state.items[itemName];
-        if (!item) continue;
+    for (const itemName of state.selectedItems) {
+      const item = getItem(itemName);
+      if (!item) continue;
 
-        undoManager.markForUndo(itemName);
-        item.is_locked = newLockState;
+      undoManager.markForUndo(itemName);
+      item.is_locked = newLockState;
 
-        const gameitemEntry = state.gameitems.find(gi => gi.file_name === item._fileName?.replace('gameitems/', ''));
-        if (gameitemEntry) {
-          gameitemEntry.is_locked = item.is_locked;
-        }
-
-        if (item.is_locked && (state.selectedNode as SelectedNodeInfo)?.itemName === itemName) {
-          state.selectedNode = null;
-        }
+      const gameitemEntry = state.gameitems.find(gi => gi.file_name === item._fileName?.replace('gameitems/', ''));
+      if (gameitemEntry) {
+        gameitemEntry.is_locked = item.is_locked;
       }
 
-      await window.vpxEditor.writeFile(
-        `${state.extractedDir}/gameitems.json`,
-        JSON.stringify(state.gameitems, null, 2)
-      );
+      if (item.is_locked && (state.selectedNode as SelectedNodeInfo)?.itemName === itemName) {
+        state.selectedNode = null;
+      }
+    }
 
-      undoManager.endUndo();
-      updatePropertiesPanel();
-      updateItemsList();
-      render();
-    });
+    await window.vpxEditor.writeFile(`${state.extractedDir}/gameitems.json`, JSON.stringify(state.gameitems, null, 2));
+
+    undoManager.endUndo();
+    updatePropertiesPanel();
+    updateItemsList();
+    render();
+  }
+
+  const lockIcon = elements.propertiesContent!.querySelector<HTMLImageElement>('#lock-object-icon');
+  if (lockIcon) {
+    lockIcon.addEventListener('click', toggleObjectLock);
   }
 
   restoreActiveTab(activeTab);
@@ -1022,7 +978,7 @@ function restoreActiveTab(tabName: string | null | undefined): void {
 }
 
 function updateItemPropertyLive(itemName: string, prop: string, value: string | number | boolean): void {
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item) return;
 
   const path = prop.split('.');
@@ -1043,11 +999,11 @@ function updateItemPropertyLive(itemName: string, prop: string, value: string | 
 }
 
 async function updateItemProperty(itemName: string, prop: string, value: string | number | boolean): Promise<void> {
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item) return;
 
-  if (item.is_locked && POSITION_PROPS.includes(prop)) {
-    elements.statusBar!.textContent = `Cannot change position of locked item`;
+  if (item.is_locked && isPositionProp(prop)) {
+    elements.statusBar!.textContent = `Cannot move locked item`;
     updatePropertiesPanel();
     return;
   }
@@ -1243,9 +1199,9 @@ function setupTablePropertyHandlers(): void {
     });
   });
 
-  const lockTableBtn = elements.propertiesContent!.querySelector<HTMLButtonElement>('#lock-table-btn');
-  if (lockTableBtn) {
-    lockTableBtn.addEventListener('click', () => {
+  const lockTableIcon = elements.propertiesContent!.querySelector<HTMLImageElement>('#lock-table-icon');
+  if (lockTableIcon) {
+    lockTableIcon.addEventListener('click', () => {
       window.vpxEditor.toggleTableLock?.();
     });
   }
@@ -1264,10 +1220,11 @@ function setupTablePropertyHandlers(): void {
 
 function showRenameTableModal(): void {
   const oldName = (state.gamedata as GameData).name || 'Table1';
+  const existingNames = Object.keys(state.items);
   window.vpxEditor.showRenameDialog({
     mode: 'table',
     currentName: oldName,
-    existingNames: [],
+    existingNames,
   });
 }
 
@@ -1423,9 +1380,9 @@ function setupBackglassPropertyHandlers(): void {
     });
   }
 
-  const lockTableBtn = elements.propertiesContent!.querySelector<HTMLButtonElement>('#lock-table-btn');
-  if (lockTableBtn) {
-    lockTableBtn.addEventListener('click', () => {
+  const lockTableIcon = elements.propertiesContent!.querySelector<HTMLImageElement>('#lock-table-icon');
+  if (lockTableIcon) {
+    lockTableIcon.addEventListener('click', () => {
       window.vpxEditor.toggleTableLock?.();
     });
   }
@@ -1443,7 +1400,7 @@ function setupBackglassPropertyHandlers(): void {
 }
 
 function setupPartGroupPropertyHandlers(groupName: string): void {
-  if (!state.partGroups[groupName]) return;
+  if (!getPartGroup(groupName)) return;
 
   if (state.isTableLocked) {
     elements
@@ -1456,7 +1413,7 @@ function setupPartGroupPropertyHandlers(groupName: string): void {
   elements.propertiesContent!.querySelectorAll<HTMLInputElement>('.prop-input[data-mask]').forEach(input => {
     input.addEventListener('change', async (e: Event) => {
       if (state.isTableLocked) return;
-      const group = state.partGroups[groupName];
+      const group = getPartGroup(groupName);
       if (!group) return;
 
       const target = e.target as HTMLInputElement;
@@ -1488,7 +1445,7 @@ function setupPartGroupPropertyHandlers(groupName: string): void {
     .forEach(input => {
       input.addEventListener('change', async (e: Event) => {
         if (state.isTableLocked) return;
-        const group = state.partGroups[groupName];
+        const group = getPartGroup(groupName);
         if (!group) return;
 
         const target = e.target as HTMLInputElement | HTMLSelectElement;
@@ -1549,17 +1506,22 @@ async function savePartGroup(_groupName: string, group: PartGroup): Promise<Writ
   return result;
 }
 
-export function showRenameModal(itemName: string): void {
+export function showRenameModal(itemName: string, elementType?: string): void {
   const existingNames = Object.keys(state.items);
+  const tableName = (state.gamedata as GameData)?.name;
+  if (tableName) {
+    existingNames.push(tableName);
+  }
   window.vpxEditor.showRenameDialog({
     mode: 'element',
     currentName: itemName,
     existingNames,
+    elementType,
   });
 }
 
 export async function renameObject(oldName: string, newName: string): Promise<void> {
-  const item = state.items[oldName];
+  const item = getItem(oldName);
   if (!item) {
     elements.statusBar!.textContent = `Object "${oldName}" not found`;
     return;
@@ -1567,7 +1529,10 @@ export async function renameObject(oldName: string, newName: string): Promise<vo
 
   const type = item._type;
   const oldFileName = item._fileName!;
-  const newFileName = `gameitems/${getFileNameFromItemName(type, newName)}`;
+  const oldBaseFileName = oldFileName.replace('gameitems/', '');
+  const existingFileNames = state.gameitems.map(gi => gi.file_name).filter(f => f !== oldBaseFileName);
+  const newBaseFileName = generateUniqueFileName(type, newName, existingFileNames);
+  const newFileName = `gameitems/${newBaseFileName}`;
 
   undoManager.beginUndo(`Rename ${oldName}`);
   undoManager.markForRename(oldName, newName, oldFileName, newFileName);
@@ -1603,18 +1568,16 @@ export async function renameObject(oldName: string, newName: string): Promise<vo
     return;
   }
 
-  delete state.items[oldName];
-  state.items[newName] = item;
+  deleteItem(oldName);
+  setItem(newName, item, newBaseFileName);
 
   const gameitemsPath = `${state.extractedDir}/gameitems.json`;
   const gameitemsResult = await window.vpxEditor.readFile(gameitemsPath);
   if (gameitemsResult.success) {
     const gameitems = JSON.parse(gameitemsResult.content!);
-    const itemInfo = gameitems.find(
-      (i: { file_name?: string }) => i.file_name && getItemNameFromFileName(i.file_name) === oldName
-    );
+    const itemInfo = gameitems.find((i: { file_name?: string }) => i.file_name === oldBaseFileName);
     if (itemInfo) {
-      itemInfo.file_name = getFileNameFromItemName(type, newName);
+      itemInfo.file_name = newBaseFileName;
       await window.vpxEditor.writeFile(gameitemsPath, JSON.stringify(gameitems, null, 2));
       state.gameitems = gameitems;
     }

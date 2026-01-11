@@ -1,0 +1,72 @@
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.prop-group {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.prop-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.prop-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.prop-label {
+  min-width: 80px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.prop-input {
+  flex: 1;
+  padding: 4px 8px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.prop-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.prop-select {
+  flex: 1;
+  padding: 4px 8px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url('/icons/dropdown-arrow.svg');
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 24px;
+}
+
+.prop-select:focus {
+  outline: none;
+}
+
+.prop-select option {
+  background: var(--bg-panel);
+  color: var(--text-primary);
+}

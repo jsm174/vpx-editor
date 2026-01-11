@@ -1,0 +1,18 @@
+html, body {
+  background: var(--bg-panel);
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px;
+}
+
+.editor-body {
+  min-height: 0;
+}
+
+.editor-options {
+  background: var(--bg-panel);
+}

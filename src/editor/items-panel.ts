@@ -1,4 +1,4 @@
-import { state, elements, setSelection, clearSelection, GameItem } from './state.js';
+import { state, elements, setSelection, clearSelection, GameItem, getItem } from './state.js';
 import { VIEW_MODE_3D } from '../shared/constants.js';
 import {
   getItemCenter,
@@ -77,7 +77,7 @@ export function updateItemStatusInfo(item: GameItem): void {
 }
 
 export function updateSelectionStatus(): void {
-  const item = state.items[state.primarySelectedItem!];
+  const item = state.primarySelectedItem ? getItem(state.primarySelectedItem) : undefined;
   const pos = item ? (getItemCenter(item) as Point | null) : null;
 
   if (elements.statusElement) {
@@ -112,7 +112,7 @@ registerCallback('itemContextMenuCallbacks');
 export function updateItemsList(_searchFilter: string = '', _collapseAll: boolean = false): void {}
 
 export function panToItem(name: string): void {
-  const item = state.items[name];
+  const item = getItem(name);
   if (!item) return;
 
   const groupedCollection = getGroupedCollectionForItem(name) as GroupedCollection | null;
@@ -166,7 +166,7 @@ export function selectItem(name: string | null, skipFocus: boolean = false, rese
     }
   }
 
-  const item = state.items[state.primarySelectedItem!];
+  const item = state.primarySelectedItem ? getItem(state.primarySelectedItem) : undefined;
   const pos = item ? (getItemCenter(item) as Point | null) : null;
 
   updateSelectionStatus();

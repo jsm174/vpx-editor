@@ -1,0 +1,162 @@
+#toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 12px;
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tool-group {
+  display: flex;
+  gap: 4px;
+}
+
+.tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.tool-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tool-btn.active {
+  background: var(--accent);
+  color: white;
+}
+
+.tool-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tool-btn:disabled:hover {
+  background: transparent;
+}
+
+#toolbar .tool-btn img {
+  filter: var(--icon-filter);
+}
+
+#toolbar .tool-btn.active img {
+  filter: invert(1);
+}
+
+.tool-btn.icon-btn {
+  width: 32px;
+  height: 32px;
+  padding: 2px;
+}
+
+.tool-btn.icon-btn img,
+.tool-btn.icon-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.tool-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.zoom-controls .tool-btn {
+  padding: 4px 8px;
+  min-width: 28px;
+  border: 1px solid transparent;
+}
+
+.zoom-controls .tool-btn:hover {
+  border-color: var(--border-color);
+}
+
+#toggle-grid,
+#toggle-backdrop,
+#toggle-materials {
+  border: 1px solid transparent;
+}
+
+#toggle-grid:hover,
+#toggle-backdrop:hover,
+#toggle-materials:hover {
+  border-color: var(--border-color);
+}
+
+.tool-select {
+  padding: 4px 8px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url('/icons/dropdown-arrow.svg');
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 24px;
+}
+
+.tool-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.tool-select option {
+  background: var(--bg-panel);
+  color: var(--text-primary);
+}
+
+#zoom-level {
+  min-width: 42px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+#status-bar {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+#footer-status {
+  display: flex;
+  padding: 4px 12px;
+  background: var(--bg-toolbar);
+  border-top: 1px solid var(--border-color);
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-height: 24px;
+}
+
+#footer-status span {
+  padding: 0 12px;
+  border-right: 1px solid var(--border-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#status-mouse { width: 160px; }
+#status-origin { width: 160px; }
+#status-blank { width: 180px; }
+#status-action { width: 200px; }
+#status-element { width: 200px; }
+#status-info { flex: 1; border-right: none; }

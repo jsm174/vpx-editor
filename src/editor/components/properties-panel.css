@@ -1,0 +1,263 @@
+#right-panel {
+  width: 260px;
+  min-width: 150px;
+  max-width: 500px;
+  min-height: 0;
+  background: var(--bg-panel);
+  border-left: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#properties-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+#properties-panel h3 {
+  padding: 8px 12px;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+#properties-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.prop-group {
+  margin-bottom: 16px;
+}
+
+.prop-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.prop-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.prop-label {
+  width: 140px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: right;
+  padding-right: 8px;
+}
+
+.prop-input {
+  flex: 1;
+  padding: 4px 8px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.prop-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.prop-input[type="number"] {
+  width: 90px;
+  flex: none;
+}
+
+.prop-unit {
+  margin-left: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.prop-input[type="checkbox"] {
+  flex: none;
+  width: auto;
+  margin: 0;
+}
+
+.prop-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.prop-checkbox-label input[type="checkbox"] {
+  margin: 0;
+}
+
+.prop-input[type="color"] {
+  width: 60px;
+  height: 24px;
+  flex: none;
+  padding: 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.prop-input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.prop-input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 2px;
+  background: inherit;
+}
+
+.prop-select {
+  flex: 1;
+  padding: 4px 8px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url('/icons/dropdown-arrow.svg');
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 24px;
+}
+
+.prop-select:focus {
+  outline: none;
+}
+
+.prop-select option {
+  background: var(--bg-panel);
+  color: var(--text-primary);
+}
+
+.prop-button {
+  padding: 4px 12px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.prop-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.prop-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.prop-button-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+  margin-left: 140px;
+}
+
+.prop-row-inline {
+  display: flex;
+  gap: 8px;
+}
+
+.prop-row-inline .prop-input {
+  width: 60px;
+  flex: none;
+}
+
+.prop-lock-icon {
+  width: 14px;
+  height: 14px;
+  margin-left: 6px;
+  filter: var(--icon-filter);
+}
+
+.prop-lock-icon-clickable {
+  cursor: pointer;
+}
+
+.prop-lock-icon-clickable:hover {
+  opacity: 0.7;
+}
+
+.prop-header-sticky {
+  position: sticky;
+  top: -12px;
+  background: var(--bg-panel);
+  z-index: 12;
+  margin: -12px -12px 0 -12px;
+  padding: 12px 12px 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.prop-header-sticky + .prop-tabs,
+.prop-header-sticky + .prop-group .prop-tabs {
+  top: 32px;
+}
+
+.prop-tabs {
+  display: flex;
+  margin: 0 -12px 12px -12px;
+  padding: 0 12px;
+  background: var(--bg-panel);
+  position: sticky;
+  top: 24px;
+  z-index: 11;
+}
+
+.prop-tab {
+  flex: 1;
+  padding: 8px 4px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.prop-tab:hover {
+  color: var(--text-primary);
+}
+
+.prop-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.prop-tab-content {
+  display: none;
+}
+
+.prop-tab-content.active {
+  display: block;
+}

@@ -1,0 +1,47 @@
+@import '../shared/styles.css';
+
+.table-info-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table-info-modal.hidden {
+  display: none;
+}
+
+.table-info-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.table-info-modal-window {
+  position: relative;
+  width: 500px;
+  max-height: 90vh;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.table-info-modal .manager-header {
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table-info-modal .table-info-prompt-overlay {
+  position: absolute;
+}

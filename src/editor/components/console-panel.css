@@ -1,0 +1,143 @@
+#console-resize-handle {
+  height: 4px;
+  background: var(--border-color);
+  cursor: ns-resize;
+}
+
+#console-resize-handle:hover {
+  background: var(--accent);
+}
+
+#console-panel {
+  display: flex;
+  flex-direction: column;
+  height: 200px;
+  min-height: 100px;
+  max-height: 50vh;
+  background: var(--bg-dark);
+  border-top: 1px solid var(--border-color);
+}
+
+#console-panel.hidden,
+#console-resize-handle.hidden {
+  display: none;
+}
+
+#console-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+#console-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+#console-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.console-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.console-btn:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
+.console-btn.active {
+  background: var(--accent);
+  color: white;
+}
+
+.console-btn img {
+  width: 14px;
+  height: 14px;
+  filter: var(--icon-filter);
+  opacity: 0.7;
+}
+
+.console-btn:hover img {
+  opacity: 1;
+}
+
+.console-btn.active img {
+  filter: invert(1);
+  opacity: 1;
+}
+
+#console-output {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+  outline: none;
+}
+
+#console-output:focus {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+#console-output .line {
+  margin-bottom: 1px;
+}
+
+#console-output .line.stdout {
+  color: var(--text-primary);
+}
+
+#console-output .line.stderr {
+  color: #f48771;
+}
+
+#console-output .line.info {
+  color: var(--text-secondary);
+}
+
+#console-output ::selection {
+  background: var(--accent);
+  color: white;
+}
+
+#console-output .line.command {
+  color: #89d185;
+}
+
+#console-output .line.success {
+  color: #89d185;
+}
+
+#console-output .line.error {
+  color: #f48771;
+}
+
+#console-output .log-error { color: #c62828; }
+#console-output .log-warn { color: #7b5800; }
+
+[data-theme="dark"] #console-output .log-error { color: #ef5350; }
+[data-theme="dark"] #console-output .log-warn { color: #ffc107; }

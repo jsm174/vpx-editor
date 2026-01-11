@@ -1,4 +1,4 @@
-import { state, elements, Point } from './state.js';
+import { state, elements, Point, setItem, deleteItem } from './state.js';
 import { VIEW_MODE_3D } from '../shared/constants.js';
 import { createObject, saveNewObject } from './object-factory.js';
 import { updateItemsList, selectItem } from './items-panel.js';
@@ -118,6 +118,19 @@ export function setUIEnabled(enabled: boolean): void {
     }
   });
 
+  const newLayerBtn = document.getElementById('new-layer-btn') as HTMLButtonElement | null;
+  if (newLayerBtn) {
+    newLayerBtn.disabled = !enabled;
+    newLayerBtn.style.opacity = opacity;
+    newLayerBtn.style.pointerEvents = pointerEvents;
+  }
+
+  const layerFilterInput = document.getElementById('layer-filter-input') as HTMLInputElement | null;
+  if (layerFilterInput) {
+    layerFilterInput.disabled = !enabled;
+    layerFilterInput.style.opacity = opacity;
+  }
+
   if (enabled) {
     const selectBtn = document.getElementById('tool-select');
     if (selectBtn && state.tool === 'select') {
@@ -162,7 +175,8 @@ export async function createObjectAtPosition(type: string, position: Point): Pro
       return;
     }
 
-    state.items[obj.name as string] = obj;
+    const baseFileName = obj._fileName!.replace('gameitems/', '');
+    setItem(obj.name as string, obj, baseFileName);
     const saved = await saveNewObject(obj);
 
     if (saved) {
@@ -171,7 +185,7 @@ export async function createObjectAtPosition(type: string, position: Point): Pro
       selectItem(obj.name as string, false, true);
       elements.statusBar!.textContent = `Created ${type}: ${obj.name}`;
     } else {
-      delete state.items[obj.name as string];
+      deleteItem(obj.name as string);
       elements.statusBar!.textContent = `Failed to create ${type}`;
     }
 

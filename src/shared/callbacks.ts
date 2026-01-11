@@ -18,6 +18,10 @@ export function invokeCallback(name: string, ...args: unknown[]): unknown {
   }
 }
 
+export function getCallback<T = unknown>(name: string): T | null {
+  return (callbacks.get(name) as T) ?? null;
+}
+
 export function hasCallback(name: string): boolean {
   return callbacks.has(name) && callbacks.get(name) !== null;
 }

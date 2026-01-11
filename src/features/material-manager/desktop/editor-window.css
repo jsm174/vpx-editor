@@ -1,0 +1,76 @@
+select {
+  user-select: text;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px;
+}
+
+.editor-content {
+  flex: 1;
+}
+
+.prop-group {
+  margin-bottom: 16px;
+}
+
+.prop-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.prop-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.prop-label {
+  width: 140px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: right;
+  padding-right: 8px;
+}
+
+.prop-input, .prop-select {
+  flex: 1;
+  padding: 4px 8px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.prop-input:focus, .prop-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.prop-input[type="number"] {
+  width: 90px;
+  flex: none;
+}
+
+.name-error {
+  color: #f44336;
+  font-size: 11px;
+  min-height: 16px;
+}
+
+.editor-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 12px;
+}

@@ -11,6 +11,7 @@ import {
   VIEW_MODE_3D,
 } from '../shared/constants.js';
 import type { Point, DragPoint } from '../types/game-objects.js';
+import { includesName } from '../shared/gameitem-utils.js';
 
 export type { Point, DragPoint };
 
@@ -346,7 +347,7 @@ export function isItemVisible(item: GameItem, _name: string): boolean {
 }
 
 export function isItemSelected(name: string): boolean {
-  return state.selectedItems.includes(name);
+  return includesName(state.selectedItems, name);
 }
 
 export function getSelectedItems(): string[] {
@@ -355,6 +356,56 @@ export function getSelectedItems(): string[] {
 
 export function getPrimarySelectedItem(): string | null {
   return state.primarySelectedItem;
+}
+
+const fileNameToItemKey = new Map<string, string>();
+
+export function getItem(name: string): GameItem | undefined {
+  return state.items[name.toLowerCase()];
+}
+
+export function getItemByFileName(fileName: string): GameItem | undefined {
+  const key = fileNameToItemKey.get(fileName.toLowerCase());
+  return key ? state.items[key] : undefined;
+}
+
+export function setItem(name: string, item: GameItem, fileName?: string): void {
+  const key = name.toLowerCase();
+  state.items[key] = item;
+  if (fileName) {
+    fileNameToItemKey.set(fileName.toLowerCase(), key);
+  }
+}
+
+export function deleteItem(name: string): void {
+  const key = name.toLowerCase();
+  for (const [fn, itemKey] of fileNameToItemKey.entries()) {
+    if (itemKey === key) {
+      fileNameToItemKey.delete(fn);
+      break;
+    }
+  }
+  delete state.items[key];
+}
+
+export function hasItem(name: string): boolean {
+  return name.toLowerCase() in state.items;
+}
+
+export function clearFileNameMap(): void {
+  fileNameToItemKey.clear();
+}
+
+export function getPartGroup(name: string): PartGroup | undefined {
+  return state.partGroups[name.toLowerCase()];
+}
+
+export function setPartGroup(name: string, group: PartGroup): void {
+  state.partGroups[name.toLowerCase()] = group;
+}
+
+export function deletePartGroup(name: string): void {
+  delete state.partGroups[name.toLowerCase()];
 }
 
 export function clearSelection(): void {

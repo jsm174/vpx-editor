@@ -1,0 +1,174 @@
+#hamburger-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+}
+#hamburger-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+}
+#hamburger-btn img {
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) invert(1);
+}
+[data-theme="light"] #hamburger-btn img {
+  filter: none;
+}
+#hamburger-btn:hover { background: var(--bg-toolbar); border-radius: 4px; }
+#menu-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  min-width: 200px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 1000;
+}
+#menu-dropdown.show { display: block; }
+.menu-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  display: flex;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.menu-item:hover { background: var(--bg-toolbar); }
+.menu-item.disabled { color: var(--text-secondary); cursor: default; opacity: 0.5; }
+.menu-item.disabled:hover { background: none; }
+.menu-submenu.disabled:hover > .submenu { display: none; }
+.menu-separator { height: 1px; background: var(--border-color); margin: 4px 8px; }
+.menu-shortcut { color: var(--text-secondary); margin-left: auto; padding-left: 20px; }
+.menu-check { width: 18px; display: inline-block; flex-shrink: 0; }
+.menu-submenu { position: relative; }
+.menu-submenu-arrow { margin-left: auto; padding-left: 10px; }
+.submenu {
+  display: none;
+  position: absolute;
+  left: 100%;
+  top: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  min-width: 240px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  white-space: nowrap;
+}
+.menu-submenu:hover > .submenu,
+.menu-submenu.expanded > .submenu { display: block; }
+@media (hover: none) {
+  .menu-submenu:hover > .submenu { display: none; }
+  .menu-submenu.expanded > .submenu { display: block; }
+}
+
+.blueprint-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.blueprint-modal.hidden { display: none; }
+.blueprint-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+.blueprint-modal-window {
+  position: relative;
+  width: 350px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+.blueprint-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+.blueprint-modal-title { font-weight: 600; font-size: 14px; }
+.blueprint-modal-body {
+  padding: 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.blueprint-modal-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.prop-group {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+.prop-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.prop-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.prop-label {
+  min-width: 80px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.prop-input {
+  flex: 1;
+  padding: 4px 8px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+.prop-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.prop-select {
+  flex: 1;
+  padding: 4px 8px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+}
+.prop-select:focus { outline: none; }
+
+.material-used-by-type,
+.material-modal .used-by-type {
+  color: var(--text-secondary);
+  font-size: 10px;
+  margin-left: 6px;
+}

@@ -2,6 +2,8 @@
 
 A cross-platform editor for Visual Pinball X (.vpx) table files.
 
+**[Try it in your browser](https://jsm174.github.io/vpx-editor)** - No installation required!
+
 <p align="center">
   <img src="docs/screenshots/screenshot-1.webp" alt="2D Editor">
 </p>
@@ -23,7 +25,7 @@ A cross-platform editor for Visual Pinball X (.vpx) table files.
 
 ## Overview
 
-VPX Editor is a cross-platform table editor for [Visual Pinball](https://github.com/vpinball/vpinball), built with [Electron](https://www.electronjs.org/), [TypeScript](https://www.typescriptlang.org/), and [Three.js](https://threejs.org/). It uses [vpxtool](https://github.com/francisdb/vpxtool) to extract and assemble VPX files.
+VPX Editor is a cross-platform table editor for [Visual Pinball](https://github.com/vpinball/vpinball), available as both a desktop application ([Electron](https://www.electronjs.org/)) and a web app. Built with [TypeScript](https://www.typescriptlang.org/) and [Three.js](https://threejs.org/), it uses [vpin-wasm](https://github.com/francisdb/vpin) to extract and assemble VPX files.
 
 This project was initially created with the assistance of Claude AI.
 
@@ -98,19 +100,37 @@ Download the latest release for your platform from the [Releases](https://github
 
 ### Getting Started
 
+1. Create a GitHub Personal Access Token with `read:packages` scope at https://github.com/settings/tokens
+
+2. Create `.npmrc` in the project root:
+```
+@jsm174:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
+3. Set your token and install:
 ```bash
+export GITHUB_TOKEN=ghp_your_token_here
 npm install
 ```
 
-### Run Locally
+### Run Desktop
 
 ```bash
 npm start
 ```
 
-Launches the app in development mode with hot reload.
+Launches the desktop app in development mode with hot reload.
 
-### Build Release
+### Run Web
+
+```bash
+npm run dev:web
+```
+
+Launches the web version in development mode with hot reload.
+
+### Build Desktop
 
 ```bash
 npm run make
@@ -138,6 +158,14 @@ To get more output during the flatpak build:
 DEBUG=electron-installer-flatpak,@malept/flatpak-bundler npm run make
 ```
 
+### Build Web
+
+```bash
+npm run build:web
+```
+
+Creates a production web build in `dist-web/`.
+
 ### Type Checking
 
 ```bash
@@ -154,29 +182,26 @@ npm run format
 
 ```
 src/
-├── main/
-│   ├── menu/
-│   ├── settings/
-│   └── vpx/
-├── preload/
-├── editor/
+├── desktop/           # Electron main process
+├── web/               # Web entry point
+├── platform/
+│   ├── desktop/       # Desktop platform abstraction
+│   └── web/           # Web platform abstraction
+├── preload/           # Electron preload scripts
+├── editor/            # Shared editor renderer
 │   ├── components/
 │   ├── meshes/
 │   ├── parts/
 │   └── undo/
-├── types/
-└── windows/
-    ├── dialogs/
-    ├── managers/
-    ├── script-editor/
-    ├── search-select/
-    └── settings/
+├── features/          # Feature modules (managers, dialogs)
+├── shared/            # Shared utilities
+└── types/             # TypeScript definitions
 ```
 
 ## Acknowledgments
 
 - [Visual Pinball](https://github.com/vpinball/vpinball)
-- [vpxtool](https://github.com/francisdb/vpxtool)
+- [vpin-wasm](https://github.com/francisdb/vpin)
 - [Three.js](https://threejs.org/)
 - [Monaco Editor](https://microsoft.github.io/monaco-editor/)
 

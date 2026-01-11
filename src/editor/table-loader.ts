@@ -16,6 +16,7 @@ import { clearPrimitiveMeshCache } from './parts/primitive.js';
 import { updateItemsList, selectItem } from './items-panel.js';
 import { updatePropertiesPanel } from './properties-panel.js';
 import { updateLayersList, updateCollectionsList } from './layers-panel.js';
+import { getItem, setItem, setPartGroup, clearFileNameMap } from './state.js';
 
 interface MimeTypes {
   [key: string]: string;
@@ -138,6 +139,7 @@ export async function loadTable(): Promise<void> {
 
   state.items = {};
   state.partGroups = {};
+  clearFileNameMap();
   for (const itemInfo of state.gameitems) {
     const itemPath = `${state.extractedDir}/gameitems/${itemInfo.file_name}`;
     const itemResult = await window.vpxEditor.readFile(itemPath);
@@ -153,10 +155,11 @@ export async function loadTable(): Promise<void> {
       if (itemInfo.editor_layer_visibility !== undefined) {
         item.editor_layer_visibility = itemInfo.editor_layer_visibility;
       }
-      state.items[item.name || itemInfo.file_name] = item;
+      const itemName = item.name || itemInfo.file_name;
+      setItem(itemName, item, itemInfo.file_name);
 
       if (type === 'PartGroup' && item.name) {
-        state.partGroups[item.name] = item;
+        setPartGroup(item.name, item);
       }
     } else {
       console.warn(`Failed to load item: ${itemPath}`, itemResult.error);
@@ -221,7 +224,7 @@ export async function loadBackdropImage(imageName: string): Promise<void> {
 }
 
 export async function saveItemToFile(itemName: string): Promise<boolean> {
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item || !item._fileName) return false;
 
   const type = item._type;
@@ -246,7 +249,7 @@ export async function saveItemToFile(itemName: string): Promise<boolean> {
 }
 
 export async function updateGameitemsJson(itemName: string): Promise<void> {
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item) return;
 
   const gameitemEntry = state.gameitems.find(

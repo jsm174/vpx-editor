@@ -93,3 +93,6 @@ out/
 
 # Downloaded vpxtool binary
 resources/vpxtool/
+
+# Web build output
+dist-web/

@@ -1,8 +1,8 @@
-import { state, GameItem } from './state.js';
+import { state, GameItem, getItem } from './state.js';
 import { generateUniqueName, saveNewObject, deleteObject } from './object-factory.js';
 import { getItemCenter, setItemPosition } from '../shared/position-utils.js';
 import { withUndo } from '../shared/undo-helpers.js';
-import { getFileNameFromItemName } from '../shared/gameitem-utils.js';
+import { generateUniqueFileName } from '../shared/gameitem-utils.js';
 import type { ClipboardItem } from '../types/data.js';
 import '../types/ipc.js';
 
@@ -11,7 +11,7 @@ export async function copyItem(itemName: string): Promise<boolean> {
   const items: ClipboardItem[] = [];
 
   for (const name of itemNames) {
-    const item = state.items[name];
+    const item = getItem(name);
     if (!item) continue;
 
     const data: Record<string, unknown> = {};
@@ -22,9 +22,9 @@ export async function copyItem(itemName: string): Promise<boolean> {
     }
 
     let meshData: string | null = null;
-    if (item._type === 'Primitive') {
+    if (item._type === 'Primitive' && item._fileName) {
       try {
-        const meshPath = `${state.extractedDir}/gameitems/Primitive.${name}.obj`;
+        const meshPath = `${state.extractedDir}/${item._fileName.replace('.json', '.obj')}`;
         const result = await window.vpxEditor.readFile(meshPath);
         meshData = result.success ? result.content || null : null;
       } catch {
@@ -94,14 +94,16 @@ export async function pasteItem(atOriginalLocation: boolean = false): Promise<st
         }
 
         newItem._type = type;
-        newItem._fileName = `gameitems/${getFileNameFromItemName(type, newName)}`;
+        const existingFileNames = state.gameitems.map(gi => gi.file_name);
+        const uniqueFileName = generateUniqueFileName(type, newName, existingFileNames);
+        newItem._fileName = `gameitems/${uniqueFileName}`;
         newItem._layer = 0;
         newItem.is_locked = false;
 
         const success = await saveNewObject(newItem, true);
         if (success) {
           if (type === 'Primitive' && meshData) {
-            const meshPath = `${state.extractedDir}/gameitems/${getFileNameFromItemName('Primitive', newName).replace('.json', '.obj')}`;
+            const meshPath = `${state.extractedDir}/gameitems/${uniqueFileName.replace('.json', '.obj')}`;
             await window.vpxEditor.writeFile(meshPath, meshData);
           }
           newNames.push(newName);
@@ -129,7 +131,7 @@ export async function updateClipboardMenuState(): Promise<void> {
 
   let allLocked = true;
   for (const name of state.selectedItems) {
-    const item = state.items[name];
+    const item = getItem(name);
     if (item && !item.is_locked) {
       allLocked = false;
       break;

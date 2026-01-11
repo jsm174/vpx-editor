@@ -1,5 +1,5 @@
 import '../../index.css';
-import { state, elements, initElements, undoManager, dragRect, isItemVisible, setSelection } from './state.js';
+import { state, elements, initElements, undoManager, dragRect, isItemVisible, setSelection, getItem } from './state.js';
 import {
   MIN_ZOOM,
   MAX_ZOOM,
@@ -8,6 +8,7 @@ import {
   VIEW_MODE_3D,
   UNIT_CONVERSION_VPU,
 } from '../shared/constants.js';
+import { includesName, nameEquals } from '../shared/gameitem-utils.js';
 import {
   updateZoomDisplay,
   toWorld,
@@ -34,6 +35,9 @@ import {
   focusOnBounds3D,
   enterPreviewMode,
   render3D,
+  get3DRenderer,
+  stopAnimation,
+  disable3DKeyboard,
 } from './canvas-renderer-3d.js';
 import { setMaxTextureSize } from './texture-loader.js';
 import { clearPrimitiveMeshCache } from './parts/primitive.js';
@@ -41,7 +45,7 @@ import { showNodeContextMenu, showObjectContextMenu, showCanvasContextMenu, hide
 import { deleteObject } from './object-factory.js';
 import { copyItem, cutItem, pasteItem, hasClipboard, updateClipboardMenuState } from './clipboard.js';
 import { getGroupedCollectionForItem, createCollectionFromSelection } from './collections.js';
-import { setCallback } from '../shared/callbacks.js';
+import { setCallback, invokeCallback } from '../shared/callbacks.js';
 import { setCanvasCursor } from './cursor-utils.js';
 import { loadTable, saveItemToFile } from './table-loader.js';
 import { toggleNodeSmooth, deleteNode, toggleNodeSlingshot, addPointToObject, addNode } from './node-operations.js';
@@ -66,12 +70,12 @@ import {
   toggleItemLock,
   renameItem,
   assignItemToGroup,
-  assignItemToSelectedLayer,
   drawItemInFront,
   drawItemInBack,
   getDrawingOrderItems,
   showRenamePartGroupModal,
   showDeletePartGroupModal,
+  renamePartGroup,
 } from './layer-operations.js';
 import { initToolboxResize, initRightPanelResize, initLayersResize, loadPanelSettings } from './panel-resize.js';
 import {
@@ -118,6 +122,15 @@ function updateStatusBarUnits(): void {
 
 initElements();
 initPanelTabs();
+
+async function deleteItemAndRefresh(itemName: string): Promise<void> {
+  await deleteObject(itemName);
+  selectItem(null);
+  updateItemsList();
+  updateLayersList();
+  updatePropertiesPanel();
+  renderCurrentView();
+}
 
 setCallback('renderCallback', renderCurrentView);
 setCallback('primitiveRenderCallback', renderCurrentView);
@@ -177,7 +190,7 @@ setCallback('itemContextMenuCallbacks', {
   onScale: scaleObject,
   onTranslate: translateObject,
   onAssignToLayer: assignItemToGroup,
-  onAssignToSelectedLayer: assignItemToSelectedLayer,
+  onDelete: deleteItemAndRefresh,
 });
 setCallback('layerContextMenuCallbacks', {
   onToggleLock: toggleItemLock,
@@ -195,15 +208,7 @@ setCallback('layerContextMenuCallbacks', {
     updateClipboardMenuState();
   },
   onRename: renameItem,
-  onDelete: async (itemName: string) => {
-    await deleteObject(itemName);
-    selectItem(null);
-    updateItemsList();
-    updateLayersList();
-    updatePropertiesPanel();
-    renderCurrentView();
-  },
-  onAssignToGroup: assignItemToGroup,
+  onDelete: deleteItemAndRefresh,
 });
 
 setCallback('partGroupContextMenuCallbacks', {
@@ -251,7 +256,10 @@ window.vpxEditor.onTableClosed?.(() => {
   state.scriptEditorOpen = false;
   undoManager.clear();
   if (is3DInitialized()) {
+    disable3DKeyboard();
+    stopAnimation();
     clearScene();
+    get3DRenderer().domElement.style.display = 'none';
   }
   clearPrimitiveMeshCache();
   state.backdropImage = null;
@@ -260,6 +268,8 @@ window.vpxEditor.onTableClosed?.(() => {
   document.getElementById('tool-3d')?.classList.remove('active');
   document.getElementById('tool-script')?.classList.remove('active');
   document.getElementById('toggle-backglass')?.classList.remove('active');
+  document.getElementById('toggle-wireframe')!.style.display = 'none';
+  document.getElementById('toggle-materials')!.style.display = 'none';
   setUIEnabled(false);
   if (elements.itemsList) {
     elements.itemsList.innerHTML = '';
@@ -272,6 +282,7 @@ window.vpxEditor.onTableClosed?.(() => {
     propsContent.innerHTML = '<p class="placeholder">Select an item to view properties</p>';
   }
   if (elements.canvas) {
+    elements.canvas.style.display = 'block';
     const ctx = elements.canvas.getContext('2d');
     if (ctx) {
       ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
@@ -399,7 +410,7 @@ elements.canvas!.addEventListener('mousedown', e => {
       const world = toWorld(e.offsetX, e.offsetY);
 
       if (state.primarySelectedItem) {
-        const item = state.items[state.primarySelectedItem];
+        const item = getItem(state.primarySelectedItem!);
 
         if (item && item.drag_points) {
           if (!item.is_locked && !state.isTableLocked && e.metaKey) {
@@ -440,8 +451,8 @@ elements.canvas!.addEventListener('mousedown', e => {
         const clickedItem = hits[0];
 
         if (e.shiftKey) {
-          if (state.selectedItems.includes(clickedItem)) {
-            const newSelection = state.selectedItems.filter(n => n !== clickedItem);
+          if (includesName(state.selectedItems, clickedItem)) {
+            const newSelection = state.selectedItems.filter(n => !nameEquals(n, clickedItem));
             if (newSelection.length > 0) {
               setSelection(newSelection, newSelection[0]);
             } else {
@@ -453,16 +464,17 @@ elements.canvas!.addEventListener('mousedown', e => {
           }
           updatePropertiesPanel();
           render();
+          invokeCallback('selectionChangeCallback');
         } else {
-          const hitInSelection = state.selectedItems.find(name => hits.includes(name));
+          const hitInSelection = state.selectedItems.find(name => includesName(hits, name));
           if (!hitInSelection) {
             selectItem(hits[0], true);
           }
-          const anyUnlocked = state.selectedItems.some(name => !state.items[name]?.is_locked);
+          const anyUnlocked = state.selectedItems.some(name => !getItem(name)?.is_locked);
           if (anyUnlocked && !state.isTableLocked) {
             undoManager.beginUndo('Move object');
             for (const itemName of state.selectedItems) {
-              if (!state.items[itemName]?.is_locked) {
+              if (!getItem(itemName)?.is_locked) {
                 undoManager.markForUndo(itemName);
               }
             }
@@ -505,7 +517,7 @@ elements.canvas!.addEventListener('mousemove', e => {
     state.panY = e.clientY - state.dragStart.y;
     render();
   } else if (state.draggingNode && state.selectedNode) {
-    const item = state.items[state.selectedNode.itemName];
+    const item = getItem(state.selectedNode.itemName);
     if (item && item.drag_points) {
       const pt = item.drag_points[state.selectedNode.nodeIndex];
       if (pt.vertex) {
@@ -525,7 +537,7 @@ elements.canvas!.addEventListener('mousemove', e => {
     if (dx !== 0 || dy !== 0) {
       state.objectMoved = true;
       for (const itemName of state.selectedItems) {
-        if (!state.items[itemName]?.is_locked) {
+        if (!getItem(itemName)?.is_locked) {
           moveObjectOffset(itemName, dx, dy);
         }
       }
@@ -536,7 +548,7 @@ elements.canvas!.addEventListener('mousemove', e => {
   }
 });
 
-export { renderCurrentView };
+export { renderCurrentView, resizeCanvas };
 export { setCanvasCursor } from './cursor-utils.js';
 
 interface DragRect {
@@ -583,7 +595,7 @@ elements.canvas!.addEventListener('mouseup', e => {
         setSelection(itemsInBox, itemsInBox[0]);
       }
       updatePropertiesPanel();
-      updateClipboardMenuState();
+      invokeCallback('selectionChangeCallback');
     }
     dragRect.active = false;
     render();
@@ -602,7 +614,7 @@ elements.canvas!.addEventListener('mouseup', e => {
   if (state.draggingObject && state.selectedItems.length > 0) {
     if (state.objectMoved) {
       for (const itemName of state.selectedItems) {
-        if (!state.items[itemName]?.is_locked) {
+        if (!getItem(itemName)?.is_locked) {
           saveItemToFile(itemName);
           invalidateItem(itemName);
         }
@@ -654,7 +666,7 @@ elements.canvas!.addEventListener('contextmenu', e => {
   }
 
   if (state.primarySelectedItem) {
-    const item = state.items[state.primarySelectedItem];
+    const item = getItem(state.primarySelectedItem!);
     if (item) {
       const world = toWorld(e.offsetX, e.offsetY);
 
@@ -726,10 +738,9 @@ elements.canvas!.addEventListener('contextmenu', e => {
           onScale: scaleObject,
           onTranslate: translateObject,
           onAssignToLayer: assignItemToGroup,
-          onAssignToSelectedLayer: assignItemToSelectedLayer,
           onDelete: async () => {
             const itemsToDelete = state.selectedItems.filter(name => {
-              const item = state.items[name];
+              const item = getItem(name);
               return item && !item.is_locked;
             });
             if (itemsToDelete.length === 0) return;
@@ -742,6 +753,7 @@ elements.canvas!.addEventListener('contextmenu', e => {
             undoManager.endUndo();
             selectItem(null);
             updateItemsList();
+            updateLayersList();
             updatePropertiesPanel();
             renderCurrentView();
           },
@@ -888,6 +900,9 @@ undoBtn?.addEventListener('click', async () => {
     updateCollectionsList();
     invalidateAllItems();
     renderCurrentView();
+    if (result.imagesChanged) window.vpxEditor.refreshImageManager();
+    if (result.materialsChanged) window.vpxEditor.refreshMaterialManager();
+    if (result.soundsChanged) window.vpxEditor.refreshSoundManager();
   }
 });
 
@@ -907,6 +922,9 @@ redoBtn?.addEventListener('click', async () => {
     updateCollectionsList();
     invalidateAllItems();
     renderCurrentView();
+    if (result.imagesChanged) window.vpxEditor.refreshImageManager();
+    if (result.materialsChanged) window.vpxEditor.refreshMaterialManager();
+    if (result.soundsChanged) window.vpxEditor.refreshSoundManager();
   }
 });
 
@@ -931,6 +949,9 @@ document.addEventListener('keydown', async e => {
       updateCollectionsList();
       invalidateAllItems();
       renderCurrentView();
+      if (result.imagesChanged) window.vpxEditor.refreshImageManager();
+      if (result.materialsChanged) window.vpxEditor.refreshMaterialManager();
+      if (result.soundsChanged) window.vpxEditor.refreshSoundManager();
     }
     return;
   }
@@ -952,21 +973,35 @@ document.addEventListener('keydown', async e => {
       updateCollectionsList();
       invalidateAllItems();
       renderCurrentView();
+      if (result.imagesChanged) window.vpxEditor.refreshImageManager();
+      if (result.materialsChanged) window.vpxEditor.refreshMaterialManager();
+      if (result.soundsChanged) window.vpxEditor.refreshSoundManager();
     }
     return;
   }
 
   const isConsoleFocused = document.activeElement === consoleOutput;
 
-  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 'a' && isConsoleFocused) {
+  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 'a') {
     e.preventDefault();
-    if (consoleOutput) {
-      const range = document.createRange();
-      range.selectNodeContents(consoleOutput);
-      const selection = window.getSelection();
-      if (selection) {
-        selection.removeAllRanges();
-        selection.addRange(range);
+    if (isConsoleFocused) {
+      if (consoleOutput) {
+        const range = document.createRange();
+        range.selectNodeContents(consoleOutput);
+        const selection = window.getSelection();
+        if (selection) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      }
+    } else {
+      const allVisibleItems = Object.entries(state.items)
+        .filter(([name, item]) => isItemVisible(item, name))
+        .map(([name]) => name);
+      if (allVisibleItems.length > 0) {
+        setSelection(allVisibleItems, allVisibleItems[0]);
+        updatePropertiesPanel();
+        renderCurrentView();
       }
     }
     return;
@@ -1222,6 +1257,8 @@ window.vpxEditor.onSelectItems?.(itemNames => {
 window.vpxEditor.onRenameSubmitted?.(async data => {
   if (data.mode === 'table') {
     await renameTable(data.newName);
+  } else if (data.mode === 'partgroup') {
+    await renamePartGroup(data.oldName, data.newName);
   } else {
     await renameObject(data.oldName, data.newName);
   }
@@ -1284,9 +1321,14 @@ window.vpxEditor.onInfoChanged?.(info => {
   state.info = info;
 });
 
-window.vpxEditor.onGamedataChanged?.(gamedata => {
-  state.gamedata = gamedata;
-  updatePropertiesPanel();
+window.vpxEditor.onGamedataChanged?.(async () => {
+  if (!state.extractedDir) return;
+  const gamedataResult = await window.vpxEditor.readFile(`${state.extractedDir}/gamedata.json`);
+  if (gamedataResult.success && gamedataResult.content) {
+    state.gamedata = JSON.parse(gamedataResult.content);
+    updatePropertiesPanel();
+    renderCurrentView();
+  }
 });
 
 window.vpxEditor.onGameitemsChanged?.(gameitems => {
@@ -1402,7 +1444,7 @@ window.vpxEditor.onDeleteSelected?.(async () => {
   if (state.selectedItems.length === 0) return;
 
   const itemsToDelete = state.selectedItems.filter(name => {
-    const item = state.items[name];
+    const item = getItem(name);
     return item && !item.is_locked;
   });
 
@@ -1438,8 +1480,8 @@ window.vpxEditor.onUndoBegin?.(description => {
   undoManager.beginUndo(description);
 });
 
-window.vpxEditor.onUndoEnd?.(() => {
-  undoManager.endUndo();
+window.vpxEditor.onUndoEnd?.(async () => {
+  await undoManager.endUndo();
 });
 
 window.vpxEditor.onCollectionsUpdated?.(collections => {
@@ -1455,8 +1497,8 @@ window.vpxEditor.onMarkSavePoint?.(() => {
   undoManager.markSavePoint();
 });
 
-window.vpxEditor.onRecordScriptChange?.((before, after) => {
-  undoManager.recordScriptChange(before, after);
+window.vpxEditor.onRecordScriptChange?.(async (before, after) => {
+  await undoManager.recordScriptChange(before, after);
 });
 
 window.vpxEditor.onUndoMarkImages?.(() => {
@@ -1481,6 +1523,18 @@ window.vpxEditor.onUndoMarkMaterialCreate?.(materialName => {
 
 window.vpxEditor.onUndoMarkMaterialDelete?.((materialName, materialData) => {
   undoManager.markMaterialForDelete(materialName, materialData);
+});
+
+window.vpxEditor.onUndoMarkSounds?.(() => {
+  undoManager.markSoundsForUndo();
+});
+
+window.vpxEditor.onUndoMarkSoundCreate?.(soundName => {
+  undoManager.markSoundForCreate(soundName);
+});
+
+window.vpxEditor.onUndoMarkSoundDelete?.((soundName, soundData, filePath) => {
+  undoManager.markSoundForDelete(soundName, soundData, filePath);
 });
 
 window.vpxEditor.onUndoMarkRenderProbes?.(() => {
@@ -1573,6 +1627,7 @@ window.vpxEditor.onToggleBackglassView?.(enabled => {
   updateLayersList();
   updatePropertiesPanel();
   fitToView();
+  window.vpxEditor.notifyBackglassViewChanged(state.backglassView);
 });
 
 window.vpxEditor.onToggleMagnify?.(() => {
@@ -1645,7 +1700,7 @@ window.vpxEditor.onMeshImported?.(async data => {
   }
 
   if (state.primarySelectedItem && state.extractedDir) {
-    const item = state.items[state.primarySelectedItem];
+    const item = getItem(state.primarySelectedItem!);
     if (item && item._fileName) {
       const itemResult = await window.vpxEditor.readFile(`${state.extractedDir}/${item._fileName}`);
       if (itemResult.success && itemResult.content) {
@@ -1705,7 +1760,7 @@ document.addEventListener('mouseup', () => {
   if (state.draggingObject) {
     if (state.objectMoved && state.selectedItems.length > 0) {
       for (const itemName of state.selectedItems) {
-        if (!state.items[itemName]?.is_locked) {
+        if (!getItem(itemName)?.is_locked) {
           saveItemToFile(itemName);
           invalidateItem(itemName);
         }
@@ -1731,7 +1786,7 @@ initConsole();
 
 window.vpxEditor.onApplyTransform?.(data => {
   if (!transformItemName) return;
-  const item = state.items[transformItemName];
+  const item = getItem(transformItemName!);
   if (!item) return;
 
   restoreDragPoints(item, originalDragPoints);
@@ -1750,7 +1805,7 @@ window.vpxEditor.onApplyTransform?.(data => {
 
 window.vpxEditor.onUndoTransform?.(() => {
   if (!transformItemName) return;
-  const item = state.items[transformItemName];
+  const item = getItem(transformItemName!);
   if (!item) return;
 
   restoreDragPoints(item, originalDragPoints);
@@ -1760,7 +1815,7 @@ window.vpxEditor.onUndoTransform?.(() => {
 
 window.vpxEditor.onSaveTransform?.(data => {
   if (!transformItemName) return;
-  const item = state.items[transformItemName];
+  const item = getItem(transformItemName!);
   if (!item) return;
 
   const currentTransform = backupDragPoints(item);
@@ -1783,7 +1838,7 @@ window.vpxEditor.onSaveTransform?.(data => {
 
 window.vpxEditor.onCancelTransform?.(() => {
   if (!transformItemName) return;
-  const item = state.items[transformItemName];
+  const item = getItem(transformItemName!);
   if (!item) return;
 
   restoreDragPoints(item, originalDragPoints);

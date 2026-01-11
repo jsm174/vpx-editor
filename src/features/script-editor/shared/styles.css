@@ -1,0 +1,59 @@
+.script-editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.script-editor-toolbar label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.script-editor-toolbar select {
+  padding: 4px 8px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 12px;
+  min-width: 150px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url('/icons/dropdown-arrow.svg');
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 24px;
+}
+
+.script-editor-toolbar select:focus {
+  outline: none;
+}
+
+.script-editor-toolbar select option {
+  background: var(--bg-panel);
+  color: var(--text-primary);
+}
+
+.script-editor-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+.script-editor-status {
+  padding: 4px 12px;
+  background: var(--bg-toolbar);
+  border-top: 1px solid var(--border-color);
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: space-between;
+}
+
+.modified-indicator {
+  color: #e8ab53;
+}

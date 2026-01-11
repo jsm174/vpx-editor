@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Wavefront OBJ Importer</title>
+  <script>
+    var theme = new URLSearchParams(window.location.search).get('theme');
+    if (theme) document.documentElement.setAttribute('data-theme', theme);
+  </script>
+  <link rel="stylesheet" href="../../../shared/window-base.css">
+  <link rel="stylesheet" href="../shared/component.css">
+  <link rel="stylesheet" href="./window.css">
+</head>
+<body>
+  <div class="mesh-import-container">
+    <div class="mesh-import-file-row">
+      <label>File</label>
+      <input type="text" id="mesh-import-path" class="win-input" readonly>
+      <button class="win-btn" id="mesh-import-browse">Browse</button>
+    </div>
+
+    <fieldset class="mesh-import-options">
+      <legend>Options</legend>
+      <div class="mesh-import-grid">
+        <label><input type="checkbox" id="mesh-import-convert-coords" checked> Convert coordinate system</label>
+        <label><input type="checkbox" id="mesh-import-center-mesh"> Center mesh to it's midpoint</label>
+        <label><input type="checkbox" id="mesh-import-animation"> Import Animation Sequence</label>
+        <label><input type="checkbox" id="mesh-import-material"> Import mesh's material</label>
+        <label><input type="checkbox" id="mesh-import-no-optimize"> Do not reorder/optimize data</label>
+        <div></div>
+        <label class="full-width"><input type="radio" name="mesh-position" id="mesh-import-rel-position" checked> Place at primitive's position</label>
+        <label class="full-width"><input type="radio" name="mesh-position" id="mesh-import-abs-position"> Place at mesh's absolute position (use mesh's midpoint)</label>
+      </div>
+    </fieldset>
+
+    <div class="mesh-import-footer">
+      <button class="win-btn" id="mesh-import-cancel">Cancel</button>
+      <button class="win-btn primary" id="mesh-import-ok" disabled>Import</button>
+    </div>
+  </div>
+
+  <script type="module" src="./window.ts"></script>
+</body>
+</html>

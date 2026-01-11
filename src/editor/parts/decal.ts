@@ -1,9 +1,12 @@
+import * as THREE from 'three';
 import { state, elements } from '../state.js';
 import { toScreen, getLineWidth, getStrokeStyle, drawPolygon, convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { materialOptions, imageOptions, surfaceOptions } from '../../shared/options-generators.js';
 import { DECAL_DEFAULTS } from '../../shared/object-defaults.js';
 import { RENDER_COLOR_BLACK, RENDER_COLOR_BLUE, BLUEPRINT_SOLID_COLOR } from '../../shared/constants.js';
 import { registerEditable, IEditable } from './registry.js';
+import { loadTexture } from '../texture-loader.js';
+import { createMaterial } from '../../shared/3d-material-helpers.js';
 import type { Decal, Point } from '../../types/game-objects.js';
 
 interface Corner {
@@ -71,6 +74,35 @@ export function renderBlueprint(ctx: CanvasRenderingContext2D, item: Decal, scal
 export function render(item: Decal, isSelected: boolean): void {
   uiRenderPass1(item, isSelected);
   uiRenderPass2(item, isSelected);
+}
+
+export function createDecal3DMesh(item: Decal): THREE.Mesh | null {
+  const center = item.center || (item as { vCenter?: Point }).vCenter;
+  if (!center) return null;
+
+  const width = item.width ?? DECAL_DEFAULTS.width;
+  const height = item.height ?? DECAL_DEFAULTS.height;
+  const rotation = ((item.rotation ?? DECAL_DEFAULTS.rotation) * Math.PI) / 180;
+
+  const geometry = new THREE.PlaneGeometry(width, height);
+
+  const material = createMaterial(item.material, null);
+  (material as THREE.MeshStandardMaterial).side = THREE.DoubleSide;
+
+  if (state.showMaterials && item.image && item.decal_type !== 'text') {
+    loadTexture(item.image).then(texture => {
+      if (texture) {
+        (material as THREE.MeshStandardMaterial).map = texture;
+        (material as THREE.MeshStandardMaterial).needsUpdate = true;
+      }
+    });
+  }
+
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.set(center.x, center.y, 0.2);
+  mesh.rotation.z = -rotation;
+
+  return mesh;
 }
 
 export function hitTestDecal(item: Decal, worldX: number, worldY: number, center?: Point): boolean {
@@ -185,6 +217,7 @@ const decalRenderer: IEditable = {
   uiRenderPass2,
   renderBlueprint,
   hitTest: hitTestDecal,
+  create3DMesh: createDecal3DMesh,
   getProperties: decalProperties,
   getCenter,
   putCenter,

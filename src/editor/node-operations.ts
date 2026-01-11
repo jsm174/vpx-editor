@@ -1,4 +1,4 @@
-import { state } from './state.js';
+import { state, getItem } from './state.js';
 import { undoManager } from './state.js';
 import { DragPoint } from './state.js';
 import { saveItemToFile } from './table-loader.js';
@@ -24,7 +24,7 @@ interface NewDragPoint {
 }
 
 export function toggleNodeSmooth(itemName: string, nodeIndex: number): void {
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item || !item.drag_points) return;
 
   undoManager.beginUndo('Toggle smooth');
@@ -40,7 +40,7 @@ export function toggleNodeSmooth(itemName: string, nodeIndex: number): void {
 }
 
 export function deleteNode(itemName: string, nodeIndex: number): void {
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item || !item.drag_points || item.drag_points.length <= 3) return;
 
   undoManager.beginUndo('Delete control point');
@@ -55,7 +55,7 @@ export function deleteNode(itemName: string, nodeIndex: number): void {
 }
 
 export function toggleNodeSlingshot(itemName: string, nodeIndex: number): void {
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item || !item.drag_points) return;
 
   const pt = item.drag_points[nodeIndex];
@@ -76,7 +76,7 @@ export function toggleNodeSlingshot(itemName: string, nodeIndex: number): void {
 }
 
 export function addPointToObject(itemName: string, worldX: number, worldY: number): void {
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item || !item.drag_points) return;
 
   undoManager.beginUndo('Add control point');
@@ -105,7 +105,7 @@ export function addPointToObject(itemName: string, worldX: number, worldY: numbe
 }
 
 export function addNode(itemName: string, worldX: number, worldY: number, smooth: boolean = false): void {
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item || !item.drag_points) return;
 
   undoManager.beginUndo('Add control point');

@@ -2,6 +2,38 @@
 <html>
 <head>
   <meta charset="UTF-8" />
+  <!-- @web-only -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VPX Editor</title>
+  <script>
+    (function() {
+      var stored = localStorage.getItem('vpx-editor-editorSettings');
+      var theme = 'system';
+      if (stored) {
+        try {
+          var settings = JSON.parse(stored);
+          theme = settings.theme || 'system';
+        } catch(e) {}
+      }
+      if (theme === 'system') {
+        theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <link rel="stylesheet" href="/src/shared/window-base.css" />
+  <link rel="stylesheet" href="/src/shared/manager-modal.css" />
+  <link rel="stylesheet" href="/src/features/settings/shared/component.css" />
+  <link rel="stylesheet" href="/src/features/settings/web/styles.css" />
+  <link rel="stylesheet" href="/src/features/about/shared/component.css" />
+  <link rel="stylesheet" href="/src/features/about/web/styles.css" />
+  <link rel="stylesheet" href="/src/features/search-select/web/styles.css" />
+  <link rel="stylesheet" href="/src/features/drawing-order/web/styles.css" />
+  <link rel="stylesheet" href="/src/features/script-editor/web/styles.css" />
+  <link rel="stylesheet" href="/src/features/table-info/web/styles.css" />
+  <link rel="stylesheet" href="/index.css" />
+  <!-- @end-web-only -->
+  <!-- @electron-only -->
   <title></title>
   <script>
     var theme = new URLSearchParams(window.location.search).get('theme');
@@ -9,10 +41,17 @@
   </script>
   <link rel="stylesheet" href="src/shared/window-base.css" />
   <link rel="stylesheet" href="./index.css" />
+  <!-- @end-electron-only -->
 </head>
 <body>
   <div id="app">
     <header id="toolbar">
+      <!-- @web-only -->
+      <div id="hamburger-menu">
+        <button id="hamburger-btn" title="Menu"><img src="/icons/menu.png" alt="Menu"></button>
+        <div id="menu-dropdown"></div>
+      </div>
+      <!-- @end-web-only -->
       <div class="tool-group undo-controls">
         <button id="undo-btn" class="tool-btn icon-btn" data-tooltip="Undo" disabled>
           <img src="icons/undo.png" alt="Undo">
@@ -39,9 +78,16 @@
         </button>
       </div>
       <div class="tool-group">
+        <!-- @web-only -->
+        <button id="btn-play" class="tool-btn icon-btn" data-tooltip="Play (Not available in web)" disabled>
+          <img src="icons/play.png" alt="Play">
+        </button>
+        <!-- @end-web-only -->
+        <!-- @electron-only -->
         <button id="btn-play" class="tool-btn icon-btn" data-tooltip="Play">
           <img src="icons/play.png" alt="Play">
         </button>
+        <!-- @end-electron-only -->
       </div>
       <div id="status-bar">Ready</div>
     </header>
@@ -108,6 +154,7 @@
           </div>
           <div class="layers-filter-row">
             <input type="text" id="layer-filter-input" class="layers-filter-input" placeholder="Filter...">
+            <button id="new-layer-btn" class="rename-btn" data-tooltip="New Layer">New</button>
           </div>
           <div id="layers-list"></div>
         </div>
@@ -145,8 +192,176 @@
 
   <div id="tooltip"></div>
 
+  <!-- @web-only -->
+  <div id="blueprint-modal" class="blueprint-modal hidden" data-theme="dark">
+    <div class="blueprint-modal-backdrop"></div>
+    <div class="blueprint-modal-window">
+      <div class="blueprint-modal-header">
+        <span class="blueprint-modal-title">Export Blueprint</span>
+        <button class="manager-close" id="blueprint-modal-close">&times;</button>
+      </div>
+      <div class="blueprint-modal-body">
+        Do you want a solid blueprint (filled shapes) or outline only?
+      </div>
+      <div class="blueprint-modal-footer">
+        <button class="win-btn" id="blueprint-cancel">Cancel</button>
+        <button class="win-btn" id="blueprint-outline">Outline</button>
+        <button class="win-btn primary" id="blueprint-solid">Solid</button>
+      </div>
+    </div>
+  </div>
+  <!-- @end-web-only -->
+
   <div id="loading-overlay" class="loading-overlay hidden"></div>
 
-  <script type="module" src="src/editor/renderer.js"></script>
+  <!-- @web-only -->
+  <script>
+    (function() {
+      function EventEmitter() {
+        this.listeners = new Map();
+      }
+      EventEmitter.prototype.on = function(event, callback) {
+        if (!this.listeners.has(event)) this.listeners.set(event, new Set());
+        this.listeners.get(event).add(callback);
+        return function() { this.off(event, callback); }.bind(this);
+      };
+      EventEmitter.prototype.off = function(event, callback) {
+        var set = this.listeners.get(event);
+        if (set) set.delete(callback);
+      };
+      EventEmitter.prototype.emit = function(event) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        var set = this.listeners.get(event);
+        if (set) set.forEach(function(cb) { cb.apply(null, args); });
+      };
+
+      var events = new EventEmitter();
+      window.__vpxEvents = events;
+
+      var vpxEditorAPI = {
+        onTableLoaded: function(cb) { return events.on('table-loaded', cb); },
+        onTableClosed: function(cb) { return events.on('table-closed', cb); },
+        onSelectItem: function(cb) { return events.on('select-item', cb); },
+        onSelectItems: function(cb) { return events.on('select-items', cb); },
+        onSelectionChanged: function(cb) { return events.on('selection-changed', cb); },
+        onUndo: function(cb) { return events.on('undo', cb); },
+        onRedo: function(cb) { return events.on('redo', cb); },
+        onCut: function(cb) { return events.on('cut', cb); },
+        onCopy: function(cb) { return events.on('copy', cb); },
+        onPaste: function(cb) { return events.on('paste', cb); },
+        onDelete: function(cb) { return events.on('delete-selected', cb); },
+        onSelectAll: function(cb) { return events.on('select-all', cb); },
+        onZoomIn: function(cb) { return events.on('zoom-in', cb); },
+        onZoomOut: function(cb) { return events.on('zoom-out', cb); },
+        onZoomReset: function(cb) { return events.on('zoom-reset', cb); },
+        onToggleGrid: function(cb) { return events.on('toggle-grid', cb); },
+        onToggleBackdrop: function(cb) { return events.on('toggle-backdrop', cb); },
+        onToggleBackglassView: function(cb) { return events.on('toggle-backglass-view', cb); },
+        onViewSettingsChanged: function(cb) { return events.on('view-settings-changed', cb); },
+        onEditorSettingsChanged: function(cb) { return events.on('editor-settings-changed', cb); },
+        onImagesChanged: function(cb) { return events.on('images-changed', cb); },
+        onMaterialsChanged: function(cb) { return events.on('materials-changed', cb); },
+        onSoundsChanged: function(cb) { return events.on('sounds-changed', cb); },
+        onCollectionsChanged: function(cb) { return events.on('collections-changed', cb); },
+        onGamedataChanged: function(cb) { return events.on('gamedata-changed', cb); },
+        onInfoChanged: function(cb) { return events.on('info-changed', cb); },
+        onConsoleOpen: function(cb) { return events.on('console-open', cb); },
+        onConsoleOutput: function(cb) { return events.on('console-output', cb); },
+        onToggleConsole: function(cb) { return events.on('toggle-console', cb); },
+        onLoading: function(cb) { return events.on('loading', cb); },
+        onStatus: function(cb) { return events.on('status', cb); },
+        onApplyTransform: function(cb) { return events.on('apply-transform', cb); },
+        onToggleScriptEditor: function(cb) { return events.on('toggle-script-editor', cb); },
+        onToggleMagnify: function(cb) { return events.on('toggle-magnify', cb); },
+        onSetTheme: function(cb) { return events.on('set-theme', cb); },
+        onPlayStarted: function(cb) { return events.on('play-started', cb); },
+        onPlayStopped: function(cb) { return events.on('play-stopped', cb); },
+        onExtractedDirChanged: function(cb) { return events.on('extracted-dir-changed', cb); },
+        onMarkSavePoint: function(cb) { return events.on('mark-save-point', cb); },
+        onSetInputDisabled: function(cb) { return events.on('set-input-disabled', cb); },
+        onShowInfoModal: function(cb) { return events.on('show-info-modal', cb); },
+        onTableLockChanged: function(cb) { return events.on('table-lock-changed', cb); },
+        onThemeChanged: function(cb) { return events.on('theme-changed', cb); },
+        onExportBlueprint: function(cb) { return events.on('export-blueprint', cb); },
+        onScriptEditorOpened: function(cb) { return events.on('script-editor-opened', cb); },
+        onScriptEditorClosed: function(cb) { return events.on('script-editor-closed', cb); },
+        onRenameSubmitted: function(cb) { return events.on('rename-submitted', cb); },
+        onRequestSelectionResend: function(cb) { return events.on('request-selection-resend', cb); },
+        onCollectionCreateFromSelectionRequest: function(cb) { return events.on('collection-create-from-selection', cb); },
+        onGameitemsChanged: function(cb) { return events.on('gameitems-changed', cb); },
+
+        updateUndoState: function(state) {},
+        sendDrawingOrderData: function(data) {},
+        notifySelectionChanged: function(items) {},
+
+        hasClipboardData: function() { return Promise.resolve(false); },
+        getClipboardData: function() { return Promise.resolve({ items: [] }); },
+        setClipboardData: function(data) { return Promise.resolve(); },
+        updateClipboardState: function(state) {},
+        toggleScriptEditor: function() { events.emit('toggle-script-editor'); },
+        notify3DModeChanged: function(is3D) {},
+        notifyBackglassViewChanged: function(enabled) {},
+
+        readFile: function() { return Promise.resolve({ success: false, error: 'Not initialized' }); },
+        readBinaryFile: function() { return Promise.resolve({ success: false, error: 'Not initialized' }); },
+        writeFile: function() { return Promise.resolve({ success: false }); },
+        writeBinaryFile: function() { return Promise.resolve({ success: false }); },
+        listDir: function() { return Promise.resolve({ success: false, files: [] }); },
+        deleteFile: function() { return Promise.resolve({ success: false }); },
+        renameFile: function() { return Promise.resolve({ success: false }); },
+        checkFileExists: function() { return Promise.resolve({ exists: false }); },
+        getExtractedDir: function() { return Promise.resolve('/vpx-work'); },
+        getTableName: function() { return Promise.resolve('table'); },
+        getTheme: function() { return Promise.resolve('dark'); },
+        previewTheme: function() {},
+        restoreTheme: function() { return Promise.resolve(); },
+        saveTheme: function() { return Promise.resolve(); },
+        getViewSettings: function() { return Promise.resolve({ solid: true, outline: false, grid: true, backdrop: true }); },
+        getGridSize: function() { return Promise.resolve(50); },
+        getTextureQuality: function() { return Promise.resolve(2048); },
+        getEditorSettings: function() { return Promise.resolve({ unitConversion: 0 }); },
+        saveSettings: function() { return Promise.resolve(); },
+        getPanelSettings: function() { return Promise.resolve({}); },
+        savePanelSettings: function() { return Promise.resolve(); },
+        getConsoleSettings: function() { return Promise.resolve({ pinned: false }); },
+        saveConsoleSettings: function() { return Promise.resolve(); },
+        undoBegin: function() {},
+        undoEnd: function() {},
+        markDirty: function() {},
+        markClean: function() {},
+        notifySelectionChanged: function() {},
+        notifyCollectionsChanged: function() {},
+        showInfo: function() { return Promise.resolve(); },
+        getImageInfo: function() { return Promise.resolve({ success: false }); },
+        importImage: function() { return Promise.resolve({ success: false }); },
+        exportImage: function() { return Promise.resolve({ success: false }); },
+        playTable: function() { return Promise.resolve(); },
+        stopPlay: function() { return Promise.resolve(); },
+        getVersion: function() { return Promise.resolve('0.7.0 (dev)'); },
+        isWeb: function() { return true; },
+        isElectron: function() { return false; },
+        getGamedata: function() { return Promise.resolve(null); },
+        saveGamedata: function() { return Promise.resolve(); },
+        getInfo: function() { return Promise.resolve(null); },
+        saveInfo: function() { return Promise.resolve(); },
+        getImages: function() { return Promise.resolve([]); },
+        getMaterials: function() { return Promise.resolve({}); },
+        saveMaterials: function() { return Promise.resolve(); },
+        getSounds: function() { return Promise.resolve([]); },
+        getCollections: function() { return Promise.resolve([]); },
+        saveCollections: function() { return Promise.resolve(); },
+        getGameitemsIndex: function() { return Promise.resolve([]); },
+        showRenameDialog: function() {}
+      };
+
+      window.vpxEditorAPI = vpxEditorAPI;
+      window.vpxEditor = vpxEditorAPI;
+    })();
+  </script>
+  <script type="module" src="/src/web/main.ts"></script>
+  <!-- @end-web-only -->
+  <!-- @electron-only -->
+  <script type="module" src="src/editor/renderer.ts"></script>
+  <!-- @end-electron-only -->
 </body>
 </html>

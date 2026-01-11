@@ -48,11 +48,11 @@ export function resizeCanvas(): void {
     resize3D(newWidth, newHeight);
   }
 
-  if (!state.viewMode && oldWidth > 0 && oldHeight > 0) {
+  if (oldWidth > 0 && oldHeight > 0) {
     resize2D(oldWidth, oldHeight, newWidth, newHeight);
-  } else {
-    renderCurrentView();
   }
+
+  renderCurrentView();
 }
 
 const BACKGLASS_ONLY_TYPES: string[] = ['TextBox', 'Reel'];

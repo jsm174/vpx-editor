@@ -1,0 +1,115 @@
+.context-menu {
+  position: fixed;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  min-width: 160px;
+  z-index: 3000;
+  padding: 4px;
+}
+
+.context-menu-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+}
+
+.context-menu-check {
+  width: 14px;
+  text-align: center;
+  font-size: 11px;
+}
+
+.context-menu-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  vertical-align: middle;
+  filter: invert(1);
+}
+
+[data-theme="light"] .context-menu-icon {
+  filter: none;
+}
+
+.context-menu-item:hover {
+  background: var(--accent);
+  color: white;
+}
+
+.context-menu-item:hover .context-menu-icon {
+  filter: invert(1);
+}
+
+.context-menu-item.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.context-menu-separator {
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}
+
+.context-menu-item.has-submenu {
+  position: relative;
+  justify-content: space-between;
+}
+
+.context-menu-arrow {
+  font-size: 8px;
+  margin-left: 12px;
+  opacity: 0.7;
+}
+
+.context-submenu {
+  position: absolute;
+  left: 100%;
+  top: -4px;
+  display: none;
+  min-width: 150px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.context-menu-item.has-submenu:hover > .context-submenu {
+  display: block;
+}
+
+.context-submenu.flip-left {
+  left: auto;
+  right: 100%;
+}
+
+.context-submenu.flip-up {
+  top: auto;
+  bottom: -4px;
+}
+
+#tooltip {
+  position: fixed;
+  padding: 6px 10px;
+  background: var(--tooltip-bg);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: normal;
+  white-space: nowrap;
+  border-radius: 4px;
+  border: 1px solid var(--tooltip-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 100000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+#tooltip.visible {
+  opacity: 1;
+}

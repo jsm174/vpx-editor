@@ -1,0 +1,65 @@
+<div id="material-modal" class="material-modal hidden" data-theme="dark">
+  <div class="material-modal-backdrop"></div>
+  <div class="material-modal-window">
+    <div class="material-header">
+      <span class="material-title">Material Manager</span>
+      <button class="material-close" id="material-close">&times;</button>
+    </div>
+    <div class="material-toolbar">
+      <input type="text" id="material-filter" placeholder="Filter...">
+      <div class="material-toolbar-spacer"></div>
+      <button class="win-btn primary" id="material-add-btn">New</button>
+      <button class="win-btn" id="material-clone-btn">Clone</button>
+    </div>
+    <div class="material-body">
+      <div class="material-list-container">
+        <table class="material-list-table">
+          <thead>
+            <tr>
+              <th style="width: 28px;" class="sortable" data-sort="color"></th>
+              <th class="sortable" data-sort="name">Name</th>
+              <th class="sortable" data-sort="used" style="width: 50px;">Used</th>
+            </tr>
+          </thead>
+          <tbody id="material-list-body"></tbody>
+        </table>
+      </div>
+      <div class="material-props-panel">
+        <div class="material-empty-state" id="material-empty-state">Select a material to view properties</div>
+        <div id="material-properties-container" style="display: none;"></div>
+      </div>
+    </div>
+    <div class="material-status" id="material-status">Ready</div>
+  </div>
+  <div id="material-edit-overlay" class="material-edit-overlay hidden">
+    <div class="material-edit-dialog">
+      <div class="material-edit-header">
+        <span class="material-edit-title" id="material-edit-title">New Material</span>
+        <button class="material-edit-close" id="material-edit-close">&times;</button>
+      </div>
+      <div class="material-edit-content">
+        <div id="material-edit-form"></div>
+        <div id="material-edit-error" class="material-edit-error"></div>
+      </div>
+      <div class="material-edit-footer">
+        <button class="win-btn" id="material-edit-cancel">Cancel</button>
+        <button class="win-btn primary" id="material-edit-ok">OK</button>
+      </div>
+    </div>
+  </div>
+  <div id="material-confirm-overlay" class="material-edit-overlay hidden">
+    <div class="material-edit-dialog" style="min-width: 280px;">
+      <div id="material-confirm-message" style="margin-bottom: 16px;"></div>
+      <div class="material-edit-buttons">
+        <button class="win-btn" id="material-confirm-cancel">Cancel</button>
+        <button class="win-btn primary" id="material-confirm-ok">Delete</button>
+      </div>
+    </div>
+  </div>
+  <div id="material-context-menu" class="material-context-menu hidden">
+    <div class="material-context-menu-item" data-action="rename">Rename</div>
+    <div class="material-context-menu-item" data-action="clone">Clone</div>
+    <div class="material-context-menu-divider"></div>
+    <div class="material-context-menu-item" data-action="delete">Delete</div>
+  </div>
+</div>

@@ -1,0 +1,225 @@
+.render-probe-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.render-probe-modal.hidden {
+  display: none;
+}
+
+.render-probe-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.render-probe-modal-window {
+  position: relative;
+  width: 750px;
+  height: 500px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.render-probe-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 8px 8px 0 0;
+}
+
+.render-probe-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.render-probe-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 8px;
+  line-height: 1;
+}
+
+.render-probe-close:hover {
+  color: var(--text-primary);
+}
+
+.render-probe-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.render-probe-toolbar-spacer {
+  flex: 1;
+}
+
+.render-probe-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.render-probe-list-container {
+  width: 240px;
+  flex-shrink: 0;
+  overflow: auto;
+  border-right: 1px solid var(--border-color);
+  background: var(--bg-panel);
+}
+
+.render-probe-item,
+.probe-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.render-probe-item:hover,
+.probe-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.render-probe-item.selected,
+.probe-item.selected {
+  background: var(--accent);
+  color: white;
+}
+
+.render-probe-item.protected,
+.probe-item.protected {
+  font-style: italic;
+}
+
+.render-probe-props-panel {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg-panel);
+}
+
+.render-probe-empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.render-probe-radio-row {
+  margin-bottom: 6px;
+}
+
+.render-probe-radio-row label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.render-probe-radio-row input[type='radio'] {
+  margin: 0;
+}
+
+.render-probe-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.render-probe-slider-row input[type='range'] {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+.render-probe-slider-row input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+.render-probe-slider-label {
+  min-width: 60px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.render-probe-status {
+  padding: 4px 12px;
+  background: var(--bg-toolbar);
+  border-top: 1px solid var(--border-color);
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-radius: 0 0 8px 8px;
+}
+
+.render-probe-context-menu {
+  position: fixed;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 4px 0;
+  min-width: 120px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 2100;
+}
+
+.render-probe-context-menu.hidden {
+  display: none;
+}
+
+.render-probe-context-menu .context-menu-item {
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.render-probe-context-menu .context-menu-item:hover {
+  background: var(--accent);
+  color: white;
+}
+
+.render-probe-context-menu .context-menu-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.render-probe-context-menu .context-menu-item.disabled:hover {
+  background: transparent;
+  color: inherit;
+}
+
+.render-probe-context-menu .context-menu-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}

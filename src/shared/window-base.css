@@ -114,7 +114,7 @@ input, textarea {
   cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
-  background-image: url('./icons/dropdown-arrow.svg');
+  background-image: url('/icons/dropdown-arrow.svg');
   background-repeat: no-repeat;
   background-position: right 8px center;
   padding-right: 24px;

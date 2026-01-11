@@ -1,0 +1,28 @@
+<div id="script-editor-modal" class="script-editor-modal hidden" data-theme="dark">
+  <div class="script-editor-modal-backdrop"></div>
+  <div class="script-editor-modal-window">
+    <div class="script-editor-header">
+      <span class="script-editor-title">Script Editor</span>
+      <button class="script-editor-close" id="script-editor-close">&times;</button>
+    </div>
+    <div class="script-editor-toolbar">
+      <label>Item:</label>
+      <select id="script-item-list">
+        <option value="">(All Items)</option>
+      </select>
+      <label>Event:</label>
+      <select id="script-event-list">
+        <option value="">(Select Event)</option>
+      </select>
+      <label>Function:</label>
+      <select id="script-function-list">
+        <option value="">(Select Function)</option>
+      </select>
+    </div>
+    <div class="script-editor-container" id="script-editor-container"></div>
+    <div class="script-editor-status">
+      <span id="script-status">Ready</span>
+      <span id="script-cursor-pos">Ln 1, Col 1</span>
+    </div>
+  </div>
+</div>

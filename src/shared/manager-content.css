@@ -1,0 +1,317 @@
+.manager-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.manager-toolbar input {
+  padding: 6px 10px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+  width: 200px;
+}
+
+.manager-toolbar input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.manager-toolbar-spacer {
+  flex: 1;
+}
+
+.manager-toolbar button {
+  padding: 6px 12px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.manager-toolbar button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.manager-toolbar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.manager-toolbar button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.manager-toolbar button.primary:hover:not(:disabled) {
+  background: var(--accent-hover, #1084d8);
+}
+
+.manager-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.manager-list {
+  flex: 1;
+  overflow: auto;
+  border-right: 1px solid var(--border-color);
+}
+
+.manager-list table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.manager-list thead {
+  position: sticky;
+  top: 0;
+  background: var(--bg-toolbar);
+  z-index: 1;
+}
+
+.manager-list th {
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.manager-list th.sortable {
+  cursor: pointer;
+}
+
+.manager-list th.sortable:hover {
+  color: var(--text-primary);
+}
+
+.manager-list th.sort-asc::after {
+  content: ' ▲';
+  font-size: 9px;
+}
+
+.manager-list th.sort-desc::after {
+  content: ' ▼';
+  font-size: 9px;
+}
+
+.manager-list td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.manager-list tr {
+  cursor: pointer;
+}
+
+.manager-list tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.manager-list tbody tr.selected {
+  background: var(--accent);
+  color: white;
+}
+
+.manager-preview {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  overflow-y: auto;
+}
+
+.manager-preview-container {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-dark);
+  border-bottom: 1px solid var(--border-color);
+  padding: 16px;
+}
+
+.manager-preview-container img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.manager-details {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.manager-detail-row {
+  display: flex;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.manager-detail-label {
+  color: var(--text-secondary);
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.manager-detail-value {
+  word-break: break-all;
+}
+
+.manager-status {
+  padding: 4px 12px;
+  background: var(--bg-toolbar);
+  border-top: 1px solid var(--border-color);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.manager-empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.manager-used-by {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.manager-used-by-item {
+  padding: 4px 8px;
+  margin-bottom: 2px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.manager-used-by-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.context-menu {
+  position: fixed;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 4px 0;
+  min-width: 120px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 3000;
+}
+
+.context-menu.hidden {
+  display: none;
+}
+
+.context-menu-item {
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.context-menu-item:hover {
+  background: var(--accent);
+  color: white;
+}
+
+.context-menu-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}
+
+.prop-btn {
+  padding: 4px 12px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.prop-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.output-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.output-badge.table {
+  background: rgba(46, 160, 67, 0.2);
+  color: #3fb950;
+}
+
+.output-badge.backglass {
+  background: rgba(136, 87, 44, 0.3);
+  color: #d29922;
+}
+
+.manager-list tbody tr.selected .output-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.used-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.used-badge.yes {
+  background: rgba(46, 160, 67, 0.2);
+  color: #3fb950;
+}
+
+.used-badge.no {
+  background: rgba(139, 148, 158, 0.2);
+  color: #8b949e;
+}
+
+.manager-list tbody tr.selected .used-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.image-thumb {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.color-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: inline-block;
+  vertical-align: middle;
+}

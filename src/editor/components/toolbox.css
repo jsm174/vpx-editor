@@ -1,0 +1,163 @@
+#toolbox-panel {
+  width: 200px;
+  min-width: 100px;
+  max-width: 400px;
+  background: var(--bg-panel);
+  border-right: none;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+#toolbox-resize-handle,
+#right-resize-handle {
+  width: 4px;
+  background: var(--border-color);
+  cursor: col-resize;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+#toolbox-resize-handle:hover,
+#toolbox-resize-handle.dragging,
+#right-resize-handle:hover,
+#right-resize-handle.dragging {
+  background: var(--accent);
+}
+
+#layers-resize-handle {
+  height: 4px;
+  background: var(--border-color);
+  cursor: row-resize;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+#layers-resize-handle:hover,
+#layers-resize-handle.dragging {
+  background: var(--accent);
+}
+
+.toolbox-section {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.toolbox-title {
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.toolbox-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px;
+}
+
+.menu-separator {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 4px 8px;
+}
+
+.toolbox-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 2px;
+}
+
+.toolbox-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--border-color);
+}
+
+.toolbox-btn.active,
+.toolbox-btn.creating {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.toolbox-btn img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: var(--icon-filter);
+}
+
+.toolbox-btn.active img,
+.toolbox-btn.creating img {
+  filter: brightness(0) invert(1);
+}
+
+.floating-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 100;
+  transition: opacity 0.2s, background 0.2s;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floating-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.floating-btn.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.floating-btn-left {
+  right: auto;
+  left: 8px;
+}
+
+.floating-select {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  padding: 4px 6px;
+  font-size: 10px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.floating-select:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.floating-select:focus {
+  outline: none;
+}
+
+.floating-select option {
+  background: #333;
+  color: #fff;
+}

@@ -1,0 +1,67 @@
+@import '../shared/styles.css';
+
+.dimensions-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dimensions-modal.hidden {
+  display: none;
+}
+
+.dimensions-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.dimensions-modal-window {
+  position: relative;
+  width: 95vw;
+  height: 80vh;
+  max-width: 950px;
+  max-height: 600px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  padding: 12px;
+}
+
+.dimensions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.dimensions-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.dimensions-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 8px;
+  line-height: 1;
+}
+
+.dimensions-close:hover {
+  color: var(--text-primary);
+}

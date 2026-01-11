@@ -1,0 +1,40 @@
+@import '../shared/component.css';
+
+.mesh-import-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mesh-import-modal.hidden {
+  display: none;
+}
+
+.mesh-import-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.mesh-import-modal-content {
+  position: relative;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  width: 520px;
+  max-width: 95vw;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.mesh-import-modal .manager-header {
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.mesh-import-modal-body {
+  padding: 0;
+}

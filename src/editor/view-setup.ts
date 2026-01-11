@@ -1,54 +1,8 @@
 import * as THREE from 'three';
+import type { GameData } from '../types/data.js';
 
 export type ViewMode = 'desktop' | 'fullscreen' | 'cabinet' | 'mixedreality' | 'vr';
 export type SpaceReference = 'playfield' | 'inherit' | string;
-
-export interface GameData {
-  glass_bottom_height?: number;
-  right?: number;
-  bottom?: number;
-  bg_view_mode_desktop?: string;
-  bg_fov_desktop?: number;
-  bg_inclination_desktop?: number;
-  bg_layback_desktop?: number;
-  bg_offset_x_desktop?: number;
-  bg_offset_y_desktop?: number;
-  bg_offset_z_desktop?: number;
-  bg_scale_x_desktop?: number;
-  bg_scale_y_desktop?: number;
-  bg_scale_z_desktop?: number;
-  bg_view_horizontal_offset_desktop?: number;
-  bg_view_vertical_offset_desktop?: number;
-  bg_window_top_z_offset_desktop?: number;
-  bg_window_bottom_z_offset_desktop?: number;
-  bg_view_mode_fullscreen?: string;
-  bg_fov_fullscreen?: number;
-  bg_inclination_fullscreen?: number;
-  bg_layback_fullscreen?: number;
-  bg_offset_x_fullscreen?: number;
-  bg_offset_y_fullscreen?: number;
-  bg_offset_z_fullscreen?: number;
-  bg_scale_x_fullscreen?: number;
-  bg_scale_y_fullscreen?: number;
-  bg_scale_z_fullscreen?: number;
-  bg_view_horizontal_offset_fullscreen?: number;
-  bg_view_vertical_offset_fullscreen?: number;
-  bg_window_top_z_offset_fullscreen?: number;
-  bg_window_bottom_z_offset_fullscreen?: number;
-  bg_view_mode_full_single_screen?: string;
-  bg_fov_full_single_screen?: number;
-  bg_inclination_full_single_screen?: number;
-  bg_layback_full_single_screen?: number;
-  bg_offset_x_full_single_screen?: number;
-  bg_offset_y_full_single_screen?: number;
-  bg_offset_z_full_single_screen?: number;
-  bg_scale_x_full_single_screen?: number;
-  bg_scale_y_full_single_screen?: number;
-  bg_scale_z_full_single_screen?: number;
-  bg_view_horizontal_offset_full_single_screen?: number;
-  bg_view_vertical_offset_full_single_screen?: number;
-  [key: string]: unknown;
-}
 
 export interface ViewSetup {
   mode?: string;

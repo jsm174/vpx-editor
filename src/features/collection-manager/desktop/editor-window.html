@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Collection</title>
+  <link rel="stylesheet" href="../../../shared/window-base.css">
+  <link rel="stylesheet" href="../shared/styles.css">
+  <link rel="stylesheet" href="./editor-window.css">
+  <script>
+    var theme = new URLSearchParams(window.location.search).get('theme');
+    if (theme) document.documentElement.setAttribute('data-theme', theme);
+  </script>
+</head>
+<body>
+  <div id="app">
+    <div class="editor-name-row">
+      <label>Name:</label>
+      <input type="text" id="collection-editor-name" class="win-input">
+    </div>
+    <div class="editor-body">
+      <div class="editor-panel">
+        <div class="editor-label">Not Included</div>
+        <input type="text" id="collection-editor-available-filter" class="win-input editor-filter" placeholder="Filter...">
+        <div id="collection-editor-available" class="editor-list"></div>
+      </div>
+      <div class="editor-transfer">
+        <button class="win-btn" id="collection-editor-add">▶</button>
+        <button class="win-btn" id="collection-editor-remove">◀</button>
+        <button class="win-btn" id="collection-editor-up">▲</button>
+        <button class="win-btn" id="collection-editor-down">▼</button>
+      </div>
+      <div class="editor-panel">
+        <div class="editor-label">Included</div>
+        <input type="text" id="collection-editor-included-filter" class="win-input editor-filter" placeholder="Filter...">
+        <div id="collection-editor-included" class="editor-list"></div>
+      </div>
+    </div>
+    <div class="editor-options">
+      <label><input type="checkbox" id="collection-editor-fire-events"> Fire events for this collection</label>
+      <label><input type="checkbox" id="collection-editor-stop-single"> Suppress individual events for each member</label>
+      <label><input type="checkbox" id="collection-editor-group"> Group elements together</label>
+    </div>
+    <div id="collection-editor-error" class="prompt-error"></div>
+    <div class="editor-footer">
+      <button class="win-btn" id="collection-editor-cancel">Cancel</button>
+      <button class="win-btn primary" id="collection-editor-ok">OK</button>
+    </div>
+  </div>
+
+  <script type="module" src="./editor-window.ts"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+.transform-container {
+  height: 100vh;
+}
+
+.transform-footer .win-btn:active {
+  background: var(--bg-panel);
+}

@@ -1,4 +1,4 @@
-import { state, undoManager } from './state.js';
+import { undoManager, getItem } from './state.js';
 import { GameItem, DragPoint, Point } from './state.js';
 import { saveItemToFile } from './table-loader.js';
 import { invalidateItem } from './canvas-renderer-3d.js';
@@ -105,7 +105,7 @@ export function getObjectCenter(item: GameItem): Point {
 }
 
 export function moveObjectOffset(itemName: string, dx: number, dy: number): void {
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item) return;
 
   if (item.center) {
@@ -146,7 +146,7 @@ export function moveObjectOffset(itemName: string, dx: number, dy: number): void
 }
 
 export function flipObjectX(itemName: string, renderCallback?: () => void): void {
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item || !item.drag_points) return;
 
   undoManager.beginUndo('Flip horizontal');
@@ -171,7 +171,7 @@ export function flipObjectX(itemName: string, renderCallback?: () => void): void
 }
 
 export function flipObjectY(itemName: string, renderCallback?: () => void): void {
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item || !item.drag_points) return;
 
   undoManager.beginUndo('Flip vertical');
@@ -196,7 +196,7 @@ export function flipObjectY(itemName: string, renderCallback?: () => void): void
 }
 
 export function rotateObject(itemName: string, worldX?: number, worldY?: number): void {
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item || !item.drag_points) return;
 
   transformItemName = itemName;
@@ -214,7 +214,7 @@ export function rotateObject(itemName: string, worldX?: number, worldY?: number)
 }
 
 export function scaleObject(itemName: string, worldX?: number, worldY?: number): void {
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item || !item.drag_points) return;
 
   transformItemName = itemName;
@@ -232,7 +232,7 @@ export function scaleObject(itemName: string, worldX?: number, worldY?: number):
 }
 
 export function translateObject(itemName: string): void {
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item || !item.drag_points) return;
 
   transformItemName = itemName;

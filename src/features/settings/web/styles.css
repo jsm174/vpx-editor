@@ -1,0 +1,44 @@
+@import '../shared/component.css';
+
+.settings-modal-window {
+  position: relative;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  width: 500px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.settings-modal .manager-header {
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.settings-modal-content {
+  display: flex;
+  flex-direction: column;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  width: 100%;
+  max-width: none;
+}
+
+.settings-modal .settings-container {
+  height: auto;
+}
+
+.settings-modal .settings-tabs {
+  display: none;
+}
+
+.settings-modal .settings-body {
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+.settings-modal .settings-footer {
+  background: var(--bg-panel);
+}

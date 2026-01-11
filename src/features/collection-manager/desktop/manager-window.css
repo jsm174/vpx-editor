@@ -1,0 +1,13 @@
+.collection-manager-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.collection-manager-body {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  overflow: hidden;
+}

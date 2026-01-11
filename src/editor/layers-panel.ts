@@ -1,11 +1,21 @@
-import { state, elements, undoManager, GameItem, PartGroup } from './state.js';
+import {
+  state,
+  elements,
+  undoManager,
+  GameItem,
+  PartGroup,
+  getItem,
+  getPartGroup,
+  setItem,
+  setPartGroup,
+  hasItem,
+} from './state.js';
 import { selectItem } from './items-panel.js';
 import { showItemsPanelContextMenu, showPartGroupContextMenu } from './context-menu.js';
 import { updatePropertiesPanel } from './properties-panel.js';
 import { TreeControl, TreeNode as BaseTreeNode } from './components/tree-control.js';
-import { registerCallback, invokeCallback } from '../shared/callbacks.js';
-import { getItemNameFromFileName } from './utils.js';
-import { getFileNameFromItemName } from '../shared/gameitem-utils.js';
+import { registerCallback, invokeCallback, getCallback } from '../shared/callbacks.js';
+import { generateUniqueFileName } from '../shared/gameitem-utils.js';
 interface TreeNode {
   id: string;
   label: string;
@@ -51,15 +61,9 @@ function triggerRender(): void {
 
 let treeControl: TreeControl | null = null;
 let filterText: string = '';
-let syncEnabled: boolean = false;
 
 export function initPanelTabs(): void {
-  document.getElementById('add-layer-btn')?.addEventListener('click', addPartGroup);
-  document.getElementById('delete-layer-btn')?.addEventListener('click', deleteSelectedPartGroup);
-  document.getElementById('assign-layer-btn')?.addEventListener('click', assignSelectedToGroup);
-  document.getElementById('collapse-all-btn')?.addEventListener('click', collapseAll);
-  document.getElementById('edit-group-btn')?.addEventListener('click', editGroupProperties);
-  document.getElementById('sync-layer-btn')?.addEventListener('click', toggleSync);
+  document.getElementById('new-layer-btn')?.addEventListener('click', addPartGroup);
 
   const filterInput = document.getElementById('layer-filter-input') as HTMLInputElement | null;
   filterInput?.addEventListener('input', (e: Event) => {
@@ -78,79 +82,9 @@ export function setSelectedPartGroup(groupName: string | null): void {
   if (treeControl) {
     treeControl.setSelected(groupName === '_root' ? '_root' : `group:${groupName}`);
   }
-  updateButtonStates();
 }
 
-function updateButtonStates(): void {
-  const hasGroup = !!state.selectedPartGroup;
-  const hasCanvasSelection = !!state.primarySelectedItem;
-
-  const assignBtn = document.getElementById('assign-layer-btn') as HTMLButtonElement | null;
-  const deleteBtn = document.getElementById('delete-layer-btn') as HTMLButtonElement | null;
-  const editBtn = document.getElementById('edit-group-btn') as HTMLButtonElement | null;
-
-  if (assignBtn) assignBtn.disabled = !hasGroup || !hasCanvasSelection;
-  if (deleteBtn) deleteBtn.disabled = !hasGroup;
-  if (editBtn) editBtn.disabled = !hasGroup;
-}
-
-function assignSelectedToGroup(): void {
-  if (!state.selectedPartGroup || !state.primarySelectedItem) return;
-
-  const item = state.items[state.primarySelectedItem];
-  if (!item || item._type === 'PartGroup') return;
-
-  reassignItemToGroup(state.primarySelectedItem, state.selectedPartGroup);
-}
-
-function collapseAll(): void {
-  if (treeControl) {
-    treeControl.collapseAll();
-    treeControl.expandedIds.add('_root');
-    treeControl.render();
-  }
-}
-
-function editGroupProperties(): void {
-  if (!state.selectedPartGroup) return;
-  updatePropertiesPanel();
-}
-
-function toggleSync(): void {
-  syncEnabled = !syncEnabled;
-  const btn = document.getElementById('sync-layer-btn');
-  if (btn) {
-    btn.classList.toggle('active', syncEnabled);
-  }
-  if (syncEnabled) {
-    syncToSelection();
-  }
-}
-
-function syncToSelection(): void {
-  if (!state.primarySelectedItem || !treeControl) return;
-
-  const item = state.items[state.primarySelectedItem];
-  if (!item) return;
-
-  if (item.part_group_name) {
-    let groupName: string | undefined = item.part_group_name;
-    while (groupName) {
-      treeControl.expandedIds.add(`group:${groupName}`);
-      const group: PartGroup | undefined = state.partGroups[groupName];
-      groupName = group?.part_group_name ?? undefined;
-    }
-  }
-  treeControl.expandedIds.add('_root');
-  treeControl.setSelected(`item:${state.primarySelectedItem}`);
-}
-
-export function onCanvasSelectionChanged(): void {
-  updateButtonStates();
-  if (syncEnabled && state.primarySelectedItem) {
-    syncToSelection();
-  }
-}
+export function onCanvasSelectionChanged(): void {}
 
 function matchesFilter(name: string): boolean {
   if (!filterText) return true;
@@ -168,32 +102,36 @@ function buildTreeData(): TreeNode[] {
   const groups: Record<string, GroupData> = {};
   const rootChildren: (GroupData | { name: string; item: GameItem; isItem: true })[] = [];
 
-  for (const [name, group] of Object.entries(state.partGroups)) {
-    groups[name] = {
-      name,
+  for (const [key, group] of Object.entries(state.partGroups)) {
+    const displayName = group.name || key;
+    groups[key] = {
+      name: displayName,
       group,
       children: [],
       items: [],
     };
   }
 
-  for (const [name, group] of Object.entries(state.partGroups)) {
+  for (const [key, group] of Object.entries(state.partGroups)) {
     const parentName = group.part_group_name;
-    if (parentName && groups[parentName]) {
-      groups[parentName].children.push(groups[name]);
+    const parentKey = parentName?.toLowerCase();
+    if (parentKey && groups[parentKey]) {
+      groups[parentKey].children.push(groups[key]);
     } else {
-      rootChildren.push(groups[name]);
+      rootChildren.push(groups[key]);
     }
   }
 
-  for (const [itemName, item] of Object.entries(state.items)) {
+  for (const [itemKey, item] of Object.entries(state.items)) {
     if (item._type === 'PartGroup') continue;
-    if (!matchesFilter(itemName)) continue;
+    const displayName = item.name || itemKey;
+    if (!matchesFilter(displayName)) continue;
     const groupName = item.part_group_name ?? (item as GameItem & { _layerName?: string })._layerName;
-    if (groupName && groups[groupName]) {
-      groups[groupName].items.push({ name: itemName, item });
+    const groupKey = groupName?.toLowerCase();
+    if (groupKey && groups[groupKey]) {
+      groups[groupKey].items.push({ name: displayName, item });
     } else {
-      rootChildren.push({ name: itemName, item, isItem: true });
+      rootChildren.push({ name: displayName, item, isItem: true });
     }
   }
 
@@ -242,9 +180,10 @@ function buildTreeData(): TreeNode[] {
   }
 
   const allItems: ItemEntry[] = [];
-  for (const [name, item] of Object.entries(state.items)) {
+  for (const [key, item] of Object.entries(state.items)) {
     if (item._type === 'PartGroup') continue;
-    allItems.push({ name, item });
+    const displayName = item.name || key;
+    allItems.push({ name: displayName, item });
   }
 
   const rootNode: TreeNode = {
@@ -304,6 +243,8 @@ export function updateLayersList(): void {
     treeControl.selectedId = `item:${state.primarySelectedItem}`;
   } else if (state.selectedPartGroup) {
     treeControl.selectedId = state.selectedPartGroup === '_root' ? '_root' : `group:${state.selectedPartGroup}`;
+  } else {
+    treeControl.selectedId = null;
   }
 
   treeControl.render();
@@ -321,7 +262,6 @@ function handleSelect(_id: string, baseNode: BaseTreeNode): void {
     state.selectedPartGroup = '_root';
     state.primarySelectedItem = null;
   }
-  updateButtonStates();
   updatePropertiesPanel();
 }
 
@@ -339,12 +279,12 @@ function handleToggleCheck(_id: string, baseNode: BaseTreeNode): void {
 function handleContextMenu(e: MouseEvent, _id: string, baseNode: BaseTreeNode): void {
   const node = baseNode as TreeNode;
   if (node.nodeType === 'item') {
-    const callbacks = invokeCallback('layerContextMenuCallbacks') as ContextMenuCallbacks | null;
+    const callbacks = getCallback<ContextMenuCallbacks>('layerContextMenuCallbacks');
     if (callbacks) {
       showItemsPanelContextMenu(e.clientX, e.clientY, node.itemName!, callbacks);
     }
   } else if (node.nodeType === 'group') {
-    const callbacks = invokeCallback('partGroupContextMenuCallbacks') as ContextMenuCallbacks | null;
+    const callbacks = getCallback<ContextMenuCallbacks>('partGroupContextMenuCallbacks');
     if (callbacks) {
       showPartGroupContextMenu(e.clientX, e.clientY, node.groupName!, callbacks);
     }
@@ -404,7 +344,7 @@ async function toggleGroupVisibility(items: ItemEntry[]): Promise<void> {
 }
 
 async function toggleItemVisibility(name: string): Promise<void> {
-  const item = state.items[name];
+  const item = getItem(name);
   if (!item) return;
 
   const isHidden = item.editor_layer_visibility === false;
@@ -437,7 +377,7 @@ async function saveItemVisibility(item: GameItem): Promise<void> {
 }
 
 async function reassignItemToGroup(itemName: string, groupName: string | null): Promise<void> {
-  const item = state.items[itemName];
+  const item = getItem(itemName);
   if (!item || item._type === 'PartGroup') return;
 
   if (item.part_group_name === groupName) return;
@@ -471,16 +411,16 @@ async function reassignItemToGroup(itemName: string, groupName: string | null): 
 
 function isDescendantGroup(parentName: string | null, childName: string): boolean {
   if (!parentName) return false;
-  let group: PartGroup | undefined = state.partGroups[parentName];
+  let group: PartGroup | undefined = getPartGroup(parentName);
   while (group) {
     if (group.part_group_name === childName) return true;
-    group = state.partGroups[group.part_group_name!];
+    group = group.part_group_name ? getPartGroup(group.part_group_name) : undefined;
   }
   return false;
 }
 
 async function reassignGroupToGroup(groupName: string, newParentName: string | null): Promise<void> {
-  const group = state.partGroups[groupName];
+  const group = getPartGroup(groupName);
   if (!group) return;
 
   if (group.part_group_name === newParentName) return;
@@ -514,9 +454,7 @@ async function reassignGroupToGroup(groupName: string, newParentName: string | n
 }
 
 function isNameUnique(name: string): boolean {
-  if (state.items[name]) return false;
-  if (state.gameitems?.some(gi => gi.file_name && getItemNameFromFileName(gi.file_name) === name)) return false;
-  return true;
+  return !hasItem(name);
 }
 
 let addingGroup: boolean = false;
@@ -564,7 +502,8 @@ async function addPartGroup(): Promise<void> {
       editor_layer_visibility: false,
     };
 
-    const fileName = getFileNameFromItemName('PartGroup', name);
+    const existingFileNames = state.gameitems.map(gi => gi.file_name);
+    const fileName = generateUniqueFileName('PartGroup', name, existingFileNames);
     const filePath = `${state.extractedDir}/gameitems/${fileName}`;
 
     await window.vpxEditor.writeFile(filePath, JSON.stringify({ PartGroup: newGroup }, null, 2));
@@ -572,8 +511,8 @@ async function addPartGroup(): Promise<void> {
     const partGroup = newGroup as unknown as PartGroup;
     partGroup._type = 'PartGroup';
     partGroup._fileName = `gameitems/${fileName}`;
-    state.partGroups[name] = partGroup;
-    state.items[name] = partGroup;
+    setPartGroup(name, partGroup);
+    setItem(name, partGroup, fileName);
 
     state.gameitems.push({
       file_name: fileName,
@@ -597,87 +536,6 @@ async function addPartGroup(): Promise<void> {
   } finally {
     addingGroup = false;
   }
-}
-
-async function deleteSelectedPartGroup(): Promise<void> {
-  if (!state.selectedPartGroup || state.selectedPartGroup === '_root') return;
-
-  const groupName = state.selectedPartGroup;
-  const group = state.partGroups[groupName];
-  if (!group) return;
-
-  const allGroups = Object.keys(state.partGroups);
-  if (allGroups.length <= 1) {
-    return;
-  }
-
-  const parentName = group.part_group_name;
-  const siblingGroups = Object.entries(state.partGroups)
-    .filter(([name, g]) => g.part_group_name === parentName && name !== groupName)
-    .map(([name]) => name)
-    .sort();
-
-  const targetGroup = siblingGroups[0] || null;
-
-  undoManager.beginUndo('Delete group');
-  await deleteGroupAndMoveItems(groupName, targetGroup);
-  await window.vpxEditor.writeFile(`${state.extractedDir}/gameitems.json`, JSON.stringify(state.gameitems, null, 2));
-  undoManager.endUndo();
-
-  state.selectedPartGroup = null;
-  updateLayersList();
-  updatePropertiesPanel();
-  triggerRender();
-}
-
-async function deleteGroupAndMoveItems(groupName: string, targetGroup: string | null): Promise<void> {
-  const group = state.partGroups[groupName];
-  if (!group) return;
-
-  const childGroups = Object.entries(state.partGroups)
-    .filter(([_, g]) => g.part_group_name === groupName)
-    .map(([name]) => name);
-
-  for (const childName of childGroups) {
-    await deleteGroupAndMoveItems(childName, targetGroup);
-  }
-
-  const itemsInGroup = Object.entries(state.items).filter(
-    ([_, item]) =>
-      (item.part_group_name === groupName || (item as GameItem & { _layerName?: string })._layerName === groupName) &&
-      item._type !== 'PartGroup'
-  );
-
-  for (const [itemName, item] of itemsInGroup) {
-    undoManager.markForUndo(itemName);
-    item.part_group_name = targetGroup ?? undefined;
-    (item as GameItem & { _layerName?: string })._layerName = targetGroup ?? undefined;
-    const fileName = item._fileName;
-    if (fileName) {
-      const saveData: Record<string, unknown> = { ...item };
-      delete saveData._type;
-      delete saveData._fileName;
-      delete saveData._layer;
-      const wrapper: Record<string, unknown> = {};
-      wrapper[item._type] = saveData;
-      await window.vpxEditor.writeFile(`${state.extractedDir}/${fileName}`, JSON.stringify(wrapper, null, 2));
-      const baseFileName = fileName.split('/').pop()!;
-      const giEntry = state.gameitems.find(gi => gi.file_name === baseFileName);
-      if (giEntry) {
-        giEntry.editor_layer_name = targetGroup ?? '';
-      }
-    }
-  }
-
-  undoManager.markForDelete(groupName);
-  const fileName = group._fileName;
-  if (fileName) {
-    await window.vpxEditor.deleteFile(`${state.extractedDir}/${fileName}`);
-  }
-  delete state.partGroups[groupName];
-  delete state.items[groupName];
-  const baseFileName = fileName ? fileName.split('/').pop()! : getFileNameFromItemName('PartGroup', groupName);
-  state.gameitems = state.gameitems.filter(gi => gi.file_name !== baseFileName);
 }
 
 export function updateCollectionsList(): void {}

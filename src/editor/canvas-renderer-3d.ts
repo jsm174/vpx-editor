@@ -4,27 +4,15 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { state, isItemVisible } from './state.js';
+import { state, isItemVisible, getItem, getPartGroup } from './state.js';
 import type { GameItem } from './state.js';
 import { selectItem } from './items-panel.js';
 import { computeCameraParams, VIEW_MODE_MASKS, getSpaceReferenceOffset, type ViewMode } from './view-setup.js';
 import { getItemBounds } from './utils.js';
 import { CAMERA_BASE_DISTANCE, CAMERA_ANIMATION_DURATION } from '../shared/constants.js';
+import type { GameData } from '../types/data.js';
 
 import { getEditable } from './parts/index.js';
-
-interface GameData {
-  left?: number;
-  top?: number;
-  right: number;
-  bottom: number;
-  glass_top_height?: number;
-  glass_bottom_height?: number;
-  light_height?: number;
-  light0_emission?: string;
-  backdrop_color?: string;
-  [key: string]: unknown;
-}
 
 type PreviewMode = 'desktop' | 'fullscreen' | 'cabinet' | 'mixedreality' | 'vr' | null;
 type ZoomChangeCallback = (zoom: number) => void;
@@ -86,7 +74,7 @@ function isVisibleInPreviewMode(item: GameItem): boolean {
 
   let groupName = item.part_group_name;
   while (groupName) {
-    const partGroup = state.partGroups[groupName];
+    const partGroup = getPartGroup(groupName);
     if (!partGroup) break;
 
     const groupMask = (partGroup.player_mode_visibility_mask as number | undefined) ?? 0xffff;
@@ -103,7 +91,7 @@ function isVisibleInPreviewMode(item: GameItem): boolean {
 function getItemSpaceReference(item: GameItem): string {
   let groupName = item.part_group_name;
   while (groupName) {
-    const partGroup = state.partGroups[groupName];
+    const partGroup = getPartGroup(groupName);
     if (!partGroup) break;
 
     const spaceRef = partGroup.space_reference;
@@ -293,8 +281,8 @@ export function resetCamera(): void {
   }
 
   const gd = state.gamedata as GameData;
-  const width = gd.right - (gd.left ?? 0);
-  const height = gd.bottom - (gd.top ?? 0);
+  const width = (gd.right ?? 0) - (gd.left ?? 0);
+  const height = (gd.bottom ?? 0) - (gd.top ?? 0);
   const centerX = width / 2;
   const centerY = height / 2;
 
@@ -312,8 +300,8 @@ export function setPresetView(view: string): void {
   if (!isInitialized || !state.gamedata) return;
 
   const gd = state.gamedata as GameData;
-  const width = gd.right - (gd.left ?? 0);
-  const height = gd.bottom - (gd.top ?? 0);
+  const width = (gd.right ?? 0) - (gd.left ?? 0);
+  const height = (gd.bottom ?? 0) - (gd.top ?? 0);
   const centerX = width / 2;
   const centerY = -height / 2;
   const distance = height * 1.2;
@@ -495,7 +483,7 @@ export function focusOnBounds3D(itemNames: string[]): void {
     maxY = -Infinity;
 
   for (const name of itemNames) {
-    const item = state.items[name];
+    const item = getItem(name);
     if (!item) continue;
     const bounds = getItemBounds(item) as ItemBounds | null;
     if (!bounds) continue;
@@ -723,9 +711,11 @@ function updatePlayfield(): void {
     return;
   }
 
+  if (!state.gamedata) return;
+
   const gd = state.gamedata as GameData;
-  const width = gd.right - (gd.left ?? 0);
-  const height = gd.bottom - (gd.top ?? 0);
+  const width = (gd.right ?? 0) - (gd.left ?? 0);
+  const height = (gd.bottom ?? 0) - (gd.top ?? 0);
 
   if (!playfieldMesh) {
     const geometry = new THREE.PlaneGeometry(width, height);

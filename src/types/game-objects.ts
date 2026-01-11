@@ -7,9 +7,6 @@ export interface Point3D extends Point {
   z: number;
 }
 
-export type Vertex2D = Point;
-export type Vertex3D = Point3D;
-
 export enum ItemTypeEnum {
   eItemSurface = 0,
   eItemFlipper = 1,
@@ -101,12 +98,6 @@ export enum DecalType {
   Image = 1,
 }
 
-export enum SizingType {
-  AutoSize = 0,
-  AutoWidth = 1,
-  ManualSize = 2,
-}
-
 export enum ShadowMode {
   None = 0,
   RaytracedBallShadows = 1,
@@ -116,17 +107,6 @@ export enum Fader {
   None = 0,
   Linear = 1,
   Incandescent = 2,
-}
-
-export enum TextAlignment {
-  Left = 0,
-  Center = 1,
-  Right = 2,
-}
-
-export enum RampImageAlignment {
-  World = 0,
-  Wrap = 1,
 }
 
 export interface DragPoint {

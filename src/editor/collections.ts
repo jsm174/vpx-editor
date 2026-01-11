@@ -1,6 +1,7 @@
 import { state, Collection } from './state.js';
 import { withUndo } from '../shared/undo-helpers.js';
 import { updateCollectionsList } from './layers-panel.js';
+import { nameEquals, includesName, findIndexByName, findByName } from '../shared/gameitem-utils.js';
 import '../types/ipc.js';
 
 interface CollectionProperties {
@@ -16,12 +17,12 @@ export async function saveCollections(selectCollection: string | null = null): P
 }
 
 export function getCollectionsForItem(itemName: string): Collection[] {
-  return state.collections.filter(c => c.items?.includes(itemName));
+  return state.collections.filter(c => c.items && includesName(c.items, itemName));
 }
 
 export function getCollectionNameForItem(itemName: string): string | null {
   for (const collection of state.collections) {
-    if (collection.items?.includes(itemName)) {
+    if (collection.items && includesName(collection.items, itemName)) {
       return collection.name;
     }
   }
@@ -29,12 +30,12 @@ export function getCollectionNameForItem(itemName: string): string | null {
 }
 
 export function getGroupedCollectionForItem(itemName: string): Collection | undefined {
-  return state.collections.find(c => c.group_elements && c.items?.includes(itemName));
+  return state.collections.find(c => c.group_elements && c.items && includesName(c.items, itemName));
 }
 
 export function isItemInCollection(itemName: string, collectionName: string): boolean {
-  const collection = state.collections.find(c => c.name === collectionName);
-  return collection ? (collection.items?.includes(itemName) ?? false) : false;
+  const collection = findByName(state.collections, collectionName);
+  return collection ? (collection.items ? includesName(collection.items, itemName) : false) : false;
 }
 
 export async function addItemToCollection(
@@ -42,10 +43,10 @@ export async function addItemToCollection(
   collectionName: string,
   skipUndo: boolean = false
 ): Promise<boolean> {
-  const collection = state.collections.find(c => c.name === collectionName);
+  const collection = findByName(state.collections, collectionName);
   if (!collection) return false;
   if (!collection.items) collection.items = [];
-  if (collection.items.includes(itemName)) return false;
+  if (includesName(collection.items, itemName)) return false;
 
   return withUndo(
     `Add ${itemName} to ${collectionName}`,
@@ -64,10 +65,10 @@ export async function removeItemFromCollection(
   collectionName: string,
   skipUndo: boolean = false
 ): Promise<boolean> {
-  const collection = state.collections.find(c => c.name === collectionName);
+  const collection = findByName(state.collections, collectionName);
   if (!collection || !collection.items) return false;
 
-  const index = collection.items.indexOf(itemName);
+  const index = findIndexByName(collection.items, itemName);
   if (index === -1) return false;
 
   return withUndo(
@@ -92,10 +93,10 @@ export async function toggleItemInCollection(itemName: string, collectionName: s
 
 function generateUniqueName(baseName: string): string {
   const existingNames = state.collections.map(c => c.name);
-  if (!existingNames.includes(baseName)) return baseName;
+  if (!includesName(existingNames, baseName)) return baseName;
 
   let counter = 1;
-  while (existingNames.includes(`${baseName}${counter}`)) {
+  while (includesName(existingNames, `${baseName}${counter}`)) {
     counter++;
   }
   return `${baseName}${counter}`;
@@ -129,7 +130,7 @@ export async function createCollection(
 
 export async function createCollectionFromSelection(selectedItems: string[]): Promise<Collection | null> {
   const scriptableItems = selectedItems.filter(name => {
-    const item = state.items[name];
+    const item = state.items[name.toLowerCase()];
     return item && item._type !== 'Decal';
   });
 
@@ -141,7 +142,7 @@ export async function createCollectionFromSelection(selectedItems: string[]): Pr
 }
 
 export async function deleteCollection(collectionName: string): Promise<boolean> {
-  const index = state.collections.findIndex(c => c.name === collectionName);
+  const index = state.collections.findIndex(c => nameEquals(c.name, collectionName));
   if (index === -1) return false;
 
   return withUndo(
@@ -149,7 +150,7 @@ export async function deleteCollection(collectionName: string): Promise<boolean>
     async (): Promise<boolean> => {
       state.collections.splice(index, 1);
 
-      if (state.selectedCollection === collectionName) {
+      if (state.selectedCollection && nameEquals(state.selectedCollection, collectionName)) {
         state.selectedCollection = null;
       }
 
@@ -162,20 +163,20 @@ export async function deleteCollection(collectionName: string): Promise<boolean>
 }
 
 export async function renameCollection(oldName: string, newName: string): Promise<boolean> {
-  if (oldName === newName) return true;
+  if (nameEquals(oldName, newName)) return true;
 
-  const collection = state.collections.find(c => c.name === oldName);
+  const collection = findByName(state.collections, oldName);
   if (!collection) return false;
 
   const existingNames = state.collections.map(c => c.name);
-  if (existingNames.includes(newName)) return false;
+  if (includesName(existingNames, newName)) return false;
 
   return withUndo(
     `Rename collection ${oldName} to ${newName}`,
     async (): Promise<boolean> => {
       collection.name = newName;
 
-      if (state.selectedCollection === oldName) {
+      if (state.selectedCollection && nameEquals(state.selectedCollection, oldName)) {
         state.selectedCollection = newName;
       }
 
@@ -188,7 +189,7 @@ export async function renameCollection(oldName: string, newName: string): Promis
 }
 
 export async function reorderCollection(collectionName: string, fromIndex: number, toIndex: number): Promise<boolean> {
-  const collection = state.collections.find(c => c.name === collectionName);
+  const collection = findByName(state.collections, collectionName);
   if (!collection || !collection.items) return false;
   if (fromIndex < 0 || fromIndex >= collection.items.length) return false;
   if (toIndex < 0 || toIndex >= collection.items.length) return false;
@@ -206,7 +207,7 @@ export async function reorderCollection(collectionName: string, fromIndex: numbe
 }
 
 export async function moveCollectionUp(collectionName: string): Promise<boolean> {
-  const index = state.collections.findIndex(c => c.name === collectionName);
+  const index = state.collections.findIndex(c => nameEquals(c.name, collectionName));
   if (index <= 0) return false;
 
   return withUndo(
@@ -223,7 +224,7 @@ export async function moveCollectionUp(collectionName: string): Promise<boolean>
 }
 
 export async function moveCollectionDown(collectionName: string): Promise<boolean> {
-  const index = state.collections.findIndex(c => c.name === collectionName);
+  const index = state.collections.findIndex(c => nameEquals(c.name, collectionName));
   if (index === -1 || index >= state.collections.length - 1) return false;
 
   return withUndo(
@@ -243,7 +244,7 @@ export async function updateCollectionProperties(
   collectionName: string,
   properties: CollectionProperties
 ): Promise<boolean> {
-  const collection = state.collections.find(c => c.name === collectionName);
+  const collection = findByName(state.collections, collectionName);
   if (!collection) return false;
 
   return withUndo(
@@ -266,7 +267,7 @@ export async function updateCollectionProperties(
 }
 
 export async function setCollectionItems(collectionName: string, items: string[]): Promise<boolean> {
-  const collection = state.collections.find(c => c.name === collectionName);
+  const collection = findByName(state.collections, collectionName);
   if (!collection) return false;
 
   return withUndo(
@@ -285,7 +286,7 @@ export function removeItemFromAllCollections(itemName: string): boolean {
   let modified = false;
   for (const collection of state.collections) {
     if (!collection.items) continue;
-    const index = collection.items.indexOf(itemName);
+    const index = findIndexByName(collection.items, itemName);
     if (index !== -1) {
       collection.items.splice(index, 1);
       modified = true;
@@ -298,7 +299,7 @@ export function renameItemInAllCollections(oldName: string, newName: string): bo
   let modified = false;
   for (const collection of state.collections) {
     if (!collection.items) continue;
-    const index = collection.items.indexOf(oldName);
+    const index = findIndexByName(collection.items, oldName);
     if (index !== -1) {
       collection.items[index] = newName;
       modified = true;

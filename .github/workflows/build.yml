@@ -7,6 +7,10 @@ defaults:
   run:
     shell: bash
 
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   version:
     name: Version
@@ -34,6 +38,9 @@ jobs:
   build-macos:
     runs-on: macos-latest
     needs: [version]
+    permissions:
+      contents: read
+      packages: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,10 +49,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@jsm174'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set version info
         run: |
@@ -99,6 +110,9 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     needs: [version]
+    permissions:
+      contents: read
+      packages: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -107,10 +121,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@jsm174'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Flatpak dependencies
         run: |
@@ -169,6 +187,9 @@ jobs:
   build-windows:
     runs-on: windows-latest
     needs: [version]
+    permissions:
+      contents: read
+      packages: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -177,10 +198,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@jsm174'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set version info
         run: |
@@ -213,3 +238,65 @@ jobs:
           name: vpx-editor-windows-x64-${{ needs.version.outputs.tag }}.zip
           path: tmp/*.zip
           if-no-files-found: error
+
+  build-web:
+    runs-on: ubuntu-latest
+    needs: [version]
+    permissions:
+      contents: read
+      packages: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@jsm174'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set version info
+        run: |
+          echo '{"revision":"${{ needs.version.outputs.revision }}","sha":"${{ needs.version.outputs.sha7 }}"}' > src/shared/version.json
+
+      - name: TypeScript check
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build:web
+        env:
+          BASE_URL: /${{ github.event.repository.name }}/
+
+      - name: Setup Pages
+        if: github.ref_name == 'master'
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        if: github.ref_name == 'master'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist-web
+
+  deploy-web:
+    runs-on: ubuntu-latest
+    if: github.ref_name == 'master'
+    needs: [build-web]
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
