@@ -44,7 +44,11 @@ import { clearPrimitiveMeshCache } from './parts/primitive.js';
 import { showNodeContextMenu, showObjectContextMenu, showCanvasContextMenu, hideContextMenu } from './context-menu.js';
 import { deleteObject } from './object-factory.js';
 import { copyItem, cutItem, pasteItem, hasClipboard, updateClipboardMenuState } from './clipboard.js';
-import { getGroupedCollectionForItem, createCollectionFromSelection } from './collections.js';
+import {
+  getGroupedCollectionForItem,
+  createCollectionFromSelection,
+  deleteCollectionWithConfirm,
+} from './collections.js';
 import { setCallback, invokeCallback } from '../shared/callbacks.js';
 import { setCanvasCursor } from './cursor-utils.js';
 import { loadTable, saveItemToFile } from './table-loader.js';
@@ -1067,8 +1071,47 @@ document.addEventListener('keydown', async e => {
   }
 
   if (e.key === 'Delete' || e.key === 'Backspace') {
-    if (state.selectedNode && !state.isTableLocked) {
+    if (isEditableElementFocused()) return;
+    if (state.isTableLocked) return;
+
+    if (state.selectedNode) {
       deleteNode(state.selectedNode.itemName, state.selectedNode.nodeIndex);
+      e.preventDefault();
+      return;
+    }
+
+    if (state.selectedItems.length > 0) {
+      const itemsToDelete = state.selectedItems.filter(name => {
+        const item = getItem(name);
+        return item && !item.is_locked;
+      });
+      if (itemsToDelete.length > 0) {
+        undoManager.beginUndo(
+          itemsToDelete.length > 1 ? `Delete ${itemsToDelete.length} items` : `Delete ${itemsToDelete[0]}`
+        );
+        (async () => {
+          for (const name of itemsToDelete) {
+            await deleteObject(name, true);
+          }
+          undoManager.endUndo();
+          selectItem(null);
+          updateItemsList();
+          updatePropertiesPanel();
+          renderCurrentView();
+        })();
+      }
+      e.preventDefault();
+      return;
+    }
+
+    if (state.selectedPartGroup && state.selectedPartGroup !== '_root') {
+      showDeletePartGroupModal(state.selectedPartGroup);
+      e.preventDefault();
+      return;
+    }
+
+    if (state.selectedCollection) {
+      deleteCollectionWithConfirm(state.selectedCollection);
       e.preventDefault();
       return;
     }

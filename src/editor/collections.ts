@@ -162,6 +162,12 @@ export async function deleteCollection(collectionName: string): Promise<boolean>
   );
 }
 
+export async function deleteCollectionWithConfirm(collectionName: string): Promise<boolean> {
+  const confirmed = confirm(`Delete collection "${collectionName}"?`);
+  if (!confirmed) return false;
+  return deleteCollection(collectionName);
+}
+
 export async function renameCollection(oldName: string, newName: string): Promise<boolean> {
   if (nameEquals(oldName, newName)) return true;
 
