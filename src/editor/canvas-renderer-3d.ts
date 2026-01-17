@@ -674,11 +674,12 @@ export function refresh3DScene(): void {
 
 export function invalidateItem(itemName: string): void {
   if (!isInitialized) return;
-  const mesh = itemMeshes.get(itemName);
+  const key = itemName.toLowerCase();
+  const mesh = itemMeshes.get(key);
   if (mesh) {
     sceneContainer.remove(mesh);
     disposeObject(mesh);
-    itemMeshes.delete(itemName);
+    itemMeshes.delete(key);
   }
 }
 
@@ -842,7 +843,7 @@ function updateSelectionOutline(): void {
   if (!outlinePass) return;
   const selectedObjects: THREE.Object3D[] = [];
   for (const name of state.selectedItems) {
-    const mesh = itemMeshes.get(name);
+    const mesh = itemMeshes.get(name.toLowerCase());
     if (mesh) selectedObjects.push(mesh);
   }
   outlinePass.selectedObjects = selectedObjects;
