@@ -616,10 +616,21 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
     if (isRamp) {
       const heightBottom = (item.height_bottom as number) ?? 0;
       const heightTop = (item.height_top as number) ?? 50;
-      const t = item.drag_points.length > 1 ? nodeIndex / (item.drag_points.length - 1) : 0;
-      const baseHeight = heightBottom + t * (heightTop - heightBottom);
+
+      let totalLength = 0;
+      const lengths = [0];
+      for (let i = 1; i < item.drag_points.length; i++) {
+        const p1 = getDragPointCoords(item.drag_points[i - 1]);
+        const p2 = getDragPointCoords(item.drag_points[i]);
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        totalLength += Math.sqrt(dx * dx + dy * dy);
+        lengths.push(totalLength);
+      }
+      const t = totalLength > 0 ? lengths[nodeIndex] / totalLength : 0;
+
       const heightOffset = pt.z ?? 0;
-      const calcHeight = baseHeight + heightOffset;
+      const calcHeight = heightOffset + heightBottom + t * (heightTop - heightBottom);
 
       html += `
         <div class="prop-row">

@@ -16,6 +16,12 @@ export interface Vertex {
   y: number;
 }
 
+export interface Vertex3D {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export interface SplineCoeffs {
   c0: number;
   c1: number;
@@ -175,6 +181,13 @@ function distance(a: Vertex, b: Vertex): number {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+function distance3D(a: Vertex3D, b: Vertex3D): number {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const dz = b.z - a.z;
+  return Math.sqrt(dx * dx + dy * dy + dz * dz);
+}
+
 export function normalize(x: number, y: number): Vertex {
   const len = Math.sqrt(x * x + y * y);
   if (len < 0.0001) return { x: 0, y: 0 };
@@ -229,6 +242,36 @@ class CatmullCurve {
     return {
       x: this.xCoeffs.c3 * t3 + this.xCoeffs.c2 * t2 + this.xCoeffs.c1 * t + this.xCoeffs.c0,
       y: this.yCoeffs.c3 * t3 + this.yCoeffs.c2 * t2 + this.yCoeffs.c1 * t + this.yCoeffs.c0,
+    };
+  }
+}
+
+class CatmullCurve3D {
+  private xCoeffs: SplineCoeffs;
+  private yCoeffs: SplineCoeffs;
+  private zCoeffs: SplineCoeffs;
+
+  constructor(p0: Vertex3D, p1: Vertex3D, p2: Vertex3D, p3: Vertex3D) {
+    let dt0 = Math.sqrt(distance3D(p0, p1));
+    let dt1 = Math.sqrt(distance3D(p1, p2));
+    let dt2 = Math.sqrt(distance3D(p2, p3));
+
+    if (dt1 < 1e-4) dt1 = 1.0;
+    if (dt0 < 1e-4) dt0 = dt1;
+    if (dt2 < 1e-4) dt2 = dt1;
+
+    this.xCoeffs = initNonuniformCatmullCoeffs(p0.x, p1.x, p2.x, p3.x, dt0, dt1, dt2);
+    this.yCoeffs = initNonuniformCatmullCoeffs(p0.y, p1.y, p2.y, p3.y, dt0, dt1, dt2);
+    this.zCoeffs = initNonuniformCatmullCoeffs(p0.z, p1.z, p2.z, p3.z, dt0, dt1, dt2);
+  }
+
+  getPointAt(t: number): Vertex3D {
+    const t2 = t * t;
+    const t3 = t2 * t;
+    return {
+      x: this.xCoeffs.c3 * t3 + this.xCoeffs.c2 * t2 + this.xCoeffs.c1 * t + this.xCoeffs.c0,
+      y: this.yCoeffs.c3 * t3 + this.yCoeffs.c2 * t2 + this.yCoeffs.c1 * t + this.yCoeffs.c0,
+      z: this.zCoeffs.c3 * t3 + this.zCoeffs.c2 * t2 + this.zCoeffs.c1 * t + this.zCoeffs.c0,
     };
   }
 }
@@ -335,6 +378,108 @@ export function generateSmoothedPath(
   }
 
   return trackControlPoints ? { vertices, controlPointIndices } : vertices;
+}
+
+function flatWithAccuracy3D(v1: Vertex3D, v2: Vertex3D, vMid: Vertex3D, accuracy: number): boolean {
+  const dxv1v2 = v2.x - v1.x;
+  const dyv1v2 = v2.y - v1.y;
+  const dzv1v2 = v2.z - v1.z;
+  const dxv1mid = vMid.x - v1.x;
+  const dyv1mid = vMid.y - v1.y;
+  const dzv1mid = vMid.z - v1.z;
+  const crossX = dyv1v2 * dzv1mid - dzv1v2 * dyv1mid;
+  const crossY = dzv1v2 * dxv1mid - dxv1v2 * dzv1mid;
+  const crossZ = dxv1v2 * dyv1mid - dyv1v2 * dxv1mid;
+  const areaSquared = crossX * crossX + crossY * crossY + crossZ * crossZ;
+  return areaSquared < accuracy;
+}
+
+function recurseSmoothLine3D(
+  curve: CatmullCurve3D,
+  t1: number,
+  t2: number,
+  vt1: Vertex3D,
+  vt2: Vertex3D,
+  vertices: Vertex3D[],
+  accuracy: number,
+  depth: number = 0
+): void {
+  if (depth > 16) {
+    vertices.push(vt1);
+    return;
+  }
+
+  const tMid = (t1 + t2) * 0.5;
+  const vMid = curve.getPointAt(tMid);
+
+  if (flatWithAccuracy3D(vt1, vt2, vMid, accuracy)) {
+    vertices.push(vt1);
+  } else {
+    recurseSmoothLine3D(curve, t1, tMid, vt1, vMid, vertices, accuracy, depth + 1);
+    recurseSmoothLine3D(curve, tMid, t2, vMid, vt2, vertices, accuracy, depth + 1);
+  }
+}
+
+interface SmoothPoint3D {
+  x: number;
+  y: number;
+  z: number;
+  smooth: boolean;
+}
+
+export function generateSmoothedPath3D(points: DragPoint[], loop: boolean = true, accuracy: number = 4.0): Vertex3D[] {
+  if (!points || points.length < 2) {
+    return [];
+  }
+
+  const vertices: Vertex3D[] = [];
+  const pts: SmoothPoint3D[] = points.map(p => {
+    const { x, y } = getDragPointCoords(p);
+    const z = p.z ?? 0;
+    return { x, y, z, smooth: p.smooth === true || p.is_smooth === true };
+  });
+
+  const cpoint = pts.length;
+  const count = loop ? cpoint : cpoint - 1;
+
+  for (let i = 0; i < count; i++) {
+    const i1 = i;
+    const i2 = (i + 1) % cpoint;
+
+    const pdp1 = pts[i1];
+    const pdp2 = pts[i2];
+
+    let iprev = pdp1.smooth ? i - 1 : i;
+    if (iprev < 0) {
+      iprev = loop ? cpoint - 1 : 0;
+    }
+
+    let inext = pdp2.smooth ? i + 2 : i + 1;
+    if (inext >= cpoint) {
+      inext = loop ? inext - cpoint : cpoint - 1;
+    }
+
+    const p0 = pts[iprev];
+    const p1 = pdp1;
+    const p2 = pdp2;
+    const p3 = pts[inext];
+
+    if (p1.x === p2.x && p1.y === p2.y && p1.z === p2.z) {
+      continue;
+    }
+
+    const curve = new CatmullCurve3D(p0, p1, p2, p3);
+    const vt1: Vertex3D = { x: p1.x, y: p1.y, z: p1.z };
+    const vt2: Vertex3D = { x: p2.x, y: p2.y, z: p2.z };
+    recurseSmoothLine3D(curve, 0, 1, vt1, vt2, vertices, accuracy);
+  }
+
+  if (!loop && pts.length > 0) {
+    const last = pts[pts.length - 1];
+    vertices.push({ x: last.x, y: last.y, z: last.z });
+  }
+
+  return vertices;
 }
 
 interface PathLengthResult {

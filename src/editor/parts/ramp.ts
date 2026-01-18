@@ -3,6 +3,7 @@ import { state, elements } from '../state.js';
 import {
   toScreen,
   generateSmoothedPath,
+  generateSmoothedPath3D,
   generateRampShape,
   getStrokeStyle,
   getLineWidth,
@@ -73,56 +74,6 @@ interface RampItem {
   is_locked?: boolean;
 }
 
-function interpolateZFromDragPoints(points: DragPoint[], smoothedPath: SmoothedPoint[]): number[] {
-  if (!points || points.length < 2) return smoothedPath.map(() => 0);
-
-  const dragPointLengths = [0];
-  let totalDragLength = 0;
-  for (let i = 1; i < points.length; i++) {
-    const p1 = points[i - 1];
-    const p2 = points[i];
-    const dx = (p2.x || p2.vertex?.x || 0) - (p1.x || p1.vertex?.x || 0);
-    const dy = (p2.y || p2.vertex?.y || 0) - (p1.y || p1.vertex?.y || 0);
-    totalDragLength += Math.sqrt(dx * dx + dy * dy);
-    dragPointLengths.push(totalDragLength);
-  }
-
-  const pathLengths = [0];
-  let totalPathLength = 0;
-  for (let i = 1; i < smoothedPath.length; i++) {
-    const dx = smoothedPath[i].x - smoothedPath[i - 1].x;
-    const dy = smoothedPath[i].y - smoothedPath[i - 1].y;
-    totalPathLength += Math.sqrt(dx * dx + dy * dy);
-    pathLengths.push(totalPathLength);
-  }
-
-  const zValues = [];
-  for (let i = 0; i < smoothedPath.length; i++) {
-    const pathRatio = totalPathLength > 0 ? pathLengths[i] / totalPathLength : 0;
-    const targetLength = pathRatio * totalDragLength;
-
-    let segIndex = 0;
-    for (let j = 1; j < dragPointLengths.length; j++) {
-      if (dragPointLengths[j] >= targetLength) {
-        segIndex = j - 1;
-        break;
-      }
-      segIndex = j - 1;
-    }
-
-    const segStart = dragPointLengths[segIndex];
-    const segEnd = dragPointLengths[segIndex + 1] || segStart;
-    const segLength = segEnd - segStart;
-    const segRatio = segLength > 0 ? (targetLength - segStart) / segLength : 0;
-
-    const z1 = points[segIndex]?.z || 0;
-    const z2 = points[Math.min(segIndex + 1, points.length - 1)]?.z || 0;
-    zValues.push(z1 + segRatio * (z2 - z1));
-  }
-
-  return zValues;
-}
-
 export function createRamp3DMesh(item: RampItem): THREE.Group | null {
   const points = item.drag_points;
   if (!points || points.length < 2) return null;
@@ -144,17 +95,24 @@ export function createRamp3DMesh(item: RampItem): THREE.Group | null {
     const group = new THREE.Group();
     const wireMat = createMaterial(item.material, null);
 
-    const smoothedPath = generateSmoothedPath(points, false, PATH_SMOOTHING_ACCURACY);
-    if (!Array.isArray(smoothedPath) || smoothedPath.length < 2) return null;
+    const smoothedPath = generateSmoothedPath3D(points, false, PATH_SMOOTHING_ACCURACY);
+    if (smoothedPath.length < 2) return null;
 
-    const zOffsets = interpolateZFromDragPoints(points, smoothedPath);
+    const pathLengths = [0];
+    let totalLength = 0;
+    for (let i = 1; i < smoothedPath.length; i++) {
+      const dx = smoothedPath[i].x - smoothedPath[i - 1].x;
+      const dy = smoothedPath[i].y - smoothedPath[i - 1].y;
+      totalLength += Math.sqrt(dx * dx + dy * dy);
+      pathLengths.push(totalLength);
+    }
 
     const createWirePath = (offset: number, zOffset: number = 0): THREE.Vector3[] => {
       const pathPoints = [];
       for (let i = 0; i < smoothedPath.length; i++) {
         const p = smoothedPath[i];
-        const t = smoothedPath.length > 1 ? i / (smoothedPath.length - 1) : 0;
-        const height = zOffsets[i] + heightBottom + t * (heightTop - heightBottom) + zOffset;
+        const t = totalLength > 0 ? pathLengths[i] / totalLength : 0;
+        const height = p.z + heightBottom + t * (heightTop - heightBottom) + zOffset;
 
         let nx = 0,
           ny = 1;
@@ -218,17 +176,24 @@ export function createRamp3DMesh(item: RampItem): THREE.Group | null {
     return group;
   }
 
-  const smoothedPath = generateSmoothedPath(points, false, PATH_SMOOTHING_ACCURACY);
-  if (!Array.isArray(smoothedPath) || smoothedPath.length < 2) return null;
+  const smoothedPath = generateSmoothedPath3D(points, false, PATH_SMOOTHING_ACCURACY);
+  if (smoothedPath.length < 2) return null;
 
-  const zOffsets = interpolateZFromDragPoints(points, smoothedPath);
+  const pathLengths = [0];
+  let totalLength = 0;
+  for (let i = 1; i < smoothedPath.length; i++) {
+    const dx = smoothedPath[i].x - smoothedPath[i - 1].x;
+    const dy = smoothedPath[i].y - smoothedPath[i - 1].y;
+    totalLength += Math.sqrt(dx * dx + dy * dy);
+    pathLengths.push(totalLength);
+  }
 
   const vertices = [];
   for (let i = 0; i < smoothedPath.length; i++) {
     const p = smoothedPath[i];
-    const t = smoothedPath.length > 1 ? i / (smoothedPath.length - 1) : 0;
+    const t = totalLength > 0 ? pathLengths[i] / totalLength : 0;
     const width = widthBottom + t * (widthTop - widthBottom);
-    const height = zOffsets[i] + heightBottom + t * (heightTop - heightBottom);
+    const height = p.z + heightBottom + t * (heightTop - heightBottom);
 
     let nx = 0,
       ny = 1;
