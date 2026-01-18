@@ -52,7 +52,7 @@ export function createKicker3DMesh(item: unknown): THREE.Object3D | null {
   if (kickerType === 'invisible') return null;
 
   const radius = kickerItem.radius ?? KICKER_DEFAULTS.radius;
-  let orientation = ((kickerItem.orientation ?? KICKER_DEFAULTS.orientation) * Math.PI) / 180;
+  let orientation = (-(kickerItem.orientation ?? KICKER_DEFAULTS.orientation) * Math.PI) / 180;
   let zOffset = 0;
   let meshData;
   let textureName: string | null = null;
@@ -106,7 +106,7 @@ function getKickerGeometry(item: unknown, scale: number): { r: number; rad: numb
   const radius = kickerItem.radius ?? KICKER_DEFAULTS.radius;
   const orientation = kickerItem.orientation ?? KICKER_DEFAULTS.orientation;
   const r = radius * scale;
-  const rad = (-orientation * Math.PI) / 180;
+  const rad = (orientation * Math.PI) / 180;
   return { r, rad };
 }
 
