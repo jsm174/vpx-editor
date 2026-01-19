@@ -54,7 +54,7 @@ export function createSpinner3DMesh(item: SpinnerItem): THREE.Group | null {
 
   const length = item.length ?? SPINNER_DEFAULTS.length;
   const height = item.height ?? SPINNER_DEFAULTS.height;
-  const rotation = ((item.rotation ?? SPINNER_DEFAULTS.rotation) * Math.PI) / 180;
+  const rotation = (-(item.rotation ?? SPINNER_DEFAULTS.rotation) * Math.PI) / 180;
 
   const group = new THREE.Group();
 
@@ -76,7 +76,7 @@ function getSpinnerGeometry(item: SpinnerItem, scale: number): SpinnerGeometry {
   const length = item.length ?? SPINNER_DEFAULTS.length;
   const rotation = item.rotation ?? SPINNER_DEFAULTS.rotation;
   const halfLen = length * 0.5 * scale;
-  const rad = (-rotation * Math.PI) / 180;
+  const rad = (rotation * Math.PI) / 180;
   return { halfLen, rad };
 }
 
