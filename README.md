@@ -100,17 +100,8 @@ Download the latest release for your platform from the [Releases](https://github
 
 ### Getting Started
 
-1. Create a GitHub Personal Access Token with `read:packages` scope at https://github.com/settings/tokens
-
-2. Create `.npmrc` in the project root:
-```
-@jsm174:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
-```
-
-3. Set your token and install:
+Install the node dependencies:
 ```bash
-export GITHUB_TOKEN=ghp_your_token_here
 npm install
 ```
 

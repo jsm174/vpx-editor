@@ -9,11 +9,11 @@ import type { WindowContext, WindowRegistry } from './window-context.js';
 const MAX_RECENT_FILES = 10;
 const SOURCE_VPX_FILENAME = '.source.vpx';
 
-let vpinModule: typeof import('@jsm174/vpin-wasm') | null = null;
+let vpinModule: typeof import('@francisdb/vpin-wasm') | null = null;
 
-async function initVpinModule(): Promise<typeof import('@jsm174/vpin-wasm')> {
+async function initVpinModule(): Promise<typeof import('@francisdb/vpin-wasm')> {
   if (!vpinModule) {
-    vpinModule = await import('@jsm174/vpin-wasm');
+    vpinModule = await import('@francisdb/vpin-wasm');
     await vpinModule.default();
   }
   return vpinModule;

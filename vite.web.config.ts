@@ -30,7 +30,7 @@ export default defineConfig({
   },
   plugins: [htmlTransformPlugin({ platform: 'web' })],
   optimizeDeps: {
-    exclude: ['@jsm174/vpin-wasm'],
+    exclude: ['@francisdb/vpin-wasm'],
   },
   resolve: {
     alias: {

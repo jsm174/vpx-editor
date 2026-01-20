@@ -1,6 +1,6 @@
 import type { VpxEngine, VpxFiles, ProgressCallback } from './types.js';
 
-let vpinModule: typeof import('@jsm174/vpin-wasm') | null = null;
+let vpinModule: typeof import('@francisdb/vpin-wasm') | null = null;
 
 export class VpinWasmEngine implements VpxEngine {
   private initialized = false;
@@ -8,7 +8,7 @@ export class VpinWasmEngine implements VpxEngine {
   async init(): Promise<void> {
     if (this.initialized) return;
 
-    vpinModule = await import('@jsm174/vpin-wasm');
+    vpinModule = await import('@francisdb/vpin-wasm');
     await vpinModule.default();
     this.initialized = true;
     console.log('VPin WASM engine initialized');
