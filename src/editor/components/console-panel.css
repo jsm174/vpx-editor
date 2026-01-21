@@ -2,6 +2,18 @@
   height: 4px;
   background: var(--border-color);
   cursor: ns-resize;
+  position: relative;
+  touch-action: none;
+}
+
+#console-resize-handle::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -20px;
+  bottom: -20px;
+  cursor: ns-resize;
 }
 
 #console-resize-handle:hover {

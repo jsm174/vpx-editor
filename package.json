@@ -42,6 +42,7 @@
     "@electron/fuses": "^1.8.0",
     "@types/node": "^25.0.3",
     "@types/three": "^0.182.0",
+    "@vitejs/plugin-basic-ssl": "^2.1.4",
     "electron": "39.2.5",
     "prettier": "^3.7.4",
     "typescript": "^5.9.3",

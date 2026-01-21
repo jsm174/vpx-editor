@@ -35,6 +35,13 @@ button:focus {
   position: absolute;
   top: 0;
   left: 0;
+  touch-action: none;
+}
+
+#console-output,
+#properties-content,
+#layers-list {
+  touch-action: pan-y;
 }
 
 .placeholder {

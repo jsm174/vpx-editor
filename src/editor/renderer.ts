@@ -364,7 +364,37 @@ function zoomAtPoint(offsetX: number, offsetY: number, zoomFactor: number): void
   render();
 }
 
-elements.canvas!.addEventListener('mousedown', e => {
+let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+let longPressStartPos: { x: number; y: number } | null = null;
+const LONG_PRESS_DURATION = 500;
+const LONG_PRESS_MOVE_THRESHOLD = 10;
+
+function cancelLongPress(): void {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+  longPressStartPos = null;
+}
+
+elements.canvas!.addEventListener('pointerdown', e => {
+  cancelLongPress();
+  if (e.button === 0 && e.pointerType === 'touch') {
+    longPressStartPos = { x: e.clientX, y: e.clientY };
+    longPressTimer = setTimeout(() => {
+      longPressTimer = null;
+      const contextEvent = new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: e.clientX,
+        clientY: e.clientY,
+      });
+      Object.defineProperty(contextEvent, 'offsetX', { value: e.offsetX });
+      Object.defineProperty(contextEvent, 'offsetY', { value: e.offsetY });
+      elements.canvas!.dispatchEvent(contextEvent);
+    }, LONG_PRESS_DURATION);
+  }
+
   if (state.tool === 'magnify') {
     if (e.button === 0) {
       zoomAtPoint(e.offsetX, e.offsetY, 1.5);
@@ -389,6 +419,7 @@ elements.canvas!.addEventListener('mousedown', e => {
     document.getElementById('tool-pan')?.classList.add('active');
     document.querySelectorAll('.toolbox-btn').forEach(b => b.classList.remove('creating'));
     setCanvasCursor('grabbing');
+    elements.canvas!.setPointerCapture(e.pointerId);
     return;
   }
 
@@ -405,6 +436,7 @@ elements.canvas!.addEventListener('mousedown', e => {
       state.isDragging = true;
       state.dragStart = { x: e.clientX - state.panX, y: e.clientY - state.panY };
       setCanvasCursor('grabbing');
+      elements.canvas!.setPointerCapture(e.pointerId);
     } else if (state.creationMode && Date.now() - getCreationModeSetTime() > 100) {
       const world = toWorld(e.offsetX, e.offsetY);
       const typeToCreate = state.creationMode;
@@ -431,6 +463,7 @@ elements.canvas!.addEventListener('mousedown', e => {
               state.draggingNode = true;
               state.nodeMoved = false;
               state.dragStart = { x: world.x, y: world.y };
+              elements.canvas!.setPointerCapture(e.pointerId);
             }
             updatePropertiesPanel();
             render();
@@ -451,6 +484,7 @@ elements.canvas!.addEventListener('mousedown', e => {
         if (!e.shiftKey) {
           selectItem(null, true);
         }
+        elements.canvas!.setPointerCapture(e.pointerId);
       } else {
         const clickedItem = hits[0];
 
@@ -485,6 +519,7 @@ elements.canvas!.addEventListener('mousedown', e => {
             state.draggingObject = true;
             state.objectMoved = false;
             state.objectDragStart = { x: world.x, y: world.y };
+            elements.canvas!.setPointerCapture(e.pointerId);
           }
         }
       }
@@ -492,7 +527,16 @@ elements.canvas!.addEventListener('mousedown', e => {
   }
 });
 
-elements.canvas!.addEventListener('mousemove', e => {
+elements.canvas!.addEventListener('pointermove', e => {
+  if (longPressStartPos) {
+    const dx = e.clientX - longPressStartPos.x;
+    const dy = e.clientY - longPressStartPos.y;
+    if (Math.abs(dx) > LONG_PRESS_MOVE_THRESHOLD || Math.abs(dy) > LONG_PRESS_MOVE_THRESHOLD) {
+      cancelLongPress();
+      hideContextMenu();
+    }
+  }
+
   const world = toWorld(e.offsetX, e.offsetY);
   state.lastMousePosition = { x: world.x, y: world.y };
 
@@ -588,7 +632,9 @@ function getItemsInRect(rect: DragRect): string[] {
   return [...result];
 }
 
-elements.canvas!.addEventListener('mouseup', e => {
+function handleCanvasPointerEnd(e: PointerEvent): void {
+  cancelLongPress();
+  elements.canvas!.releasePointerCapture(e.pointerId);
   if (dragRect.active) {
     const itemsInBox = getItemsInRect(dragRect);
     if (itemsInBox.length > 0) {
@@ -655,7 +701,9 @@ elements.canvas!.addEventListener('mouseup', e => {
   } else {
     setCanvasCursor(getToolCursor());
   }
-});
+}
+elements.canvas!.addEventListener('pointerup', handleCanvasPointerEnd);
+elements.canvas!.addEventListener('pointercancel', handleCanvasPointerEnd);
 
 elements.canvas!.addEventListener('contextmenu', e => {
   e.preventDefault();
@@ -1784,7 +1832,7 @@ async function initViewSettings(): Promise<void> {
 
 initViewSettings();
 
-document.addEventListener('mouseup', () => {
+function handleDocumentPointerEnd(): void {
   if (state.isDragging) {
     state.isDragging = false;
     setCanvasCursor(getToolCursor());
@@ -1816,7 +1864,9 @@ document.addEventListener('mouseup', () => {
     state.objectMoved = false;
   }
   state.ctrlZoomHandled = false;
-});
+}
+document.addEventListener('pointerup', handleDocumentPointerEnd);
+document.addEventListener('pointercancel', handleDocumentPointerEnd);
 
 window.vpxEditor.onRequestDrawingOrderData?.(mode => {
   window.vpxEditor.sendDrawingOrderData({

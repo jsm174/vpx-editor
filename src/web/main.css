@@ -64,10 +64,6 @@
 }
 .menu-submenu:hover > .submenu,
 .menu-submenu.expanded > .submenu { display: block; }
-@media (hover: none) {
-  .menu-submenu:hover > .submenu { display: none; }
-  .menu-submenu.expanded > .submenu { display: block; }
-}
 
 .blueprint-modal {
   position: fixed;

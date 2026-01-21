@@ -102,6 +102,19 @@ export function createWebMenuRenderer(callbacks: WebMenuCallbacks): WebMenuRende
           div.classList.remove('expanded');
         }
       });
+
+      div.addEventListener('pointerenter', e => {
+        if ((e as PointerEvent).pointerType === 'touch') {
+          if (div.classList.contains('disabled')) return;
+          const parent = div.parentElement;
+          if (parent) {
+            parent.querySelectorAll(':scope > .menu-submenu.expanded').forEach(el => {
+              if (el !== div) el.classList.remove('expanded');
+            });
+          }
+          div.classList.add('expanded');
+        }
+      });
     } else {
       let labelHtml = '';
 

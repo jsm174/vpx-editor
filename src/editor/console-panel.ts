@@ -16,7 +16,6 @@ function formatLogLine(text: string): string {
 const consoleResizeHandle = document.getElementById('console-resize-handle') as HTMLElement | null;
 const consolePanel = document.getElementById('console-panel') as HTMLElement | null;
 let consolePinned = false;
-let consoleResizing = false;
 let consoleStartY = 0;
 let consoleStartHeight = 0;
 
@@ -109,28 +108,40 @@ consoleOutput?.addEventListener('contextmenu', (e: MouseEvent) => {
   });
 });
 
-consoleResizeHandle?.addEventListener('mousedown', (e: MouseEvent) => {
-  consoleResizing = true;
-  consoleStartY = e.clientY;
-  consoleStartHeight = consolePanel?.offsetHeight || 0;
-  document.body.style.cursor = 'ns-resize';
-  e.preventDefault();
-});
+let consoleActivePointerId: number | null = null;
 
-document.addEventListener('mousemove', (e: MouseEvent) => {
-  if (!consoleResizing || !consolePanel) return;
+const onConsolePointerMove = (e: PointerEvent): void => {
+  if (e.pointerId !== consoleActivePointerId || !consolePanel) return;
   const delta = consoleStartY - e.clientY;
   const newHeight = Math.max(100, Math.min(window.innerHeight * 0.5, consoleStartHeight + delta));
   consolePanel.style.height = `${newHeight}px`;
   resizeCanvas();
-});
+};
 
-document.addEventListener('mouseup', () => {
-  if (consoleResizing && consolePanel) {
-    consoleResizing = false;
-    document.body.style.cursor = '';
+const onConsolePointerEnd = (e: PointerEvent): void => {
+  if (e.pointerId !== consoleActivePointerId || !consoleResizeHandle) return;
+  consoleActivePointerId = null;
+  consoleResizeHandle.releasePointerCapture(e.pointerId);
+  document.body.style.cursor = '';
+  consoleResizeHandle.removeEventListener('pointermove', onConsolePointerMove);
+  consoleResizeHandle.removeEventListener('pointerup', onConsolePointerEnd);
+  consoleResizeHandle.removeEventListener('pointercancel', onConsolePointerEnd);
+  if (consolePanel) {
     window.vpxEditor.saveConsoleSettings({ height: consolePanel.offsetHeight });
   }
+};
+
+consoleResizeHandle?.addEventListener('pointerdown', (e: PointerEvent) => {
+  if (consoleActivePointerId !== null || !consoleResizeHandle) return;
+  consoleActivePointerId = e.pointerId;
+  consoleStartY = e.clientY;
+  consoleStartHeight = consolePanel?.offsetHeight || 0;
+  consoleResizeHandle.setPointerCapture(e.pointerId);
+  document.body.style.cursor = 'ns-resize';
+  e.preventDefault();
+  consoleResizeHandle.addEventListener('pointermove', onConsolePointerMove);
+  consoleResizeHandle.addEventListener('pointerup', onConsolePointerEnd);
+  consoleResizeHandle.addEventListener('pointercancel', onConsolePointerEnd);
 });
 
 window.vpxEditor.onConsoleOpen(() => {

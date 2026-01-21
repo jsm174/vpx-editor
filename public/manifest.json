@@ -1,0 +1,15 @@
+{
+  "name": "VPX Editor",
+  "short_name": "VPX Editor",
+  "icons": [
+    {
+      "src": "icons/app-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e1e1e",
+  "theme_color": "#1e1e1e"
+}

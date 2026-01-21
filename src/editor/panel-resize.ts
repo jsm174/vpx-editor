@@ -50,32 +50,41 @@ export function initToolboxResize(resizeCanvas: () => void): void {
 
   let startX: number;
   let startWidth: number;
+  let activePointerId: number | null = null;
 
-  handle.addEventListener('mousedown', (e: MouseEvent) => {
+  const onPointerMove = (e: PointerEvent): void => {
+    if (e.pointerId !== activePointerId) return;
+    const delta = e.clientX - startX;
+    const newWidth = Math.min(TOOLBOX_MAX_WIDTH, Math.max(TOOLBOX_MIN_WIDTH, startWidth + delta));
+    panel.style.width = newWidth + 'px';
+    resizeCanvas();
+  };
+
+  const onPointerEnd = (e: PointerEvent): void => {
+    if (e.pointerId !== activePointerId) return;
+    activePointerId = null;
+    handle.releasePointerCapture(e.pointerId);
+    handle.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    handle.removeEventListener('pointermove', onPointerMove);
+    handle.removeEventListener('pointerup', onPointerEnd);
+    handle.removeEventListener('pointercancel', onPointerEnd);
+    savePanelSettings();
+  };
+
+  handle.addEventListener('pointerdown', (e: PointerEvent) => {
+    if (activePointerId !== null) return;
+    activePointerId = e.pointerId;
     startX = e.clientX;
     startWidth = panel.offsetWidth;
+    handle.setPointerCapture(e.pointerId);
     handle.classList.add('dragging');
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
-
-    const onMouseMove = (e: MouseEvent): void => {
-      const delta = e.clientX - startX;
-      const newWidth = Math.min(TOOLBOX_MAX_WIDTH, Math.max(TOOLBOX_MIN_WIDTH, startWidth + delta));
-      panel.style.width = newWidth + 'px';
-      resizeCanvas();
-    };
-
-    const onMouseUp = (): void => {
-      handle.classList.remove('dragging');
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-      savePanelSettings();
-    };
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
+    handle.addEventListener('pointermove', onPointerMove);
+    handle.addEventListener('pointerup', onPointerEnd);
+    handle.addEventListener('pointercancel', onPointerEnd);
   });
 }
 
@@ -86,32 +95,41 @@ export function initRightPanelResize(resizeCanvas: () => void): void {
 
   let startX: number;
   let startWidth: number;
+  let activePointerId: number | null = null;
 
-  handle.addEventListener('mousedown', (e: MouseEvent) => {
+  const onPointerMove = (e: PointerEvent): void => {
+    if (e.pointerId !== activePointerId) return;
+    const delta = startX - e.clientX;
+    const newWidth = Math.min(RIGHT_PANEL_MAX_WIDTH, Math.max(RIGHT_PANEL_MIN_WIDTH, startWidth + delta));
+    panel.style.width = newWidth + 'px';
+    resizeCanvas();
+  };
+
+  const onPointerEnd = (e: PointerEvent): void => {
+    if (e.pointerId !== activePointerId) return;
+    activePointerId = null;
+    handle.releasePointerCapture(e.pointerId);
+    handle.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    handle.removeEventListener('pointermove', onPointerMove);
+    handle.removeEventListener('pointerup', onPointerEnd);
+    handle.removeEventListener('pointercancel', onPointerEnd);
+    savePanelSettings();
+  };
+
+  handle.addEventListener('pointerdown', (e: PointerEvent) => {
+    if (activePointerId !== null) return;
+    activePointerId = e.pointerId;
     startX = e.clientX;
     startWidth = panel.offsetWidth;
+    handle.setPointerCapture(e.pointerId);
     handle.classList.add('dragging');
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
-
-    const onMouseMove = (e: MouseEvent): void => {
-      const delta = startX - e.clientX;
-      const newWidth = Math.min(RIGHT_PANEL_MAX_WIDTH, Math.max(RIGHT_PANEL_MIN_WIDTH, startWidth + delta));
-      panel.style.width = newWidth + 'px';
-      resizeCanvas();
-    };
-
-    const onMouseUp = (): void => {
-      handle.classList.remove('dragging');
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-      savePanelSettings();
-    };
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
+    handle.addEventListener('pointermove', onPointerMove);
+    handle.addEventListener('pointerup', onPointerEnd);
+    handle.addEventListener('pointercancel', onPointerEnd);
   });
 }
 
@@ -123,32 +141,41 @@ export function initLayersResize(): void {
 
   let startY: number;
   let startHeight: number;
+  let activePointerId: number | null = null;
 
-  handle.addEventListener('mousedown', (e: MouseEvent) => {
+  const onPointerMove = (e: PointerEvent): void => {
+    if (e.pointerId !== activePointerId) return;
+    const delta = startY - e.clientY;
+    const maxHeight = rightPanel.offsetHeight - 100;
+    const newHeight = Math.min(maxHeight, Math.max(80, startHeight + delta));
+    panel.style.flex = 'none';
+    panel.style.height = newHeight + 'px';
+  };
+
+  const onPointerEnd = (e: PointerEvent): void => {
+    if (e.pointerId !== activePointerId) return;
+    activePointerId = null;
+    handle.releasePointerCapture(e.pointerId);
+    handle.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    handle.removeEventListener('pointermove', onPointerMove);
+    handle.removeEventListener('pointerup', onPointerEnd);
+    handle.removeEventListener('pointercancel', onPointerEnd);
+    savePanelSettings();
+  };
+
+  handle.addEventListener('pointerdown', (e: PointerEvent) => {
+    if (activePointerId !== null) return;
+    activePointerId = e.pointerId;
     startY = e.clientY;
     startHeight = panel.offsetHeight;
+    handle.setPointerCapture(e.pointerId);
     handle.classList.add('dragging');
     document.body.style.cursor = 'row-resize';
     document.body.style.userSelect = 'none';
-
-    const onMouseMove = (e: MouseEvent): void => {
-      const delta = startY - e.clientY;
-      const maxHeight = rightPanel.offsetHeight - 100;
-      const newHeight = Math.min(maxHeight, Math.max(80, startHeight + delta));
-      panel.style.flex = 'none';
-      panel.style.height = newHeight + 'px';
-    };
-
-    const onMouseUp = (): void => {
-      handle.classList.remove('dragging');
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-      savePanelSettings();
-    };
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
+    handle.addEventListener('pointermove', onPointerMove);
+    handle.addEventListener('pointerup', onPointerEnd);
+    handle.addEventListener('pointercancel', onPointerEnd);
   });
 }

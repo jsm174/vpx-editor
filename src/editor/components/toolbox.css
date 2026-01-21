@@ -17,6 +17,19 @@
   cursor: col-resize;
   flex-shrink: 0;
   transition: background 0.15s;
+  position: relative;
+  touch-action: none;
+}
+
+#toolbox-resize-handle::after,
+#right-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -20px;
+  right: -20px;
+  cursor: col-resize;
 }
 
 #toolbox-resize-handle:hover,
@@ -32,6 +45,18 @@
   cursor: row-resize;
   flex-shrink: 0;
   transition: background 0.15s;
+  position: relative;
+  touch-action: none;
+}
+
+#layers-resize-handle::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -20px;
+  bottom: -20px;
+  cursor: row-resize;
 }
 
 #layers-resize-handle:hover,
