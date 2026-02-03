@@ -307,7 +307,7 @@ export function flasherProperties(item: Flasher): string {
         <div class="prop-group-title">Transparency</div>
         <div class="prop-row">
           <label class="prop-label">${opacityLabel}</label>
-          <input type="number" class="prop-input" data-prop="alpha" value="${item.alpha ?? FLASHER_DEFAULTS.alpha}" step="5" min="0" max="100">
+          <input type="number" class="prop-input" data-prop="alpha" data-type="int" value="${item.alpha ?? FLASHER_DEFAULTS.alpha}" step="5" min="0" max="100">
         </div>
         <div class="prop-row" style="${isAlphaSeg ? 'display:none' : ''}">
           <label class="prop-label">Lightmap</label>

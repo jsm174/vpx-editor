@@ -670,6 +670,9 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
           if ('convertUnits' in target.dataset) {
             value = convertFromUnit(value);
           }
+          if (target.dataset.type === 'int') {
+            value = Math.round(value);
+          }
         }
         await updateItemProperty(state.primarySelectedItem!, prop, value);
       });
@@ -810,6 +813,9 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
           value = parseFloat(target.value);
           if ('convertUnits' in (target as HTMLInputElement).dataset) {
             value = convertFromUnit(value);
+          }
+          if ((target as HTMLInputElement).dataset.type === 'int') {
+            value = Math.round(value);
           }
         }
         if ((target as HTMLInputElement).type === 'color') {

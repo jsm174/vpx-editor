@@ -216,7 +216,10 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
         // MTL generation is optional
       }
 
-      const baseName = srcFileName.split('/').pop()!.replace(/^Primitive\./, '');
+      const baseName = srcFileName
+        .split('/')
+        .pop()!
+        .replace(/^Primitive\./, '');
       const mtlBaseName = baseName.replace('.obj', '.mtl');
       if (mtlContent && materialName) {
         const firstNewline = objContent.indexOf('\n');

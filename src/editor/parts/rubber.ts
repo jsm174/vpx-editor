@@ -343,7 +343,7 @@ export function rubberProperties(item: unknown): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Thickness</label>
-          <input type="number" class="prop-input" data-prop="thickness" data-convert-units value="${convertToUnit(rubberItem.thickness ?? RUBBER_DEFAULTS.thickness).toFixed(1)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
+          <input type="number" class="prop-input" data-prop="thickness" data-type="int" data-convert-units value="${convertToUnit(rubberItem.thickness ?? RUBBER_DEFAULTS.thickness).toFixed(1)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
       </div>
       <div class="prop-group">
