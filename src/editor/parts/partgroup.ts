@@ -92,7 +92,7 @@ export function partGroupProperties(item: PartGroupItem): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Timer Interval</label>
-          <input type="number" class="prop-input" data-prop="timer_interval" value="${item.timer_interval ?? PARTGROUP_DEFAULT_TIMER_INTERVAL}" step="1">
+          <input type="number" class="prop-input" data-prop="timer_interval" data-type="int" value="${item.timer_interval ?? PARTGROUP_DEFAULT_TIMER_INTERVAL}" step="1">
         </div>
       </div>
     </div>

@@ -158,7 +158,7 @@ export function lightSequencerProperties(item: LightSequencer): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Update Interval (ms)</label>
-          <input type="number" class="prop-input" data-prop="update_interval" value="${item.update_interval ?? LIGHTSEQUENCER_DEFAULTS.update_interval}" step="5" min="1">
+          <input type="number" class="prop-input" data-prop="update_interval" data-type="int" value="${item.update_interval ?? LIGHTSEQUENCER_DEFAULTS.update_interval}" step="5" min="1">
         </div>
       </div>
     </div>
@@ -171,7 +171,7 @@ export function lightSequencerProperties(item: LightSequencer): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Interval (ms)</label>
-          <input type="number" class="prop-input" data-prop="timer_interval" value="${item.timer_interval ?? LIGHTSEQUENCER_DEFAULTS.timer_interval}" step="10" min="1">
+          <input type="number" class="prop-input" data-prop="timer_interval" data-type="int" value="${item.timer_interval ?? LIGHTSEQUENCER_DEFAULTS.timer_interval}" step="10" min="1">
         </div>
       </div>
     </div>

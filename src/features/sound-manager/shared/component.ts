@@ -314,15 +314,15 @@ export function initSoundManagerComponent(
         <div class="prop-group-title">Position / Volume</div>
         <div class="prop-row">
           <label class="prop-label">Balance</label>
-          <input type="number" class="prop-input" data-prop="balance" value="${sound.balance ?? 0}" step="1" min="-100" max="100">
+          <input type="number" class="prop-input" data-prop="balance" data-type="int" value="${sound.balance ?? 0}" step="1" min="-100" max="100">
         </div>
         <div class="prop-row">
           <label class="prop-label">Fade</label>
-          <input type="number" class="prop-input" data-prop="fade" value="${sound.fade ?? 0}" step="1" min="-100" max="100">
+          <input type="number" class="prop-input" data-prop="fade" data-type="int" value="${sound.fade ?? 0}" step="1" min="-100" max="100">
         </div>
         <div class="prop-row">
           <label class="prop-label">Volume</label>
-          <input type="number" class="prop-input" data-prop="volume" value="${sound.volume ?? 0}" step="1" min="-100" max="100">
+          <input type="number" class="prop-input" data-prop="volume" data-type="int" value="${sound.volume ?? 0}" step="1" min="-100" max="100">
         </div>
       </div>
 

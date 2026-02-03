@@ -193,7 +193,7 @@ export function reelProperties(item: ReelItem): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Images Per Row</label>
-          <input type="number" class="prop-input" data-prop="images_per_grid_row" value="${item.images_per_grid_row ?? REEL_DEFAULTS.images_per_grid_row}" step="1" min="1">
+          <input type="number" class="prop-input" data-prop="images_per_grid_row" data-type="int" value="${item.images_per_grid_row ?? REEL_DEFAULTS.images_per_grid_row}" step="1" min="1">
         </div>
       </div>
       <div class="prop-group">
@@ -233,7 +233,7 @@ export function reelProperties(item: ReelItem): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Update Interval</label>
-          <input type="number" class="prop-input" data-prop="update_interval" value="${item.update_interval ?? REEL_DEFAULTS.update_interval}" step="10" min="1">
+          <input type="number" class="prop-input" data-prop="update_interval" data-type="int" value="${item.update_interval ?? REEL_DEFAULTS.update_interval}" step="10" min="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Sound</label>
@@ -250,7 +250,7 @@ export function reelProperties(item: ReelItem): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Interval (ms)</label>
-          <input type="number" class="prop-input" data-prop="timer_interval" value="${item.timer_interval ?? REEL_DEFAULTS.timer_interval}" step="10" min="1">
+          <input type="number" class="prop-input" data-prop="timer_interval" data-type="int" value="${item.timer_interval ?? REEL_DEFAULTS.timer_interval}" step="10" min="1">
         </div>
       </div>
     </div>

@@ -257,7 +257,7 @@ export function flasherProperties(item: Flasher): string {
         </div>
         <div class="prop-row" style="${isDisplay ? '' : 'display:none'}">
           <label class="prop-label">Ambient</label>
-          <input type="number" class="prop-input" data-prop="glass_ambient" value="${item.glass_ambient ?? 0}" step="1">
+          <input type="number" class="prop-input" data-prop="glass_ambient" data-type="int" value="${item.glass_ambient ?? 0}" step="1">
         </div>
         <div class="prop-row" style="${isDisplay ? '' : 'display:none'}">
           <label class="prop-label">Pad T/B</label>
@@ -296,7 +296,7 @@ export function flasherProperties(item: Flasher): string {
         </div>
         <div class="prop-row" style="${isFlasher ? '' : 'display:none'}">
           <label class="prop-label">Mix Factor</label>
-          <input type="number" class="prop-input" data-prop="filter_amount" value="${item.filter_amount ?? FLASHER_DEFAULTS.filter_amount}" step="10" min="0" max="100">
+          <input type="number" class="prop-input" data-prop="filter_amount" data-type="int" value="${item.filter_amount ?? FLASHER_DEFAULTS.filter_amount}" step="10" min="0" max="100">
         </div>
         <div class="prop-row" style="${isFlasher ? '' : 'display:none'}">
           <label class="prop-label">Show in Editor</label>
@@ -359,7 +359,7 @@ export function flasherProperties(item: Flasher): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Interval (ms)</label>
-          <input type="number" class="prop-input" data-prop="timer_interval" value="${item.timer_interval ?? FLASHER_DEFAULTS.timer_interval}" step="10" min="1">
+          <input type="number" class="prop-input" data-prop="timer_interval" data-type="int" value="${item.timer_interval ?? FLASHER_DEFAULTS.timer_interval}" step="10" min="1">
         </div>
       </div>
     </div>

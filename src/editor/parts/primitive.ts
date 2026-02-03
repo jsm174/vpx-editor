@@ -986,7 +986,7 @@ export function primitiveProperties(item: PrimitiveItem): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Legacy/Sides</label>
-          <input type="number" class="prop-input" data-prop="sides" value="${item.sides ?? PRIMITIVE_DEFAULTS.sides}" step="1" min="3" max="100">
+          <input type="number" class="prop-input" data-prop="sides" data-type="int" value="${item.sides ?? PRIMITIVE_DEFAULTS.sides}" step="1" min="3" max="100">
         </div>
         <div class="prop-row">
           <label class="prop-label">Editor</label>

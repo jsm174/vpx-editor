@@ -331,7 +331,7 @@ export function hitTargetProperties(item: HitTargetItem): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Raise Delay (ms)</label>
-          <input type="number" class="prop-input" data-prop="raise_delay" value="${item.raise_delay ?? HITTARGET_DEFAULTS.raise_delay}" step="10">
+          <input type="number" class="prop-input" data-prop="raise_delay" data-type="int" value="${item.raise_delay ?? HITTARGET_DEFAULTS.raise_delay}" step="10">
         </div>
         <div class="prop-row">
           <label class="prop-label">Depth Bias</label>
@@ -444,7 +444,7 @@ export function hitTargetProperties(item: HitTargetItem): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Interval (ms)</label>
-          <input type="number" class="prop-input" data-prop="timer_interval" value="${item.timer_interval ?? HITTARGET_DEFAULTS.timer_interval}" step="10" min="1">
+          <input type="number" class="prop-input" data-prop="timer_interval" data-type="int" value="${item.timer_interval ?? HITTARGET_DEFAULTS.timer_interval}" step="10" min="1">
         </div>
       </div>
     </div>

@@ -494,7 +494,7 @@ export function lightProperties(item: unknown): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Blink Interval</label>
-          <input type="number" class="prop-input" data-prop="blink_interval" value="${lightItem.blink_interval ?? LIGHT_DEFAULTS.blink_interval}" step="25">
+          <input type="number" class="prop-input" data-prop="blink_interval" data-type="int" value="${lightItem.blink_interval ?? LIGHT_DEFAULTS.blink_interval}" step="25">
         </div>
       </div>
     </div>
@@ -507,7 +507,7 @@ export function lightProperties(item: unknown): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Interval (ms)</label>
-          <input type="number" class="prop-input" data-prop="timer_interval" value="${lightItem.timer_interval ?? LIGHT_DEFAULTS.timer_interval}" step="10" min="1">
+          <input type="number" class="prop-input" data-prop="timer_interval" data-type="int" value="${lightItem.timer_interval ?? LIGHT_DEFAULTS.timer_interval}" step="10" min="1">
         </div>
       </div>
     </div>

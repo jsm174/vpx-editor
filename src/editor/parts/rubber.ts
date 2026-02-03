@@ -416,7 +416,7 @@ export function rubberProperties(item: unknown): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Interval (ms)</label>
-          <input type="number" class="prop-input" data-prop="timer_interval" value="${rubberItem.timer_interval ?? RUBBER_DEFAULTS.timer_interval}" step="10" min="1">
+          <input type="number" class="prop-input" data-prop="timer_interval" data-type="int" value="${rubberItem.timer_interval ?? RUBBER_DEFAULTS.timer_interval}" step="10" min="1">
         </div>
       </div>
     </div>

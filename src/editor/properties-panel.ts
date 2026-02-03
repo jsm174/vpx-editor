@@ -335,7 +335,7 @@ function tableProperties(gamedata: GameData): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Physics Max. Loops</label>
-          <input type="number" class="prop-input" data-prop="physics_max_loops" value="${gamedata.physics_max_loops ?? 0}" step="1">
+          <input type="number" class="prop-input" data-prop="physics_max_loops" data-type="int" value="${gamedata.physics_max_loops ?? 0}" step="1">
         </div>
       </div>
     </div>
