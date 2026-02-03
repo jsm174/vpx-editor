@@ -5,9 +5,46 @@ import {
   generateProcessedObj,
   type MeshImportOptions,
 } from '../shared/component';
+import { builtinMeshToOBJ } from '../../../shared/builtin-primitive-mesh';
 import templateHtml from './template.html?raw';
 
 let templateInjected = false;
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const clean = hex.replace('#', '');
+  return {
+    r: parseInt(clean.substring(0, 2), 16) / 255,
+    g: parseInt(clean.substring(2, 4), 16) / 255,
+    b: parseInt(clean.substring(4, 6), 16) / 255,
+  };
+}
+
+function generateWebMtl(materialName: string, mat: Record<string, unknown>): string {
+  const lines: string[] = [`newmtl ${materialName}`];
+  const kd = hexToRgb((mat.base_color as string) || '#808080');
+  lines.push(`Kd ${kd.r.toFixed(6)} ${kd.g.toFixed(6)} ${kd.b.toFixed(6)}`);
+  const ks = hexToRgb((mat.glossy_color as string) || '#000000');
+  lines.push(`Ks ${ks.r.toFixed(6)} ${ks.g.toFixed(6)} ${ks.b.toFixed(6)}`);
+  const roughness = (mat.roughness as number) ?? 0.5;
+  lines.push(`Ns ${Math.max(0, (roughness - 0.5) * 2000.0).toFixed(4)}`);
+  if (mat.opacity_active && mat.opacity !== undefined && (mat.opacity as number) < 1.0) {
+    lines.push(`d ${(mat.opacity as number).toFixed(6)}`);
+  }
+  lines.push('illum 2');
+  return lines.join('\n') + '\n';
+}
+
+function downloadFile(content: string, filename: string): void {
+  const blob = new Blob([content], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 function injectTemplate(): void {
   if (templateInjected) return;
@@ -133,22 +170,66 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
       const srcPath = `${extractedDir}/${srcFileName}`;
 
       const fileResult = await deps.fileSystem.readFile(srcPath);
-      if (!fileResult.success || !fileResult.content) {
+      let objContent = fileResult.success ? fileResult.content : null;
+
+      if (!objContent) {
+        const jsonPath = `${extractedDir}/${primitiveFileName}`;
+        const jsonResult = await deps.fileSystem.readFile(jsonPath);
+        if (jsonResult.success && jsonResult.content) {
+          try {
+            const itemData = JSON.parse(jsonResult.content);
+            const prim = itemData.Primitive;
+            if (prim && !prim.use_3d_mesh) {
+              objContent = builtinMeshToOBJ(prim.name || 'primitive', prim.sides ?? 4, !!prim.draw_textures_inside);
+            }
+          } catch {
+            // fall through
+          }
+        }
+      }
+
+      if (!objContent) {
         deps.events.emit('status', 'No mesh file found for this primitive');
         return;
       }
 
-      const blob = new Blob([fileResult.content], { type: 'application/octet-stream' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = srcFileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      let mtlContent: string | null = null;
+      let materialName: string | null = null;
+      try {
+        const jsonPath = `${extractedDir}/${primitiveFileName}`;
+        const jsonResult = await deps.fileSystem.readFile(jsonPath);
+        if (jsonResult.success && jsonResult.content) {
+          const itemData = JSON.parse(jsonResult.content);
+          materialName = itemData.Primitive?.material || null;
+        }
+        if (materialName) {
+          const matResult = await deps.fileSystem.readFile(`${extractedDir}/materials.json`);
+          if (matResult.success && matResult.content) {
+            const materials = JSON.parse(matResult.content) as { name: string }[];
+            const mat = materials.find(m => m.name === materialName) as Record<string, unknown> | undefined;
+            if (mat) {
+              mtlContent = generateWebMtl(materialName!, mat);
+            }
+          }
+        }
+      } catch {
+        // MTL generation is optional
+      }
 
-      deps.events.emit('status', `Exported mesh: ${srcFileName}`);
+      const baseName = srcFileName.split('/').pop()!.replace(/^Primitive\./, '');
+      const mtlBaseName = baseName.replace('.obj', '.mtl');
+      if (mtlContent && materialName) {
+        const firstNewline = objContent.indexOf('\n');
+        const mtlRef = `mtllib ${mtlBaseName}\nusemtl ${materialName}\n`;
+        objContent = objContent.slice(0, firstNewline + 1) + mtlRef + objContent.slice(firstNewline + 1);
+      }
+
+      downloadFile(objContent, baseName);
+      if (mtlContent) {
+        downloadFile(mtlContent, mtlBaseName);
+      }
+
+      deps.events.emit('status', `Exported mesh: ${baseName}${mtlContent ? ` + ${mtlBaseName}` : ''}`);
     } catch (err) {
       console.error('Mesh export failed:', err);
       deps.events.emit('status', 'Mesh export failed');

@@ -832,9 +832,31 @@ function updateItems(): void {
   updateSelectionOutline();
 }
 
+function applyDepthBias(obj: THREE.Object3D, depthBias: number): void {
+  obj.renderOrder = depthBias;
+  obj.traverse(child => {
+    if ((child as THREE.Mesh).isMesh) {
+      const mat = (child as THREE.Mesh).material;
+      const materials = Array.isArray(mat) ? mat : [mat];
+      for (const m of materials) {
+        m.polygonOffset = true;
+        m.polygonOffsetFactor = -depthBias;
+        m.polygonOffsetUnits = -depthBias;
+      }
+    }
+  });
+}
+
 function createItemMesh(item: GameItem): THREE.Object3D | null {
   const renderer = getEditable(item._type);
-  return renderer?.create3DMesh?.(item) ?? null;
+  const mesh = renderer?.create3DMesh?.(item) ?? null;
+  if (mesh) {
+    const depthBias = (item as { depth_bias?: number }).depth_bias;
+    if (depthBias && depthBias !== 0) {
+      applyDepthBias(mesh, depthBias);
+    }
+  }
+  return mesh;
 }
 
 function updateItemMesh(_name: string, _item: GameItem): void {}

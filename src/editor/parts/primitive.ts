@@ -8,6 +8,7 @@ import { PRIMITIVE_DEFAULTS } from '../../shared/object-defaults.js';
 import { getWireframeMode } from '../canvas-renderer-3d.js';
 import { registerCallback, invokeCallback } from '../../shared/callbacks.js';
 import { RENDER_COLOR_BLACK, BLUEPRINT_SOLID_COLOR } from '../../shared/constants.js';
+import { generateBuiltinMesh } from '../../shared/builtin-primitive-mesh.js';
 import { registerEditable, IEditable, Point } from './registry.js';
 
 interface PrimitiveItem {
@@ -79,6 +80,8 @@ const meshCache = new Map<string, MeshCacheEntry>();
 
 registerCallback('primitiveRenderCallback');
 registerCallback('primitiveStatusCallback');
+
+export { builtinMeshToOBJ } from '../../shared/builtin-primitive-mesh.js';
 
 export function getPrimitiveMeshInfo(item: PrimitiveItem): MeshInfo | null {
   if (!item || !item._fileName) return null;
@@ -152,13 +155,68 @@ export function createPrimitive3DMesh(item: PrimitiveItem): THREE.Group {
 
   if (item._fileName && state.extractedDir) {
     const objPath = `${state.extractedDir}/${item._fileName.replace('.json', '.obj')}`;
-    loadPrimitiveOBJ(objPath, meshContainer, placeholder, item);
+    loadPrimitiveOBJOrBuiltin(objPath, meshContainer, placeholder, item);
+  } else if (!item.use_3d_mesh) {
+    applyBuiltinMesh3D(meshContainer, placeholder, item);
   }
 
   return group;
 }
 
-async function loadPrimitiveOBJ(
+function createPrimitiveMaterial(item: PrimitiveItem): THREE.Material {
+  let defaultColor: number | null = null;
+  if (item.color) {
+    if (typeof item.color === 'string' && item.color.startsWith('#')) {
+      defaultColor = parseInt(item.color.slice(1), 16);
+    } else if (typeof item.color === 'number') {
+      defaultColor = item.color;
+    }
+  }
+
+  const isPlayfield = item.name === 'playfield_mesh';
+  const imageName = isPlayfield ? (state.gamedata?.image as string | undefined) : item.image;
+  const materialName = isPlayfield ? (state.gamedata?.playfield_material as string | undefined) : item.material;
+
+  const material = createMaterial(materialName, imageName, defaultColor);
+  material.wireframe = getWireframeMode();
+  return material;
+}
+
+function replacePlaceholder(meshContainer: THREE.Group, placeholder: THREE.Mesh, newObj: THREE.Object3D): void {
+  meshContainer.remove(placeholder);
+  (placeholder.geometry as THREE.BufferGeometry).dispose();
+  (placeholder.material as THREE.Material).dispose();
+  meshContainer.add(newObj);
+}
+
+function applyBuiltinMesh3D(meshContainer: THREE.Group, placeholder: THREE.Mesh, item: PrimitiveItem): void {
+  const sides = item.sides ?? PRIMITIVE_DEFAULTS.sides;
+  const builtin = generateBuiltinMesh(sides, !!item.draw_textures_inside);
+  const verts = builtin.vertices;
+  const norms = builtin.normals;
+  const idxs = builtin.indices;
+
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(verts.length);
+  const normalArr = new Float32Array(norms.length);
+  for (let i = 0; i < verts.length; i++) {
+    positions[i] = verts[i];
+    normalArr[i] = norms[i];
+  }
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('normal', new THREE.BufferAttribute(normalArr, 3));
+  geometry.setIndex(idxs);
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+
+  const material = createPrimitiveMaterial(item);
+  const mesh = new THREE.Mesh(geometry, material);
+  const obj = new THREE.Group();
+  obj.add(mesh);
+  replacePlaceholder(meshContainer, placeholder, obj);
+}
+
+async function loadPrimitiveOBJOrBuiltin(
   objPath: string,
   meshContainer: THREE.Group,
   placeholder: THREE.Mesh,
@@ -166,25 +224,15 @@ async function loadPrimitiveOBJ(
 ): Promise<void> {
   try {
     const result = await window.vpxEditor.readFile(objPath);
-    if (!result.success) return;
-
-    const obj = objLoader.parse(result.content!);
-
-    let defaultColor: number | null = null;
-    if (item.color) {
-      if (typeof item.color === 'string' && item.color.startsWith('#')) {
-        defaultColor = parseInt(item.color.slice(1), 16);
-      } else if (typeof item.color === 'number') {
-        defaultColor = item.color;
+    if (!result.success) {
+      if (!item.use_3d_mesh) {
+        applyBuiltinMesh3D(meshContainer, placeholder, item);
       }
+      return;
     }
 
-    const isPlayfield = item.name === 'playfield_mesh';
-    const imageName = isPlayfield ? (state.gamedata?.image as string | undefined) : item.image;
-    const materialName = isPlayfield ? (state.gamedata?.playfield_material as string | undefined) : item.material;
-
-    const material = createMaterial(materialName, imageName, defaultColor);
-    material.wireframe = getWireframeMode();
+    const obj = objLoader.parse(result.content!);
+    const material = createPrimitiveMaterial(item);
 
     obj.traverse((child: THREE.Object3D) => {
       if ((child as THREE.Mesh).isMesh) {
@@ -211,10 +259,7 @@ async function loadPrimitiveOBJ(
       }
     });
 
-    meshContainer.remove(placeholder);
-    (placeholder.geometry as THREE.BufferGeometry).dispose();
-    (placeholder.material as THREE.Material).dispose();
-    meshContainer.add(obj);
+    replacePlaceholder(meshContainer, placeholder, obj);
   } catch (e: unknown) {
     console.warn('Failed to load OBJ:', objPath, e);
   }
@@ -789,7 +834,15 @@ async function loadMeshForCache(item: PrimitiveItem): Promise<void> {
   try {
     const result = await window.vpxEditor.readFile(objPath);
     if (!result.success) {
-      meshCache.set(cacheKey, { error: true });
+      if (!item.use_3d_mesh) {
+        const sides = item.sides ?? PRIMITIVE_DEFAULTS.sides;
+        const builtin = generateBuiltinMesh(sides, !!item.draw_textures_inside);
+        meshCache.set(cacheKey, { ...builtin, normalIndices: builtin.indices.slice() });
+        invokeCallback('primitiveRenderCallback');
+        invokeCallback('primitiveStatusCallback', item);
+      } else {
+        meshCache.set(cacheKey, { error: true });
+      }
       return;
     }
 

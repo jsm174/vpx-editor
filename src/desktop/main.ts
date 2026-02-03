@@ -2039,6 +2039,70 @@ async function addMaterialToTable(extractedDir: string, material: { name: string
   }
 }
 
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const clean = hex.replace('#', '');
+  return {
+    r: parseInt(clean.substring(0, 2), 16) / 255,
+    g: parseInt(clean.substring(2, 4), 16) / 255,
+    b: parseInt(clean.substring(4, 6), 16) / 255,
+  };
+}
+
+function generateMtlContent(
+  materialName: string,
+  material: {
+    base_color?: string;
+    glossy_color?: string;
+    roughness?: number;
+    opacity?: number;
+    opacity_active?: boolean;
+  }
+): string {
+  const lines: string[] = [];
+  lines.push(`newmtl ${materialName}`);
+
+  const kd = hexToRgb(material.base_color || '#808080');
+  lines.push(`Kd ${kd.r.toFixed(6)} ${kd.g.toFixed(6)} ${kd.b.toFixed(6)}`);
+
+  const ks = hexToRgb(material.glossy_color || '#000000');
+  lines.push(`Ks ${ks.r.toFixed(6)} ${ks.g.toFixed(6)} ${ks.b.toFixed(6)}`);
+
+  const roughness = material.roughness ?? 0.5;
+  const ns = (roughness - 0.5) * 2000.0;
+  lines.push(`Ns ${Math.max(0, ns).toFixed(4)}`);
+
+  if (material.opacity_active && material.opacity !== undefined && material.opacity < 1.0) {
+    lines.push(`d ${material.opacity.toFixed(6)}`);
+  }
+
+  lines.push('illum 2');
+  return lines.join('\n') + '\n';
+}
+
+async function findPrimitiveMaterial(
+  extractedDir: string,
+  primitiveFileName: string
+): Promise<{ materialName: string; material: Record<string, unknown> } | null> {
+  try {
+    const jsonPath = path.join(extractedDir, primitiveFileName);
+    const jsonContent = await fs.promises.readFile(jsonPath, 'utf-8');
+    const itemData = JSON.parse(jsonContent);
+    const prim = itemData.Primitive;
+    const matName = prim?.material;
+    if (!matName) return null;
+
+    const materialsPath = path.join(extractedDir, 'materials.json');
+    const materialsContent = await fs.promises.readFile(materialsPath, 'utf-8');
+    const materials = JSON.parse(materialsContent) as { name: string }[];
+    const found = materials.find(m => m.name === matName);
+    if (!found) return null;
+
+    return { materialName: matName, material: found as Record<string, unknown> };
+  } catch {
+    return null;
+  }
+}
+
 ipcMain.handle('export-mesh', async (event, primitiveFileName: string, suggestedName?: string) => {
   const ctx = windowRegistry.getContextFromEvent(event);
   if (!ctx?.extractedDir) return { success: false, error: 'No table open' };
@@ -2046,10 +2110,31 @@ ipcMain.handle('export-mesh', async (event, primitiveFileName: string, suggested
   const srcFileName = primitiveFileName.replace('.json', '.obj');
   const srcPath = path.join(ctx.extractedDir, srcFileName);
 
+  let hasObjFile = false;
   try {
     await fs.promises.access(srcPath);
+    hasObjFile = true;
   } catch {
-    return { success: false, error: 'No mesh file found for this primitive' };
+    // no obj file
+  }
+
+  let generatedOBJ: string | null = null;
+  if (!hasObjFile) {
+    try {
+      const jsonPath = path.join(ctx.extractedDir, primitiveFileName);
+      const jsonContent = await fs.promises.readFile(jsonPath, 'utf-8');
+      const itemData = JSON.parse(jsonContent);
+      const prim = itemData.Primitive;
+      if (prim && !prim.use_3d_mesh) {
+        const { builtinMeshToOBJ } = await import('../shared/builtin-primitive-mesh.js');
+        generatedOBJ = builtinMeshToOBJ(prim.name || 'primitive', prim.sides ?? 4, !!prim.draw_textures_inside);
+      }
+    } catch {
+      // fall through
+    }
+    if (!generatedOBJ) {
+      return { success: false, error: 'No mesh file found for this primitive' };
+    }
   }
 
   const defaultPath = path.join(getLastFolder('Obj'), suggestedName || srcFileName);
@@ -2066,8 +2151,35 @@ ipcMain.handle('export-mesh', async (event, primitiveFileName: string, suggested
 
   setLastFolder('Obj', path.dirname(result.filePath));
   try {
-    await fs.promises.copyFile(srcPath, result.filePath);
-    return { success: true, path: result.filePath };
+    const objFilePath = result.filePath;
+    const mtlFileName = path.basename(objFilePath, '.obj') + '.mtl';
+    const mtlFilePath = path.join(path.dirname(objFilePath), mtlFileName);
+
+    const matInfo = await findPrimitiveMaterial(ctx.extractedDir, primitiveFileName);
+
+    if (generatedOBJ) {
+      const mtlRef = matInfo ? `mtllib ${mtlFileName}\nusemtl ${matInfo.materialName}\n` : '';
+      const firstNewline = generatedOBJ.indexOf('\n');
+      const objWithMtl = generatedOBJ.slice(0, firstNewline + 1) + mtlRef + generatedOBJ.slice(firstNewline + 1);
+      await fs.promises.writeFile(objFilePath, objWithMtl, 'utf-8');
+    } else {
+      let objContent = await fs.promises.readFile(srcPath, 'utf-8');
+      if (matInfo) {
+        const mtlRef = `mtllib ${mtlFileName}\nusemtl ${matInfo.materialName}\n`;
+        const firstNewline = objContent.indexOf('\n');
+        if (firstNewline >= 0) {
+          objContent = objContent.slice(0, firstNewline + 1) + mtlRef + objContent.slice(firstNewline + 1);
+        }
+      }
+      await fs.promises.writeFile(objFilePath, objContent, 'utf-8');
+    }
+
+    if (matInfo) {
+      const mtlContent = generateMtlContent(matInfo.materialName, matInfo.material);
+      await fs.promises.writeFile(mtlFilePath, mtlContent, 'utf-8');
+    }
+
+    return { success: true, path: objFilePath };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message };
   }
