@@ -8,6 +8,7 @@ import {
   IMAGE_PROPERTIES,
   TABLE_IMAGE_PROPERTIES,
 } from './core';
+import { addLongPressContextMenu } from '../../../shared/long-press';
 
 export interface ImageManagerCallbacks {
   readFile: (path: string) => Promise<string>;
@@ -317,6 +318,7 @@ export function initImageManagerComponent(
       tr.append(thumbTd, nameTd, sizeTd, formatTd, usedTd);
       tr.addEventListener('click', () => selectImage(img.name, tr));
       if (contextMenu) {
+        addLongPressContextMenu(tr);
         tr.addEventListener('contextmenu', e => {
           selectImage(img.name, tr);
           showContextMenu(e);

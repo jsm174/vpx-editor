@@ -1,3 +1,5 @@
+import { addLongPressContextMenu } from '../../shared/long-press.js';
+
 type CheckState = 'checked' | 'mixed' | 'unchecked' | undefined;
 
 export interface TreeNode {
@@ -162,6 +164,7 @@ export class TreeControl {
       }
     });
 
+    addLongPressContextMenu(row);
     row.addEventListener('contextmenu', (e: MouseEvent) => {
       e.preventDefault();
       this.setSelected(node.id);

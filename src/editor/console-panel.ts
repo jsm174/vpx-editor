@@ -1,6 +1,7 @@
 import { showConsoleContextMenu } from './context-menu.js';
 import { resizeCanvas } from './view-manager.js';
 import { escapeHtml } from '../shared/window-utils.js';
+import { addLongPressContextMenu } from '../shared/long-press.js';
 import type { ConsoleSettings, ConsoleOutputData } from '../types/ipc.js';
 
 type ConsoleLineType = 'stdout' | 'stderr' | 'info' | 'command' | 'success' | 'error' | 'warn';
@@ -84,6 +85,7 @@ document.getElementById('console-close')?.addEventListener('click', () => {
   hideConsole();
 });
 
+if (consoleOutput) addLongPressContextMenu(consoleOutput);
 consoleOutput?.addEventListener('contextmenu', (e: MouseEvent) => {
   e.preventDefault();
   showConsoleContextMenu(e.clientX, e.clientY, {

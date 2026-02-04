@@ -1,6 +1,7 @@
 import type { Material } from '../../../types/data';
 import { colorToHexString } from '../../../shared/color-utils';
 import { escapeHtml } from '../../../shared/window-utils';
+import { addLongPressContextMenu } from '../../../shared/long-press';
 
 export interface MaterialManagerCallbacks {
   readFile: (path: string) => Promise<string>;
@@ -231,6 +232,7 @@ export function initMaterialManagerComponent(
 
       tr.append(colorTd, nameTd, usedTd);
       tr.addEventListener('click', () => selectMaterial(mat.name));
+      addLongPressContextMenu(tr);
       tr.addEventListener('contextmenu', e => {
         selectMaterial(mat.name);
         showContextMenu(e);

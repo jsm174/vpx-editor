@@ -50,6 +50,7 @@ import {
   deleteCollectionWithConfirm,
 } from './collections.js';
 import { setCallback, invokeCallback } from '../shared/callbacks.js';
+import { addLongPressContextMenu } from '../shared/long-press.js';
 import { setCanvasCursor } from './cursor-utils.js';
 import { loadTable, saveItemToFile } from './table-loader.js';
 import { toggleNodeSmooth, deleteNode, toggleNodeSlingshot, addPointToObject, addNode } from './node-operations.js';
@@ -364,37 +365,9 @@ function zoomAtPoint(offsetX: number, offsetY: number, zoomFactor: number): void
   render();
 }
 
-let longPressTimer: ReturnType<typeof setTimeout> | null = null;
-let longPressStartPos: { x: number; y: number } | null = null;
-const LONG_PRESS_DURATION = 500;
-const LONG_PRESS_MOVE_THRESHOLD = 10;
-
-function cancelLongPress(): void {
-  if (longPressTimer) {
-    clearTimeout(longPressTimer);
-    longPressTimer = null;
-  }
-  longPressStartPos = null;
-}
+addLongPressContextMenu(elements.canvas!);
 
 elements.canvas!.addEventListener('pointerdown', e => {
-  cancelLongPress();
-  if (e.button === 0 && e.pointerType === 'touch') {
-    longPressStartPos = { x: e.clientX, y: e.clientY };
-    longPressTimer = setTimeout(() => {
-      longPressTimer = null;
-      const contextEvent = new MouseEvent('contextmenu', {
-        bubbles: true,
-        cancelable: true,
-        clientX: e.clientX,
-        clientY: e.clientY,
-      });
-      Object.defineProperty(contextEvent, 'offsetX', { value: e.offsetX });
-      Object.defineProperty(contextEvent, 'offsetY', { value: e.offsetY });
-      elements.canvas!.dispatchEvent(contextEvent);
-    }, LONG_PRESS_DURATION);
-  }
-
   if (state.tool === 'magnify') {
     if (e.button === 0) {
       zoomAtPoint(e.offsetX, e.offsetY, 1.5);
@@ -528,15 +501,6 @@ elements.canvas!.addEventListener('pointerdown', e => {
 });
 
 elements.canvas!.addEventListener('pointermove', e => {
-  if (longPressStartPos) {
-    const dx = e.clientX - longPressStartPos.x;
-    const dy = e.clientY - longPressStartPos.y;
-    if (Math.abs(dx) > LONG_PRESS_MOVE_THRESHOLD || Math.abs(dy) > LONG_PRESS_MOVE_THRESHOLD) {
-      cancelLongPress();
-      hideContextMenu();
-    }
-  }
-
   const world = toWorld(e.offsetX, e.offsetY);
   state.lastMousePosition = { x: world.x, y: world.y };
 
@@ -633,7 +597,6 @@ function getItemsInRect(rect: DragRect): string[] {
 }
 
 function handleCanvasPointerEnd(e: PointerEvent): void {
-  cancelLongPress();
   elements.canvas!.releasePointerCapture(e.pointerId);
   if (dragRect.active) {
     const itemsInBox = getItemsInRect(dragRect);

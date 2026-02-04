@@ -8,6 +8,7 @@ import {
   getWavInfo,
   type SoundData,
 } from './core';
+import { addLongPressContextMenu } from '../../../shared/long-press';
 
 export interface SoundManagerCallbacks {
   readFile: (path: string) => Promise<string>;
@@ -246,6 +247,7 @@ export function initSoundManagerComponent(
       tr.addEventListener('click', () => selectSound(sound, tr));
       tr.addEventListener('dblclick', () => playSound(sound.name));
       if (contextMenu) {
+        addLongPressContextMenu(tr);
         tr.addEventListener('contextmenu', e => {
           selectSound(sound, tr);
           showContextMenu(e);

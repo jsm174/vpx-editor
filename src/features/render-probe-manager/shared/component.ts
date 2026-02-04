@@ -7,6 +7,8 @@ export interface RenderProbe {
   disable_light_reflection?: boolean;
 }
 
+import { addLongPressContextMenu } from '../../../shared/long-press';
+
 export interface RenderProbeManagerCallbacks {
   writeFile: (path: string, content: string) => Promise<void>;
   onRenderProbesChanged?: () => void;
@@ -101,6 +103,7 @@ export function initRenderProbeManagerComponent(
       item.textContent = name;
       item.dataset.name = name;
       item.addEventListener('click', () => selectProbe(name));
+      addLongPressContextMenu(item);
       item.addEventListener('contextmenu', e => {
         e.preventDefault();
         selectProbe(name);
