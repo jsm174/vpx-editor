@@ -3,6 +3,7 @@ import {
   IMAGE_MIME_TYPES,
   findImageUsage,
   sortImages,
+  detectImageOpaque,
   type ImageData,
   type GameItem,
   IMAGE_PROPERTIES,
@@ -399,9 +400,11 @@ export function initImageManagerComponent(
         const imagePath = `${extractedDir}/images/${name}${ext}`;
         await callbacks.writeBinaryFile(imagePath, data);
 
+        const isOpaque = await detectImageOpaque(data);
         images[name] = {
           name,
           path: file.name,
+          is_opaque: isOpaque,
         };
         lastName = name;
         imported++;
@@ -439,10 +442,22 @@ export function initImageManagerComponent(
     callbacks.undoMarkImages?.();
     callbacks.undoMarkImageCreate?.(result.name);
 
+    let isOpaque = true;
+    try {
+      const info = await getImageInfo(result.name);
+      if (info?.path) {
+        const data = await callbacks.readBinaryFile(info.path);
+        isOpaque = await detectImageOpaque(data);
+      }
+    } catch {
+      /* ignore - default to opaque */
+    }
+
     images[result.name] = {
       name: result.name,
       path: result.originalPath || '',
       alpha_test_value: 128.0,
+      is_opaque: isOpaque,
     };
     await saveImages();
     Object.keys(imageInfoCache).forEach(key => delete imageInfoCache[key]);

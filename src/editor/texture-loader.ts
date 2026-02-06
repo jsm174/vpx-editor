@@ -235,6 +235,14 @@ export function createMaterialFromVPX(
     matOptions.metalness = 0.0;
   }
 
+  if (imageName) {
+    const imageInfo = state.images[imageName] as { is_opaque?: boolean } | undefined;
+    if (imageInfo?.is_opaque === false) {
+      matOptions.transparent = true;
+      matOptions.depthWrite = false;
+    }
+  }
+
   const material = new THREE.MeshStandardMaterial(matOptions);
 
   if (imageName && state.showMaterials) {

@@ -129,6 +129,7 @@ export interface ImageInfo {
   width?: number;
   height?: number;
   alpha_test_value?: number;
+  is_opaque?: boolean;
 }
 
 export interface Sound {

@@ -2,6 +2,7 @@ export interface ImageData {
   name: string;
   path?: string;
   alpha_test_value?: number;
+  is_opaque?: boolean;
 }
 
 export interface ImageInfo {
@@ -80,6 +81,43 @@ export function findImageUsage(
   }
 
   return usedBy;
+}
+
+export function detectImageOpaque(data: Uint8Array): Promise<boolean> {
+  return new Promise(resolve => {
+    const format = getImageFormat(data);
+    if (format === 'JPG' || format === 'BMP') {
+      resolve(true);
+      return;
+    }
+
+    const blob = new Blob([data as BlobPart], {
+      type: format === 'PNG' ? 'image/png' : format === 'WEBP' ? 'image/webp' : 'application/octet-stream',
+    });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0);
+      const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      for (let i = 3; i < pixels.length; i += 4) {
+        if (pixels[i] !== 255) {
+          resolve(false);
+          return;
+        }
+      }
+      resolve(true);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(true);
+    };
+    img.src = url;
+  });
 }
 
 export function getImageFormat(data: Uint8Array): string | null {
