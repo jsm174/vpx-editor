@@ -175,7 +175,7 @@ export function initMaterialManagerComponent(
       const usage = findMaterialUsage(name);
       return {
         name,
-        type: (mat as unknown as Record<string, unknown>).type_ || 'basic',
+        type: (mat as unknown as Record<string, unknown>).type || 'basic',
         baseColor: colorToHexString(
           (mat as unknown as Record<string, unknown>).base_color as number | string | undefined
         ),
@@ -279,9 +279,9 @@ export function initMaterialManagerComponent(
         </div>
         <div class="prop-row">
           <label class="prop-label">Type</label>
-          <select class="prop-select" data-prop="type_">
-            <option value="basic" ${mat.type_ === 'basic' ? 'selected' : ''}>Basic</option>
-            <option value="metal" ${mat.type_ === 'metal' ? 'selected' : ''}>Metal</option>
+          <select class="prop-select" data-prop="type">
+            <option value="basic" ${mat.type === 'basic' ? 'selected' : ''}>Basic</option>
+            <option value="metal" ${mat.type === 'metal' ? 'selected' : ''}>Metal</option>
           </select>
         </div>
       </div>
@@ -417,7 +417,7 @@ export function initMaterialManagerComponent(
   function getDefaultMaterial(): Record<string, unknown> {
     return {
       name: 'NewMaterial',
-      type_: 'basic',
+      type: 'basic',
       wrap_lighting: 0.25,
       roughness: 0.5,
       glossy_image_lerp: 0.5,
@@ -456,8 +456,8 @@ export function initMaterialManagerComponent(
           <div class="prop-row">
             <label class="prop-label">Type</label>
             <select class="prop-select" id="edit-type">
-              <option value="basic" ${mat.type_ === 'basic' ? 'selected' : ''}>Basic</option>
-              <option value="metal" ${mat.type_ === 'metal' ? 'selected' : ''}>Metal</option>
+              <option value="basic" ${mat.type === 'basic' ? 'selected' : ''}>Basic</option>
+              <option value="metal" ${mat.type === 'metal' ? 'selected' : ''}>Metal</option>
             </select>
           </div>
         </div>
@@ -534,7 +534,7 @@ export function initMaterialManagerComponent(
         const result = {
           ...mat,
           name: (document.getElementById('edit-name') as HTMLInputElement).value.trim(),
-          type_: (document.getElementById('edit-type') as HTMLSelectElement).value,
+          type: (document.getElementById('edit-type') as HTMLSelectElement).value,
           elasticity: parseFloat((document.getElementById('edit-elasticity') as HTMLInputElement).value),
           elasticity_falloff: parseFloat(
             (document.getElementById('edit-elasticity-falloff') as HTMLInputElement).value

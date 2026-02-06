@@ -26,7 +26,7 @@ interface OldPhysics {
 
 interface NewMaterial {
   name: string;
-  type_: string;
+  type: string;
   base_color: string;
   glossy_color: string;
   clearcoat_color: string;
@@ -82,7 +82,7 @@ function convertOldToNewMaterials(oldMaterials: OldMaterial[], oldPhysics: OldPh
 
     return {
       name: oldMat.name,
-      type_: oldMat.is_metal ? 'Metal' : 'Basic',
+      type: oldMat.is_metal ? 'Metal' : 'Basic',
       base_color: oldMat.base_color,
       glossy_color: oldMat.glossy_color,
       clearcoat_color: oldMat.clearcoat_color,
@@ -380,12 +380,67 @@ export async function cleanupCollectionItems(
   return modified;
 }
 
+export async function upgradeTypeFieldRename(
+  fs: FileSystemAdapter,
+  dir: string,
+  sendConsoleOutput?: ConsoleOutputCallback
+): Promise<boolean> {
+  let upgraded = false;
+
+  const materialsPath = joinPath(dir, 'materials.json');
+  if (await fs.exists(materialsPath)) {
+    try {
+      const materials = JSON.parse(await fs.readFile(materialsPath)) as Record<string, unknown>[];
+      let modified = false;
+      for (const mat of materials) {
+        if ('type_' in mat && !('type' in mat)) {
+          mat.type = mat.type_;
+          delete mat.type_;
+          modified = true;
+        }
+      }
+      if (modified) {
+        await fs.writeFile(materialsPath, JSON.stringify(materials, null, 2));
+        upgraded = true;
+        sendConsoleOutput?.('info', 'Upgraded materials.json: renamed type_ to type');
+      }
+    } catch (err) {
+      sendConsoleOutput?.('error', `Failed to upgrade materials type field: ${(err as Error).message}`);
+    }
+  }
+
+  const renderprobesPath = joinPath(dir, 'renderprobes.json');
+  if (await fs.exists(renderprobesPath)) {
+    try {
+      const probes = JSON.parse(await fs.readFile(renderprobesPath)) as Record<string, unknown>[];
+      let modified = false;
+      for (const probe of probes) {
+        if ('type_' in probe && !('type' in probe)) {
+          probe.type = probe.type_;
+          delete probe.type_;
+          modified = true;
+        }
+      }
+      if (modified) {
+        await fs.writeFile(renderprobesPath, JSON.stringify(probes, null, 2));
+        upgraded = true;
+        sendConsoleOutput?.('info', 'Upgraded renderprobes.json: renamed type_ to type');
+      }
+    } catch (err) {
+      sendConsoleOutput?.('error', `Failed to upgrade renderprobes type field: ${(err as Error).message}`);
+    }
+  }
+
+  return upgraded;
+}
+
 export async function runAllUpgrades(
   fs: FileSystemAdapter,
   dir: string,
   sendConsoleOutput?: ConsoleOutputCallback
 ): Promise<void> {
   await upgradeOldMaterialsFormat(fs, dir);
+  await upgradeTypeFieldRename(fs, dir, sendConsoleOutput);
   await upgradePlayfieldMeshVisibility(fs, dir, sendConsoleOutput);
   await upgradeLayersToPartGroups(fs, dir, sendConsoleOutput);
   await upgradePartGroupIsLocked(fs, dir, sendConsoleOutput);

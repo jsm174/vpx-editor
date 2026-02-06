@@ -1,6 +1,6 @@
 export interface RenderProbe {
   name: string;
-  type_: 'plane_reflection' | 'screen_space_transparency';
+  type: 'plane_reflection' | 'screen_space_transparency';
   roughness: number;
   reflection_plane?: { x: number; y: number; z: number; w: number };
   reflection_mode?: string;
@@ -77,7 +77,7 @@ export function initRenderProbeManagerComponent(
 
   function getDefaultProbe(): RenderProbe {
     return {
-      type_: 'plane_reflection',
+      type: 'plane_reflection',
       name: 'New Render Probe',
       roughness: 0,
       reflection_plane: { x: 0, y: 0, z: 1, w: 0 },
@@ -138,7 +138,7 @@ export function initRenderProbeManagerComponent(
     elements.propertiesContainer.style.display = 'block';
 
     const isProtected = isPlayfieldProbe(probe.name);
-    const isPlaneReflection = probe.type_ === 'plane_reflection';
+    const isPlaneReflection = probe.type === 'plane_reflection';
 
     elements.typePlane.checked = isPlaneReflection;
     elements.typeScreen.checked = !isPlaneReflection;
@@ -175,12 +175,12 @@ export function initRenderProbeManagerComponent(
     const isProtected = isPlayfieldProbe(probe.name);
 
     if (!isProtected) {
-      probe.type_ = elements.typePlane.checked ? 'plane_reflection' : 'screen_space_transparency';
+      probe.type = elements.typePlane.checked ? 'plane_reflection' : 'screen_space_transparency';
     }
 
     probe.roughness = parseInt(elements.roughness.value, 10);
 
-    if (probe.type_ === 'plane_reflection' && !isProtected) {
+    if (probe.type === 'plane_reflection' && !isProtected) {
       probe.reflection_plane = {
         x: parseFloat(elements.planeX.value) || 0,
         y: parseFloat(elements.planeY.value) || 0,
@@ -189,7 +189,7 @@ export function initRenderProbeManagerComponent(
       };
     }
 
-    if (probe.type_ === 'plane_reflection') {
+    if (probe.type === 'plane_reflection') {
       probe.reflection_mode = elements.reflectionMode.value;
       probe.disable_light_reflection = elements.disableLightmaps.checked;
     }

@@ -1981,7 +1981,7 @@ function parseMtlFile(content: string) {
     if (parts[0] === 'newmtl' && parts[1]) {
       material = {
         name: parts[1],
-        type_: 'Basic',
+        type: 'Basic',
         base_color: '#808080',
         glossy_color: '#000000',
         clearcoat_color: '#000000',

@@ -22,7 +22,7 @@ window.vpxEditor.onInitMaterialEditor?.((data: MaterialEditorData) => {
   document.title = mode === 'new' ? 'New Material' : 'Clone Material';
 
   (document.getElementById('edit-name') as HTMLInputElement).value = (mat.name as string) || '';
-  (document.getElementById('edit-type') as HTMLSelectElement).value = (mat.type_ as string) || 'basic';
+  (document.getElementById('edit-type') as HTMLSelectElement).value = (mat.type as string) || 'basic';
   (document.getElementById('edit-elasticity') as HTMLInputElement).value = ((mat.elasticity as number) ?? 0).toFixed(3);
   (document.getElementById('edit-elasticity-falloff') as HTMLInputElement).value = (
     (mat.elasticity_falloff as number) ?? 0
@@ -77,7 +77,7 @@ function validateName(): boolean {
 
   const result = {
     name: (document.getElementById('edit-name') as HTMLInputElement).value.trim(),
-    type_: (document.getElementById('edit-type') as HTMLSelectElement).value,
+    type: (document.getElementById('edit-type') as HTMLSelectElement).value,
     elasticity: parseFloat((document.getElementById('edit-elasticity') as HTMLInputElement).value),
     elasticity_falloff: parseFloat((document.getElementById('edit-elasticity-falloff') as HTMLInputElement).value),
     friction: parseFloat((document.getElementById('edit-friction') as HTMLInputElement).value),

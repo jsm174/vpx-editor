@@ -17,7 +17,7 @@ interface VPXMaterial {
   opacity_active?: boolean;
   opacity_active_edge_alpha?: number;
   opacity?: number;
-  type_?: string;
+  type?: string;
   is_metal?: boolean;
 }
 
@@ -223,7 +223,7 @@ export function createMaterialFromVPX(
       matOptions.opacity = vpxMaterial.opacity;
     }
 
-    const isMetal = vpxMaterial.is_metal || vpxMaterial.type_?.toLowerCase() === 'metal';
+    const isMetal = vpxMaterial.is_metal || vpxMaterial.type?.toLowerCase() === 'metal';
     if (isMetal) {
       matOptions.metalness = 0.8;
     } else {
