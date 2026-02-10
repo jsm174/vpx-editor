@@ -275,6 +275,7 @@ window.vpxEditor.onTableClosed?.(() => {
   document.getElementById('toggle-backglass')?.classList.remove('active');
   document.getElementById('toggle-wireframe')!.style.display = 'none';
   document.getElementById('toggle-materials')!.style.display = 'none';
+  document.getElementById('play-mode-select')!.style.display = 'none';
   setUIEnabled(false);
   if (elements.itemsList) {
     elements.itemsList.innerHTML = '';
