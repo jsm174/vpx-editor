@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { state } from './state.js';
 import { VIEW_MODE_3D } from '../shared/constants.js';
+import { getMetalEnvMap } from './canvas-renderer-3d.js';
 
 interface LoadQueueItem {
   imageName: string;
@@ -226,6 +227,8 @@ export function createMaterialFromVPX(
     const isMetal = vpxMaterial.is_metal || vpxMaterial.type?.toLowerCase() === 'metal';
     if (isMetal) {
       matOptions.metalness = 0.8;
+      matOptions.envMap = getMetalEnvMap();
+      matOptions.envMapIntensity = 0.3;
     } else {
       matOptions.metalness = 0.0;
     }

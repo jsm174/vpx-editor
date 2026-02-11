@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
@@ -65,6 +66,11 @@ let savedEditorCamera: SavedCameraState | null = null;
 let cameraAnimationId: number | null = null;
 let composer: EffectComposer;
 let outlinePass: OutlinePass;
+let metalEnvMap: THREE.Texture | null = null;
+
+export function getMetalEnvMap(): THREE.Texture | null {
+  return metalEnvMap;
+}
 
 function isVisibleInPreviewMode(item: GameItem): boolean {
   if (!previewMode) return true;
@@ -198,6 +204,10 @@ export function init3D(container: HTMLElement): void {
       renderer.domElement.style.cursor = 'default';
     }
   });
+
+  const pmremGenerator = new THREE.PMREMGenerator(renderer);
+  metalEnvMap = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+  pmremGenerator.dispose();
 
   ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
   scene.add(ambientLight);
