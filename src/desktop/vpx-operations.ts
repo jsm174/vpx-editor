@@ -713,7 +713,11 @@ async function runAssembleThenPlay(ctx: WindowContext, vpxPath: string, settings
 }
 
 export function launchVPinball(ctx: WindowContext, vpxPath: string, settings: Settings): void {
-  const vpinballArgs = ['-Minimized', '-play', vpxPath];
+  const vpinballArgs: string[] = [];
+  if (process.platform === 'win32') {
+    vpinballArgs.push('-Minimized');
+  }
+  vpinballArgs.push('-play', vpxPath);
   let spawnCmd: string;
   let spawnArgs: string[];
 
