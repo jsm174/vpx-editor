@@ -96,9 +96,14 @@ async function runVpinExtract(
   sendConsoleOutput(ctx, 'info', infoMessage);
 
   const vpxData = await fs.promises.readFile(vpxPath);
-  onProgress?.('Parsing VPX file...');
 
-  const files = vpin.extract(vpxData, onProgress) as Record<string, Uint8Array>;
+  const wasmProgress = (msg: string) => {
+    sendConsoleOutput(ctx, 'info', msg);
+    onProgress?.(msg);
+  };
+
+  wasmProgress('Parsing VPX file...');
+  const files = vpin.extract(vpxData, wasmProgress) as Record<string, Uint8Array>;
   const filePaths = Object.keys(files);
   const totalFiles = filePaths.length;
 
@@ -136,19 +141,27 @@ async function runVpinAssemble(
   ctx.window.webContents.send('console-open');
   sendConsoleOutput(ctx, 'info', infoMessage);
 
-  onProgress?.('Reading files...');
   const diskFiles = await getAllFilesRecursively(workDir);
+  const totalFiles = diskFiles.length;
   const files: Record<string, Uint8Array> = {};
 
-  for (const diskFile of diskFiles) {
-    const fullPath = path.join(workDir, diskFile);
+  for (let i = 0; i < diskFiles.length; i++) {
+    const fullPath = path.join(workDir, diskFiles[i]);
     const data = await fs.promises.readFile(fullPath);
-    const vpxPath = '/vpx/' + diskFile;
+    const vpxPath = '/vpx/' + diskFiles[i];
     files[vpxPath] = data;
+    if ((i + 1) % 10 === 0 || i === totalFiles - 1) {
+      onProgress?.(`Reading files... ${i + 1}/${totalFiles}`);
+    }
   }
 
-  onProgress?.('Assembling VPX...');
-  const outputData = vpin.assemble(files, onProgress);
+  const wasmProgress = (msg: string) => {
+    sendConsoleOutput(ctx, 'info', msg);
+    onProgress?.(msg);
+  };
+
+  wasmProgress('Assembling VPX...');
+  const outputData = vpin.assemble(files, wasmProgress);
 
   await fs.promises.writeFile(outputPath, outputData);
   sendConsoleOutput(ctx, 'success', `Assembled ${diskFiles.length} files`);

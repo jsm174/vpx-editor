@@ -61,16 +61,21 @@ export async function openVpxFile(file: File): Promise<void> {
     const arrayBuffer = await file.arrayBuffer();
     const vpxData = new Uint8Array(arrayBuffer);
 
-    const progressCallback = (message: string) => {
+    const wasmProgress = (message: string) => {
       events.emit('console-output', { type: 'info', text: message });
+      events.emit('status', message);
     };
 
-    const files = await state.platform.vpxEngine.extract(vpxData, progressCallback);
+    wasmProgress('Parsing VPX file...');
+    const files = await state.platform.vpxEngine.extract(vpxData, wasmProgress);
 
     const opfs = state.platform.fileSystem as OpfsFileSystem;
     await opfs.clear();
 
-    for (const [filePath, data] of Object.entries(files)) {
+    const fileEntries = Object.entries(files);
+    const totalFiles = fileEntries.length;
+    for (let i = 0; i < fileEntries.length; i++) {
+      const [filePath, data] = fileEntries[i];
       const relativePath = filePath.replace(ROOT_DIR, EXTRACTED_DIR);
       try {
         await opfs.writeBinaryFile(relativePath, data);
@@ -78,9 +83,12 @@ export async function openVpxFile(file: File): Promise<void> {
         console.warn(`Failed to write file ${filePath}:`, e);
       }
       delete files[filePath];
+      if ((i + 1) % 10 === 0 || i === totalFiles - 1) {
+        events.emit('status', `Extracting files... ${i + 1}/${totalFiles}`);
+      }
     }
 
-    events.emit('console-output', { type: 'success', text: 'Extraction complete' });
+    events.emit('console-output', { type: 'success', text: `Extracted ${totalFiles} files` });
 
     const fsAdapter = createFsAdapter(opfs);
     await runAllUpgrades(fsAdapter, EXTRACTED_DIR, (type, text) => {
@@ -124,20 +132,32 @@ export async function saveVpxFile(onProgress?: (message: string) => void): Promi
     throw new Error('No VPX file loaded');
   }
 
+  const events = getEvents();
   const opfs = state.platform.fileSystem as OpfsFileSystem;
   const allFiles = await opfs.getAllPaths();
   const opfsFiles = allFiles.filter(f => f.startsWith(EXTRACTED_DIR));
 
-  onProgress?.('Reading files from storage...');
+  const totalFiles = opfsFiles.length;
   const files: VpxFiles = {};
-  for (const opfsPath of opfsFiles) {
+  for (let i = 0; i < opfsFiles.length; i++) {
+    const opfsPath = opfsFiles[i];
     const wasmPath = opfsPath.replace(EXTRACTED_DIR, ROOT_DIR);
     const data = await opfs.readBinaryFile(opfsPath);
     files[wasmPath] = data;
+    if ((i + 1) % 10 === 0 || i === totalFiles - 1) {
+      onProgress?.(`Reading files... ${i + 1}/${totalFiles}`);
+    }
   }
 
-  onProgress?.('Assembling VPX...');
-  return state.platform.vpxEngine.assemble(files, onProgress);
+  const wasmProgress = (msg: string) => {
+    events.emit('console-output', { type: 'info', text: msg });
+    onProgress?.(msg);
+  };
+
+  wasmProgress('Assembling VPX...');
+  const result = state.platform.vpxEngine.assemble(files, wasmProgress);
+  events.emit('console-output', { type: 'success', text: `Assembled ${totalFiles} files` });
+  return result;
 }
 
 async function saveToHandle(handle: FileSystemFileHandle, bytes: Uint8Array): Promise<void> {
@@ -197,7 +217,7 @@ export async function handleSave(): Promise<void> {
     events.emit('console-open');
 
     const progressCallback = (message: string) => {
-      events.emit('console-output', { type: 'info', text: message });
+      events.emit('status', message);
     };
 
     const bytes = await saveVpxFile(progressCallback);
@@ -214,8 +234,9 @@ export async function handleSave(): Promise<void> {
 
     markClean();
     updateWindowTitle();
-    events.emit('console-output', { type: 'success', text: 'Save complete' });
-    events.emit('status', 'Saved successfully');
+    const fileName = state.currentFileName || 'table.vpx';
+    events.emit('console-output', { type: 'success', text: `Saved to ${fileName}` });
+    events.emit('status', `Saved to ${fileName}`);
     events.emit('mark-save-point');
   } catch (error) {
     events.emit('console-output', { type: 'error', text: `Error: ${error}` });
@@ -241,7 +262,7 @@ export async function handleSaveAs(): Promise<void> {
     events.emit('console-open');
 
     const progressCallback = (message: string) => {
-      events.emit('console-output', { type: 'info', text: message });
+      events.emit('status', message);
     };
 
     const bytes = await saveVpxFile(progressCallback);
@@ -256,8 +277,9 @@ export async function handleSaveAs(): Promise<void> {
 
     markClean();
     updateWindowTitle();
-    events.emit('console-output', { type: 'success', text: 'Save complete' });
-    events.emit('status', 'Saved successfully');
+    const fileName = state.currentFileName || 'table.vpx';
+    events.emit('console-output', { type: 'success', text: `Saved to ${fileName}` });
+    events.emit('status', `Saved to ${fileName}`);
     events.emit('mark-save-point');
   } catch (error) {
     events.emit('console-output', { type: 'error', text: `Error: ${error}` });
