@@ -13,10 +13,9 @@ interface MimeTypes {
 }
 
 interface VPXMaterial {
-  base_color?: number;
+  base_color?: string;
   roughness?: number;
   opacity_active?: boolean;
-  opacity_active_edge_alpha?: number;
   opacity?: number;
   type?: string;
   is_metal?: boolean;
@@ -194,6 +193,16 @@ function resizeImage(img: HTMLImageElement, maxSize: number): HTMLCanvasElement 
   return canvas;
 }
 
+function findImageInfo(imageName: string): { is_opaque?: boolean } | undefined {
+  const direct = state.images[imageName];
+  if (direct) return direct as { is_opaque?: boolean };
+  const lowerName = imageName.toLowerCase();
+  for (const key of Object.keys(state.images)) {
+    if (key.toLowerCase() === lowerName) return state.images[key] as { is_opaque?: boolean };
+  }
+  return undefined;
+}
+
 export function createMaterialFromVPX(
   materialName: string,
   imageName: string | null,
@@ -214,12 +223,7 @@ export function createMaterialFromVPX(
       matOptions.roughness = vpxMaterial.roughness;
     }
 
-    let opacityActive = vpxMaterial.opacity_active;
-    if (opacityActive === undefined && vpxMaterial.opacity_active_edge_alpha !== undefined) {
-      opacityActive = (vpxMaterial.opacity_active_edge_alpha & 1) === 1;
-    }
-
-    if (opacityActive && vpxMaterial.opacity !== undefined && vpxMaterial.opacity < 1.0) {
+    if (vpxMaterial.opacity_active && vpxMaterial.opacity !== undefined && vpxMaterial.opacity < 1.0) {
       matOptions.transparent = true;
       matOptions.opacity = vpxMaterial.opacity;
     }
@@ -239,10 +243,9 @@ export function createMaterialFromVPX(
   }
 
   if (imageName) {
-    const imageInfo = state.images[imageName] as { is_opaque?: boolean } | undefined;
+    const imageInfo = findImageInfo(imageName);
     if (imageInfo?.is_opaque === false) {
       matOptions.transparent = true;
-      matOptions.depthWrite = false;
     }
   }
 

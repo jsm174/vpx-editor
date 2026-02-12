@@ -65,6 +65,18 @@ function createWallSidesGeometry(shape: THREE.Shape, height: number): THREE.Buff
   return geometry;
 }
 
+function applyPlayfieldUVs(geometry: THREE.BufferGeometry): void {
+  const pos = geometry.getAttribute('position');
+  const uv = geometry.getAttribute('uv');
+  if (!pos || !uv) return;
+  const tableWidth = ((state.gamedata?.right as number) || 952) - ((state.gamedata?.left as number) || 0);
+  const tableHeight = ((state.gamedata?.bottom as number) || 2162) - ((state.gamedata?.top as number) || 0);
+  for (let i = 0; i < uv.count; i++) {
+    uv.setXY(i, pos.getX(i) / tableWidth, pos.getY(i) / tableHeight);
+  }
+  uv.needsUpdate = true;
+}
+
 export function createWall3DMesh(item: WallItem): THREE.Mesh | null {
   const points = item.drag_points;
   if (!points || points.length < 3) return null;
@@ -95,6 +107,7 @@ export function createWall3DMesh(item: WallItem): THREE.Mesh | null {
 
   if (!sideVisible && topVisible) {
     const geometry = new THREE.ShapeGeometry(shape);
+    applyPlayfieldUVs(geometry);
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.z = heightTop;
     return mesh;
@@ -109,6 +122,7 @@ export function createWall3DMesh(item: WallItem): THREE.Mesh | null {
   }
 
   const geometry = new THREE.ExtrudeGeometry(shape, { depth: Math.abs(height), bevelEnabled: false });
+  applyPlayfieldUVs(geometry);
   const mesh = new THREE.Mesh(geometry, material);
   const baseZ = Math.min(heightBottom, heightTop);
   mesh.position.z = baseZ >= 0 && baseZ < 1 ? 0.5 : baseZ;
