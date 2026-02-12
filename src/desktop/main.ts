@@ -1261,7 +1261,7 @@ ipcMain.handle('save-collections', async (event, collections: unknown[]) => {
   if (!ctx?.extractedDir) return;
 
   await fs.promises.writeFile(`${ctx.extractedDir}/collections.json`, JSON.stringify(collections, null, 2));
-  ctx.window.webContents.send('collections-updated', collections);
+  ctx.window.webContents.send('collections-changed', { collections });
 });
 
 ipcMain.on(
@@ -1369,8 +1369,8 @@ ipcMain.on(
       ctx.markDirty();
     }
 
+    ctx.window.webContents.send('collections-changed', { collections });
     ctx.window.webContents.send('undo-end');
-    ctx.window.webContents.send('collections-updated', collections);
 
     if (ctx.collectionManagerWindow) {
       ctx.collectionManagerWindow.webContents.send('collections-changed', { collections });
@@ -1451,8 +1451,8 @@ ipcMain.on('collection-prompt-submit', async (_event, name: string) => {
     ctx.hasExternalChanges = true;
     ctx.markDirty();
 
+    ctx.window.webContents.send('collections-changed', { collections });
     ctx.window.webContents.send('undo-end');
-    ctx.window.webContents.send('collections-updated', collections);
 
     if (ctx.collectionManagerWindow) {
       ctx.collectionManagerWindow.webContents.send('collections-changed', { collections });
@@ -1476,8 +1476,8 @@ ipcMain.on('collection-prompt-submit', async (_event, name: string) => {
       ctx.markDirty();
     }
 
+    ctx.window.webContents.send('collections-changed', { collections });
     ctx.window.webContents.send('undo-end');
-    ctx.window.webContents.send('collections-updated', collections);
 
     if (ctx.collectionManagerWindow) {
       ctx.collectionManagerWindow.webContents.send('collections-changed', { collections });
@@ -1568,8 +1568,8 @@ ipcMain.on('prompt-submit', async (_event, name: string) => {
       ctx.hasExternalChanges = true;
       ctx.markDirty();
 
+      ctx.window.webContents.send('collections-changed', { collections });
       ctx.window.webContents.send('undo-end');
-      ctx.window.webContents.send('collections-updated', collections);
 
       if (ctx.collectionManagerWindow) {
         ctx.collectionManagerWindow.webContents.send('collections-changed', { collections });
@@ -1593,8 +1593,8 @@ ipcMain.on('prompt-submit', async (_event, name: string) => {
         ctx.markDirty();
       }
 
+      ctx.window.webContents.send('collections-changed', { collections });
       ctx.window.webContents.send('undo-end');
-      ctx.window.webContents.send('collections-updated', collections);
 
       if (ctx.collectionManagerWindow) {
         ctx.collectionManagerWindow.webContents.send('collections-changed', { collections });

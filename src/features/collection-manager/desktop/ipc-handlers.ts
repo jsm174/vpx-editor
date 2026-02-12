@@ -39,6 +39,7 @@ export function setupCollectionHandlers(deps: CollectionHandlerDeps): void {
   const { getContextForManagerEvent } = deps;
 
   function notifyCollectionsChanged(ctx: WindowContext, collections: Collection[]) {
+    ctx.window.webContents.send('collections-changed', { collections });
     if (ctx.collectionManagerWindow) {
       ctx.collectionManagerWindow.webContents.send('collections-changed', { collections });
     }

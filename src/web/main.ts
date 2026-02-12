@@ -1001,7 +1001,12 @@ function setupCollectionManagerModal(): void {
     writeFile: (path, content) => state.platform!.fileSystem.writeFile(path, content),
     readFile: path => state.platform!.fileSystem.readFile(path),
     getSelectedItems: () => selectedItems,
-    onCollectionsChanged: () => events.emit('collections-changed'),
+    onCollectionsChanged: async () => {
+      try {
+        const json = await state.platform!.fileSystem.readFile(`${EXTRACTED_DIR}/collections.json`);
+        events.emit('collections-changed', JSON.parse(json));
+      } catch {}
+    },
     onClose: closeCollectionManager,
   });
 

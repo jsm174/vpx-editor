@@ -169,11 +169,6 @@ const vpxEditorAPI: VpxEditorAPI = {
   onUndoEnd: (callback: () => void): void => {
     ipcRenderer.on('undo-end', () => callback());
   },
-  onCollectionsUpdated: (callback: (collections: Collection[]) => void): void => {
-    ipcRenderer.on('collections-updated', (_event: IpcRendererEvent, collections: Collection[]) =>
-      callback(collections)
-    );
-  },
   onUndoCancel: (callback: () => void): void => {
     ipcRenderer.on('undo-cancel', () => callback());
   },
@@ -244,6 +239,9 @@ const vpxEditorAPI: VpxEditorAPI = {
   },
   onUndoMarkGameitemsList: (callback: () => void): void => {
     ipcRenderer.on('undo-mark-gameitems-list', () => callback());
+  },
+  onUndoMarkCollections: (callback: () => void): void => {
+    ipcRenderer.on('undo-mark-collections', () => callback());
   },
   getTheme: (): Promise<string> => ipcRenderer.invoke('get-theme'),
   getViewSettings: (): Promise<ViewSettings> => ipcRenderer.invoke('get-view-settings'),

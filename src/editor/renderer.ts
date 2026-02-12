@@ -1539,9 +1539,17 @@ window.vpxEditor.onUndoEnd?.(async () => {
   await undoManager.endUndo();
 });
 
-window.vpxEditor.onCollectionsUpdated?.(collections => {
+window.vpxEditor.onCollectionsChanged?.(async collections => {
+  const needsUndo = !undoManager.currentRecord;
+  if (needsUndo) {
+    undoManager.beginUndo('Edit collection');
+    undoManager.markCollectionsForUndo();
+  }
   state.collections = collections as typeof state.collections;
   updateCollectionsList();
+  if (needsUndo) {
+    await undoManager.endUndo();
+  }
 });
 
 window.vpxEditor.onUndoCancel?.(() => {
@@ -1602,6 +1610,10 @@ window.vpxEditor.onUndoMarkRenderProbeCreate?.(probeName => {
 
 window.vpxEditor.onUndoMarkRenderProbeDelete?.((probeName, probeData) => {
   undoManager.markRenderProbeForDelete(probeName, probeData);
+});
+
+window.vpxEditor.onUndoMarkCollections?.(() => {
+  undoManager.markCollectionsForUndo();
 });
 
 window.vpxEditor.onRenderProbesChanged?.(async () => {

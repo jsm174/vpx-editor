@@ -181,7 +181,6 @@ export interface VpxEditorAPI {
   onSelectAll: (callback: IpcCallback) => void;
   onUndoBegin: (callback: IpcCallback<string>) => void;
   onUndoEnd: (callback: IpcCallback) => void;
-  onCollectionsUpdated: (callback: IpcCallback<Collection[]>) => void;
   onUndoCancel: (callback: IpcCallback) => void;
   onUndoMarkImages: (callback: IpcCallback) => void;
   onUndoMarkImageCreate: (callback: IpcCallback<string>) => void;
@@ -200,6 +199,7 @@ export interface VpxEditorAPI {
   onUndoMarkGamedata: (callback: IpcCallback) => void;
   onUndoMarkInfo: (callback: IpcCallback) => void;
   onUndoMarkGameitemsList: (callback: IpcCallback) => void;
+  onUndoMarkCollections: (callback: IpcCallback) => void;
 
   getTheme: () => Promise<string>;
   getViewSettings: () => Promise<ViewSettings>;
