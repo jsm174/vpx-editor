@@ -224,6 +224,10 @@ export function createRamp3DMesh(item: RampItem): THREE.Group | null {
 
   const leftWallHeight = item.left_wall_height_visible ?? 0;
   const rightWallHeight = item.right_wall_height_visible ?? 0;
+  const isWorldAlignment = item.image_alignment === 'world';
+  const tableWidth = ((state.gamedata?.right as number) || 952) - ((state.gamedata?.left as number) || 0);
+  const tableHeight = ((state.gamedata?.bottom as number) || 2162) - ((state.gamedata?.top as number) || 0);
+  const imageWalls = item.image_walls !== false;
 
   const group = new THREE.Group();
 
@@ -236,8 +240,13 @@ export function createRamp3DMesh(item: RampItem): THREE.Group | null {
     const t = vertices.length > 1 ? i / (vertices.length - 1) : 0;
     floorPos.push(vertices[i].left.x, vertices[i].left.y, vertices[i].left.z);
     floorPos.push(vertices[i].right.x, vertices[i].right.y, vertices[i].right.z);
-    floorUvs.push(0, 1 - t);
-    floorUvs.push(1, 1 - t);
+    if (isWorldAlignment) {
+      floorUvs.push(vertices[i].left.x / tableWidth, vertices[i].left.y / tableHeight);
+      floorUvs.push(vertices[i].right.x / tableWidth, vertices[i].right.y / tableHeight);
+    } else {
+      floorUvs.push(0, 1 - t);
+      floorUvs.push(1, 1 - t);
+    }
   }
 
   for (let i = 0; i < vertices.length - 1; i++) {
@@ -260,12 +269,28 @@ export function createRamp3DMesh(item: RampItem): THREE.Group | null {
   if (leftWallHeight > 0) {
     const wallGeom = new THREE.BufferGeometry();
     const wallPos = [];
+    const wallUvs = [];
     const wallIdx = [];
 
     for (let i = 0; i < vertices.length; i++) {
       const v = vertices[i].left;
+      const t = vertices.length > 1 ? i / (vertices.length - 1) : 0;
       wallPos.push(v.x, v.y, v.z);
       wallPos.push(v.x, v.y, v.z + leftWallHeight);
+      if (imageWalls) {
+        if (isWorldAlignment) {
+          const u = v.x / tableWidth;
+          const uv = v.y / tableHeight;
+          wallUvs.push(u, uv);
+          wallUvs.push(u, uv);
+        } else {
+          wallUvs.push(0, 1 - t);
+          wallUvs.push(0, 1 - t);
+        }
+      } else {
+        wallUvs.push(0, 0);
+        wallUvs.push(0, 0);
+      }
     }
 
     for (let i = 0; i < vertices.length - 1; i++) {
@@ -278,6 +303,7 @@ export function createRamp3DMesh(item: RampItem): THREE.Group | null {
     }
 
     wallGeom.setAttribute('position', new THREE.Float32BufferAttribute(wallPos, 3));
+    wallGeom.setAttribute('uv', new THREE.Float32BufferAttribute(wallUvs, 2));
     wallGeom.setIndex(wallIdx);
     wallGeom.computeVertexNormals();
     group.add(new THREE.Mesh(wallGeom, material));
@@ -286,12 +312,28 @@ export function createRamp3DMesh(item: RampItem): THREE.Group | null {
   if (rightWallHeight > 0) {
     const wallGeom = new THREE.BufferGeometry();
     const wallPos = [];
+    const wallUvs = [];
     const wallIdx = [];
 
     for (let i = 0; i < vertices.length; i++) {
       const v = vertices[i].right;
+      const t = vertices.length > 1 ? i / (vertices.length - 1) : 0;
       wallPos.push(v.x, v.y, v.z);
       wallPos.push(v.x, v.y, v.z + rightWallHeight);
+      if (imageWalls) {
+        if (isWorldAlignment) {
+          const u = v.x / tableWidth;
+          const uv = v.y / tableHeight;
+          wallUvs.push(u, uv);
+          wallUvs.push(u, uv);
+        } else {
+          wallUvs.push(0, 1 - t);
+          wallUvs.push(0, 1 - t);
+        }
+      } else {
+        wallUvs.push(0, 0);
+        wallUvs.push(0, 0);
+      }
     }
 
     for (let i = 0; i < vertices.length - 1; i++) {
@@ -304,6 +346,7 @@ export function createRamp3DMesh(item: RampItem): THREE.Group | null {
     }
 
     wallGeom.setAttribute('position', new THREE.Float32BufferAttribute(wallPos, 3));
+    wallGeom.setAttribute('uv', new THREE.Float32BufferAttribute(wallUvs, 2));
     wallGeom.setIndex(wallIdx);
     wallGeom.computeVertexNormals();
     group.add(new THREE.Mesh(wallGeom, material));

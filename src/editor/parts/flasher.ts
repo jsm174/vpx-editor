@@ -44,26 +44,36 @@ export function createFlasher3DMesh(item: Flasher): THREE.Mesh | null {
 
   const geometry = new THREE.ShapeGeometry(shape);
 
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
-  for (const v of vertices) {
-    minX = Math.min(minX, v.x);
-    minY = Math.min(minY, v.y);
-    maxX = Math.max(maxX, v.x);
-    maxY = Math.max(maxY, v.y);
-  }
-  const width = maxX - minX;
-  const height = maxY - minY;
+  const isWorldAlignment = item.image_alignment === 'world';
+  const posAttr = geometry.getAttribute('position');
+  const uvs = new Float32Array(posAttr.count * 2);
 
-  const uvAttr = geometry.getAttribute('position');
-  const uvs = new Float32Array(uvAttr.count * 2);
-  for (let i = 0; i < uvAttr.count; i++) {
-    const x = uvAttr.getX(i);
-    const y = uvAttr.getY(i);
-    uvs[i * 2] = width > 0 ? (x - minX) / width : 0;
-    uvs[i * 2 + 1] = height > 0 ? (y - minY) / height : 0;
+  if (isWorldAlignment) {
+    const tableWidth = ((state.gamedata?.right as number) || 952) - ((state.gamedata?.left as number) || 0);
+    const tableHeight = ((state.gamedata?.bottom as number) || 2162) - ((state.gamedata?.top as number) || 0);
+    for (let i = 0; i < posAttr.count; i++) {
+      uvs[i * 2] = posAttr.getX(i) / tableWidth;
+      uvs[i * 2 + 1] = posAttr.getY(i) / tableHeight;
+    }
+  } else {
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+    for (const v of vertices) {
+      minX = Math.min(minX, v.x);
+      minY = Math.min(minY, v.y);
+      maxX = Math.max(maxX, v.x);
+      maxY = Math.max(maxY, v.y);
+    }
+    const width = maxX - minX;
+    const height = maxY - minY;
+    for (let i = 0; i < posAttr.count; i++) {
+      const x = posAttr.getX(i);
+      const y = posAttr.getY(i);
+      uvs[i * 2] = width > 0 ? (x - minX) / width : 0;
+      uvs[i * 2 + 1] = height > 0 ? (y - minY) / height : 0;
+    }
   }
   geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
 
