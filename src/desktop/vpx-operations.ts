@@ -37,6 +37,7 @@ interface ExtractDeps extends RecentFilesDeps {
   upgradePlayfieldMeshVisibility: (dir: string, callback?: (type: string, text: string) => void) => Promise<void>;
   upgradeLayersToPartGroups: (dir: string, callback?: (type: string, text: string) => void) => Promise<boolean>;
   upgradePartGroupIsLocked: (dir: string, callback?: (type: string, text: string) => void) => Promise<boolean>;
+  upgradePartGroupOrdering: (dir: string, callback?: (type: string, text: string) => void) => Promise<boolean>;
   cleanupCollectionItems: (dir: string, callback?: (type: string, text: string) => void) => Promise<boolean>;
 }
 
@@ -235,6 +236,7 @@ export async function extractVPX(vpxPath: string, options: ExtractOptions = {}, 
     upgradePlayfieldMeshVisibility,
     upgradeLayersToPartGroups,
     upgradePartGroupIsLocked,
+    upgradePartGroupOrdering,
     cleanupCollectionItems,
     settings,
     saveSettings,
@@ -300,6 +302,7 @@ export async function extractVPX(vpxPath: string, options: ExtractOptions = {}, 
         ctx!.extractedDir = workDir;
         ctx!.backglassViewEnabled = false;
         ctx!.is3DMode = false;
+        await upgradePartGroupOrdering(workDir);
         await readTableLockState(ctx!);
         addToRecentFiles(vpxPath, { settings, saveSettings, createMenu });
         ctx!.updateWindowTitle();
@@ -331,6 +334,7 @@ export async function extractVPX(vpxPath: string, options: ExtractOptions = {}, 
         ctx!.extractedDir = workDir;
         ctx!.backglassViewEnabled = false;
         ctx!.is3DMode = false;
+        await upgradePartGroupOrdering(workDir);
         await readTableLockState(ctx!);
         addToRecentFiles(vpxPath, { settings, saveSettings, createMenu });
         ctx!.updateWindowTitle();
@@ -375,6 +379,7 @@ export async function extractVPX(vpxPath: string, options: ExtractOptions = {}, 
     );
     await upgradeLayersToPartGroups(localCtx.extractedDir!, (type, text) => sendConsoleOutput(localCtx, type, text));
     await upgradePartGroupIsLocked(localCtx.extractedDir!, (type, text) => sendConsoleOutput(localCtx, type, text));
+    await upgradePartGroupOrdering(localCtx.extractedDir!, (type, text) => sendConsoleOutput(localCtx, type, text));
     await cleanupCollectionItems(localCtx.extractedDir!, (type, text) => sendConsoleOutput(localCtx, type, text));
     await readTableLockState(localCtx);
     addToRecentFiles(vpxPath, { settings, saveSettings, createMenu });
@@ -448,6 +453,7 @@ export async function createNewTable(templateName: string, displayName: string, 
     upgradePlayfieldMeshVisibility,
     upgradeLayersToPartGroups,
     upgradePartGroupIsLocked,
+    upgradePartGroupOrdering,
     cleanupCollectionItems,
   } = deps;
 
@@ -491,6 +497,7 @@ export async function createNewTable(templateName: string, displayName: string, 
     await upgradePlayfieldMeshVisibility(localCtx.extractedDir!);
     await upgradeLayersToPartGroups(localCtx.extractedDir!);
     await upgradePartGroupIsLocked(localCtx.extractedDir!);
+    await upgradePartGroupOrdering(localCtx.extractedDir!);
     await cleanupCollectionItems(localCtx.extractedDir!);
     localCtx.isTableLocked = false;
     localCtx.updateWindowTitle();

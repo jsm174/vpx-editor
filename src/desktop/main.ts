@@ -8,6 +8,7 @@ import {
   upgradePlayfieldMeshVisibility,
   upgradeLayersToPartGroups,
   upgradePartGroupIsLocked,
+  upgradePartGroupOrdering,
   cleanupCollectionItems,
 } from './table-upgrades.js';
 import { WindowContext, WindowRegistry } from './window-context.js';
@@ -80,6 +81,7 @@ function getVpxOpsDeps() {
     upgradePlayfieldMeshVisibility,
     upgradeLayersToPartGroups,
     upgradePartGroupIsLocked,
+    upgradePartGroupOrdering,
     cleanupCollectionItems,
     settings,
     saveSettings,

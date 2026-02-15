@@ -15,7 +15,7 @@ import { showItemsPanelContextMenu, showPartGroupContextMenu } from './context-m
 import { updatePropertiesPanel } from './properties-panel.js';
 import { TreeControl, TreeNode as BaseTreeNode } from './components/tree-control.js';
 import { registerCallback, invokeCallback, getCallback } from '../shared/callbacks.js';
-import { generateUniqueFileName } from '../shared/gameitem-utils.js';
+import { generateUniqueFileName, getPartGroupInsertIndex } from '../shared/gameitem-utils.js';
 interface TreeNode {
   id: string;
   label: string;
@@ -514,7 +514,8 @@ async function addPartGroup(): Promise<void> {
     setPartGroup(name, partGroup);
     setItem(name, partGroup, fileName);
 
-    state.gameitems.push({
+    const insertIdx = getPartGroupInsertIndex(state.gameitems);
+    state.gameitems.splice(insertIdx, 0, {
       file_name: fileName,
       editor_layer_name: name,
     });

@@ -234,7 +234,7 @@ export async function upgradeLayersToPartGroups(
     }
   }
 
-  const newGameitems: GameItemInfo[] = [...gameitems];
+  const partGroupEntries: GameItemInfo[] = [];
   const existingFileNames = gameitems.map(gi => gi.file_name);
 
   for (const [initialGroupName, layerData] of layers) {
@@ -259,7 +259,7 @@ export async function upgradeLayersToPartGroups(
     const partGroupPath = joinPath(gameitemsDir, partGroupFileName);
     await fs.writeFile(partGroupPath, JSON.stringify(partGroup, null, 2));
 
-    newGameitems.push({
+    partGroupEntries.push({
       file_name: partGroupFileName,
       is_locked: false,
       editor_layer: 0,
@@ -280,6 +280,7 @@ export async function upgradeLayersToPartGroups(
     }
   }
 
+  const newGameitems = [...partGroupEntries, ...gameitems];
   await fs.writeFile(gameitemsPath, JSON.stringify(newGameitems, null, 2));
 
   const groupNames = [...groupNameRemap.values()].join(', ');
@@ -323,6 +324,30 @@ export async function upgradePartGroupIsLocked(
   }
 
   return upgraded > 0;
+}
+
+export async function upgradePartGroupOrdering(
+  fs: FileSystemAdapter,
+  dir: string,
+  sendConsoleOutput?: ConsoleOutputCallback
+): Promise<boolean> {
+  const gameitemsPath = joinPath(dir, 'gameitems.json');
+  if (!(await fs.exists(gameitemsPath))) return false;
+
+  const gameitems: GameItemInfo[] = JSON.parse(await fs.readFile(gameitemsPath));
+
+  const firstNonGroup = gameitems.findIndex(gi => !gi.file_name.startsWith('PartGroup.'));
+  const hasGroupAfterNonGroup = gameitems.some((gi, i) => i > firstNonGroup && gi.file_name.startsWith('PartGroup.'));
+
+  if (firstNonGroup < 0 || !hasGroupAfterNonGroup) return false;
+
+  const groups = gameitems.filter(gi => gi.file_name.startsWith('PartGroup.'));
+  const others = gameitems.filter(gi => !gi.file_name.startsWith('PartGroup.'));
+  const reordered = [...groups, ...others];
+
+  await fs.writeFile(gameitemsPath, JSON.stringify(reordered, null, 2));
+  sendConsoleOutput?.('info', `Reordered ${groups.length} PartGroup(s) to appear before other game items`);
+  return true;
 }
 
 export async function cleanupCollectionItems(
@@ -444,5 +469,6 @@ export async function runAllUpgrades(
   await upgradePlayfieldMeshVisibility(fs, dir, sendConsoleOutput);
   await upgradeLayersToPartGroups(fs, dir, sendConsoleOutput);
   await upgradePartGroupIsLocked(fs, dir, sendConsoleOutput);
+  await upgradePartGroupOrdering(fs, dir, sendConsoleOutput);
   await cleanupCollectionItems(fs, dir, sendConsoleOutput);
 }

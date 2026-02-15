@@ -5,6 +5,7 @@ import {
   upgradePlayfieldMeshVisibility as sharedUpgradePlayfieldMeshVisibility,
   upgradeLayersToPartGroups as sharedUpgradeLayersToPartGroups,
   upgradePartGroupIsLocked as sharedUpgradePartGroupIsLocked,
+  upgradePartGroupOrdering as sharedUpgradePartGroupOrdering,
   cleanupCollectionItems as sharedCleanupCollectionItems,
   type FileSystemAdapter,
   type ConsoleOutputCallback,
@@ -41,6 +42,13 @@ export async function upgradePartGroupIsLocked(
   sendConsoleOutput?: ConsoleOutputCallback
 ): Promise<boolean> {
   return sharedUpgradePartGroupIsLocked(nodeFileSystem, dir, sendConsoleOutput);
+}
+
+export async function upgradePartGroupOrdering(
+  dir: string,
+  sendConsoleOutput?: ConsoleOutputCallback
+): Promise<boolean> {
+  return sharedUpgradePartGroupOrdering(nodeFileSystem, dir, sendConsoleOutput);
 }
 
 export async function cleanupCollectionItems(dir: string, sendConsoleOutput?: ConsoleOutputCallback): Promise<boolean> {

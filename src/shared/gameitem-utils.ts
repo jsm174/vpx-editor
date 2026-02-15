@@ -46,3 +46,11 @@ export function findIndexByNameProp<T extends { name?: string }>(arr: T[], name:
   const lower = name.toLowerCase();
   return arr.findIndex(item => item.name?.toLowerCase() === lower);
 }
+
+export function getPartGroupInsertIndex(gameitems: { file_name: string }[]): number {
+  let lastGroupIdx = -1;
+  for (let i = 0; i < gameitems.length; i++) {
+    if (gameitems[i].file_name.startsWith('PartGroup.')) lastGroupIdx = i;
+  }
+  return lastGroupIdx + 1;
+}
