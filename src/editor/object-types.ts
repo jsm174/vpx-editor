@@ -555,6 +555,7 @@ type ObjectTypes = Record<string, ObjectTypeDefinition>;
 
 export const objectTypes: ObjectTypes = {
   Light: {
+    hasDragPoints: true,
     dragPointColor: '#0000c8',
     createDragPoints: (center: Point2D, defaults: ObjectDefaults): DragPoint[] => {
       const points: DragPoint[] = [];

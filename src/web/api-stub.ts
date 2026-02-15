@@ -1,9 +1,12 @@
 import type { VpxEditorAPI } from '../types/ipc.js';
+import type { ClipboardData } from '../types/data.js';
 import { markDirty, markClean } from './state.js';
 
 declare const __APP_VERSION__: string;
 
 const events = window.__vpxEvents;
+
+let clipboardStore: ClipboardData | null = null;
 
 const noop = () => {};
 
@@ -111,10 +114,14 @@ export const vpxEditorAPI = {
   isWeb: () => true,
   isElectron: () => false,
 
-  hasClipboardData: async () => false,
-  getClipboardData: async () => null,
-  setClipboardData: async () => {},
-  updateClipboardState: () => {},
+  hasClipboardData: async () => clipboardStore !== null && clipboardStore.items.length > 0,
+  getClipboardData: async () => clipboardStore,
+  setClipboardData: async (data: ClipboardData) => {
+    clipboardStore = data;
+  },
+  updateClipboardState: (state: { hasSelection: boolean; hasClipboard: boolean; isLocked: boolean }) => {
+    events.emit('clipboard-changed', state.hasClipboard);
+  },
   updateUndoState: () => {},
   notify3DModeChanged: () => {},
   notifyBackglassViewChanged: (enabled: boolean) => events.emit('backglass-view-changed', enabled),
