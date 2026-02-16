@@ -82,7 +82,7 @@ function convertOldToNewMaterials(oldMaterials: OldMaterial[], oldPhysics: OldPh
 
     return {
       name: oldMat.name,
-      type: oldMat.is_metal ? 'Metal' : 'Basic',
+      type: oldMat.is_metal ? 'metal' : 'basic',
       base_color: oldMat.base_color,
       glossy_color: oldMat.glossy_color,
       clearcoat_color: oldMat.clearcoat_color,
