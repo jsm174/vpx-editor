@@ -963,9 +963,9 @@ function setupMaterialManagerModal(): void {
     }
   );
 
-  events.on('show-material-manager', async () => {
+  events.on('show-material-manager', async (materialName?: string) => {
     if (!state.tableLoaded) return;
-    await materialManagerInstance!.open(EXTRACTED_DIR);
+    await materialManagerInstance!.open(EXTRACTED_DIR, materialName);
   });
 }
 

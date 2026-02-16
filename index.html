@@ -355,7 +355,8 @@
         getCollections: function() { return Promise.resolve([]); },
         saveCollections: function() { return Promise.resolve(); },
         getGameitemsIndex: function() { return Promise.resolve([]); },
-        showRenameDialog: function() {}
+        showRenameDialog: function() {},
+        openMaterialManager: function(materialName) { events.emit('show-material-manager', materialName); }
       };
 
       window.vpxEditorAPI = vpxEditorAPI;

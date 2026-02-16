@@ -21,7 +21,7 @@ export interface WebMaterialManagerDeps {
 }
 
 export interface WebMaterialManagerInstance {
-  open: (extractedDir: string) => Promise<void>;
+  open: (extractedDir: string, selectMaterial?: string) => Promise<void>;
   close: () => void;
   setTheme: (theme: string) => void;
   refresh: () => Promise<void>;
@@ -54,7 +54,7 @@ export function initWebMaterialManager(
   let materialInstance: MaterialManagerInstance | null = null;
   let lastExtractedDir: string | null = null;
 
-  async function open(extractedDir: string): Promise<void> {
+  async function open(extractedDir: string, selectMaterial?: string): Promise<void> {
     lastExtractedDir = extractedDir;
     const themeSetting = await getThemeFromSettings();
     const theme = resolveTheme(themeSetting);
@@ -120,6 +120,9 @@ export function initWebMaterialManager(
     });
     materialInstance.setUIDisabled(false);
     materialInstance.renderList('');
+    if (selectMaterial) {
+      materialInstance.selectMaterialByName(selectMaterial);
+    }
     document.getElementById('material-status')!.textContent = `Loaded ${Object.keys(materials).length} materials`;
     modal.classList.remove('hidden');
   }

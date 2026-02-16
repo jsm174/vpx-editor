@@ -17,6 +17,7 @@ export interface MaterialManagerAPI extends CommonBridgeAPI {
   ) => void;
   onMaterialEditorResult: (callback: (result: Record<string, unknown> | null) => void) => void;
   onRefresh: (callback: (data: { materials: Record<string, unknown>; items: Record<string, unknown> }) => void) => void;
+  onSelectMaterial: (callback: (materialName: string) => void) => void;
 }
 
 const materialManagerAPI: MaterialManagerAPI = {
@@ -50,6 +51,9 @@ const materialManagerAPI: MaterialManagerAPI = {
   },
   onRefresh: (callback): void => {
     ipcRenderer.on('refresh', (_event: IpcRendererEvent, data) => callback(data));
+  },
+  onSelectMaterial: (callback: (materialName: string) => void): void => {
+    ipcRenderer.on('select-material', (_event: IpcRendererEvent, materialName: string) => callback(materialName));
   },
 };
 

@@ -34,6 +34,7 @@ import {
   soundOptions,
   renderProbeOptions,
 } from '../shared/options-generators.js';
+import { materialSelect } from '../shared/property-templates.js';
 
 export {
   materialOptions,
@@ -128,10 +129,7 @@ function tableProperties(gamedata: GameData): string {
     <div class="prop-tab-content active" data-tab="visuals">
       <div class="prop-group">
         <div class="prop-group-title">Playfield</div>
-        <div class="prop-row">
-          <label class="prop-label">Material</label>
-          <select class="prop-select" data-prop="playfield_material">${materialOptions(gamedata.playfield_material)}</select>
-        </div>
+        ${materialSelect('Material', 'playfield_material', materialOptions(gamedata.playfield_material))}
         <div class="prop-row">
           <label class="prop-label">Image</label>
           <select class="prop-select" data-prop="image">${imageOptions(gamedata.image)}</select>
@@ -855,6 +853,18 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
       });
     });
 
+  elements.propertiesContent!.addEventListener('click', (e: Event) => {
+    const target = e.target as HTMLElement;
+    if (!target.classList.contains('prop-goto-icon')) return;
+    const prop = target.dataset.gotoProp;
+    if (!prop) return;
+    const sel = target.parentElement?.querySelector(`select[data-prop="${prop}"]`) as HTMLSelectElement;
+    const materialName = sel?.value;
+    if (materialName) {
+      window.vpxEditor.openMaterialManager(materialName);
+    }
+  });
+
   elements.propertiesContent!.querySelectorAll<HTMLInputElement>('input[type="color"]').forEach(input => {
     applyColorGradient(input);
     input.addEventListener('input', (e: Event) => {
@@ -1214,6 +1224,18 @@ function setupTablePropertyHandlers(): void {
         c.classList.toggle('active', c.dataset.tab === tabName);
       });
     });
+  });
+
+  elements.propertiesContent!.addEventListener('click', (e: Event) => {
+    const target = e.target as HTMLElement;
+    if (!target.classList.contains('prop-goto-icon')) return;
+    const prop = target.dataset.gotoProp;
+    if (!prop) return;
+    const sel = target.parentElement?.querySelector(`select[data-prop="${prop}"]`) as HTMLSelectElement;
+    const materialName = sel?.value;
+    if (materialName) {
+      window.vpxEditor.openMaterialManager(materialName);
+    }
   });
 
   const lockTableIcon = elements.propertiesContent!.querySelector<HTMLImageElement>('#lock-table-icon');

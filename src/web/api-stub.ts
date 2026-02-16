@@ -150,6 +150,7 @@ export const vpxEditorAPI = {
 
   refreshImageManager: noop,
   refreshMaterialManager: noop,
+  openMaterialManager: (materialName?: string) => events.emit('show-material-manager', materialName),
   refreshSoundManager: noop,
 } as unknown as VpxEditorAPI;
 

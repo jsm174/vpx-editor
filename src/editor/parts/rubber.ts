@@ -11,6 +11,7 @@ import {
 } from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
+import { materialSelect } from '../../shared/property-templates.js';
 import { RUBBER_DEFAULTS } from '../../shared/object-defaults.js';
 import { RENDER_COLOR_BLACK, BLUEPRINT_SOLID_COLOR } from '../../shared/constants.js';
 import { convertToUnit, getUnitSuffixHtml } from '../utils.js';
@@ -318,10 +319,7 @@ export function rubberProperties(item: unknown): string {
           <label class="prop-label">Image</label>
           <select class="prop-select" data-prop="image">${imageOptions(rubberItem.image)}</select>
         </div>
-        <div class="prop-row">
-          <label class="prop-label">Material</label>
-          <select class="prop-select" data-prop="material">${materialOptions(rubberItem.material)}</select>
-        </div>
+        ${materialSelect('Material', 'material', materialOptions(rubberItem.material))}
         <div class="prop-row">
           <label class="prop-label">Static Rendering</label>
           <input type="checkbox" class="prop-input" data-prop="static_rendering" ${rubberItem.static_rendering ? 'checked' : ''}>
@@ -369,10 +367,7 @@ export function rubberProperties(item: unknown): string {
 
     <div class="prop-tab-content" data-tab="physics">
       <div class="prop-group">
-        <div class="prop-row">
-          <label class="prop-label">Physics Material</label>
-          <select class="prop-select" data-prop="physics_material">${materialOptions(rubberItem.physics_material)}</select>
-        </div>
+        ${materialSelect('Physics Material', 'physics_material', materialOptions(rubberItem.physics_material))}
         <div class="prop-row">
           <label class="prop-label">Overwrite Material Settings</label>
           <input type="checkbox" class="prop-input" data-prop="overwrite_physics" ${rubberItem.overwrite_physics ? 'checked' : ''}>

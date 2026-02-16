@@ -14,6 +14,7 @@ import {
 } from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
+import { materialSelect } from '../../shared/property-templates.js';
 import { RAMP_DEFAULTS } from '../../shared/object-defaults.js';
 import { RENDER_COLOR_BLACK, BLUEPRINT_SOLID_COLOR, PATH_SMOOTHING_ACCURACY } from '../../shared/constants.js';
 import { registerEditable, IEditable, Point } from './registry.js';
@@ -593,10 +594,7 @@ export function rampProperties(item: RampItem): string {
           <label class="prop-label">Image</label>
           <select class="prop-select" data-prop="image">${imageOptions(item.image)}</select>
         </div>
-        <div class="prop-row">
-          <label class="prop-label">Material</label>
-          <select class="prop-select" data-prop="material">${materialOptions(item.material)}</select>
-        </div>
+        ${materialSelect('Material', 'material', materialOptions(item.material))}
         <div class="prop-row">
           <label class="prop-label">Mode</label>
           <select class="prop-select" data-prop="image_alignment">
@@ -691,10 +689,7 @@ export function rampProperties(item: RampItem): string {
         </div>
       </div>
       <div class="prop-group">
-        <div class="prop-row">
-          <label class="prop-label">Physics Material</label>
-          <select class="prop-select" data-prop="physics_material">${materialOptions(item.physics_material)}</select>
-        </div>
+        ${materialSelect('Physics Material', 'physics_material', materialOptions(item.physics_material))}
         <div class="prop-row">
           <label class="prop-label">Overwrite Material Settings</label>
           <input type="checkbox" class="prop-input" data-prop="overwrite_physics" ${item.overwrite_physics !== false ? 'checked' : ''}>

@@ -3,6 +3,7 @@ import { state, elements } from '../state.js';
 import { toScreen, getStrokeStyle, getLineWidth, convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { createMaterial, getSurfaceHeight } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions, surfaceOptions } from '../../shared/options-generators.js';
+import { materialSelect } from '../../shared/property-templates.js';
 import { PLUNGER_DEFAULTS } from '../../shared/object-defaults.js';
 import { RENDER_COLOR_GRAY, RENDER_COLOR_BLACK } from '../../shared/constants.js';
 import { registerEditable, IEditable, Point } from './registry.js';
@@ -148,10 +149,7 @@ export function plungerProperties(item: PlungerItem): string {
             <option value="custom"${item.plunger_type === 'custom' ? ' selected' : ''}>Custom</option>
           </select>
         </div>
-        <div class="prop-row">
-          <label class="prop-label">Material</label>
-          <select class="prop-select" data-prop="material">${materialOptions(item.material)}</select>
-        </div>
+        ${materialSelect('Material', 'material', materialOptions(item.material))}
         <div class="prop-row">
           <label class="prop-label">Image</label>
           <select class="prop-select" data-prop="image">${imageOptions(item.image)}</select>

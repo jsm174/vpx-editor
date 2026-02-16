@@ -995,6 +995,10 @@ ipcMain.on('refresh-image-manager', async event => {
   }
 });
 
+ipcMain.on('open-material-manager-with-selection', (_event, materialName?: string) => {
+  windowFactory.openMaterialManagerWindow(materialName);
+});
+
 ipcMain.on('refresh-material-manager', async event => {
   const ctx = getContextForManagerEvent(event);
   if (!ctx?.extractedDir || !ctx.materialManagerWindow || ctx.materialManagerWindow.isDestroyed()) return;

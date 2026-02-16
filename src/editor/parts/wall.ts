@@ -11,6 +11,7 @@ import {
 } from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
+import { materialSelect } from '../../shared/property-templates.js';
 import { WALL_DEFAULTS } from '../../shared/object-defaults.js';
 import { RENDER_COLOR_BLACK, BLUEPRINT_SOLID_COLOR, PATH_SMOOTHING_ACCURACY } from '../../shared/constants.js';
 import { convertToUnit, getUnitSuffixHtml } from '../utils.js';
@@ -224,10 +225,7 @@ export function wallProperties(item: WallItem): string {
           <label class="prop-label">Display Image in Editor</label>
           <input type="checkbox" class="prop-input" data-prop="display_texture" ${item.display_texture ? 'checked' : ''}>
         </div>
-        <div class="prop-row">
-          <label class="prop-label">Top Material</label>
-          <select class="prop-select" data-prop="top_material">${materialOptions(item.top_material)}</select>
-        </div>
+        ${materialSelect('Top Material', 'top_material', materialOptions(item.top_material))}
       </div>
       <div class="prop-group">
         <div class="prop-row">
@@ -238,14 +236,8 @@ export function wallProperties(item: WallItem): string {
           <label class="prop-label">Side Image</label>
           <select class="prop-select" data-prop="side_image">${imageOptions(item.side_image)}</select>
         </div>
-        <div class="prop-row">
-          <label class="prop-label">Side Material</label>
-          <select class="prop-select" data-prop="side_material">${materialOptions(item.side_material)}</select>
-        </div>
-        <div class="prop-row">
-          <label class="prop-label">Slingshot Material</label>
-          <select class="prop-select" data-prop="slingshot_material">${materialOptions(item.slingshot_material)}</select>
-        </div>
+        ${materialSelect('Side Material', 'side_material', materialOptions(item.side_material))}
+        ${materialSelect('Slingshot Material', 'slingshot_material', materialOptions(item.slingshot_material))}
       </div>
       <div class="prop-group">
         <div class="prop-row">
@@ -303,10 +295,7 @@ export function wallProperties(item: WallItem): string {
         </div>
       </div>
       <div class="prop-group">
-        <div class="prop-row">
-          <label class="prop-label">Physics Material</label>
-          <select class="prop-select" data-prop="physics_material">${materialOptions(item.physics_material)}</select>
-        </div>
+        ${materialSelect('Physics Material', 'physics_material', materialOptions(item.physics_material))}
         <div class="prop-row">
           <label class="prop-label">Overwrite Material Settings</label>
           <input type="checkbox" class="prop-input" data-prop="overwrite_physics" ${item.overwrite_physics !== false ? 'checked' : ''}>

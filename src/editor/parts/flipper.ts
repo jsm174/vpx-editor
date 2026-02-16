@@ -3,6 +3,7 @@ import { state, elements } from '../state.js';
 import { toScreen, getStrokeStyle, getLineWidth, distToSegment } from '../utils.js';
 import { createMaterial, getSurfaceHeight } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions, surfaceOptions } from '../../shared/options-generators.js';
+import { materialSelect } from '../../shared/property-templates.js';
 import { FLIPPER_DEFAULTS } from '../../shared/object-defaults.js';
 import { RENDER_COLOR_BLACK, RENDER_COLOR_GRAY } from '../../shared/constants.js';
 import { convertToUnit, getUnitSuffixHtml } from '../utils.js';
@@ -490,14 +491,8 @@ export function flipperProperties(item: FlipperItem): string {
           <label class="prop-label">Image</label>
           <select class="prop-select" data-prop="image">${imageOptions(item.image)}</select>
         </div>
-        <div class="prop-row">
-          <label class="prop-label">Material</label>
-          <select class="prop-select" data-prop="material">${materialOptions(item.material)}</select>
-        </div>
-        <div class="prop-row">
-          <label class="prop-label">Rubber Material</label>
-          <select class="prop-select" data-prop="rubber_material">${materialOptions(item.rubber_material)}</select>
-        </div>
+        ${materialSelect('Material', 'material', materialOptions(item.material))}
+        ${materialSelect('Rubber Material', 'rubber_material', materialOptions(item.rubber_material))}
         <div class="prop-row">
           <label class="prop-label">Rubber Thickness</label>
           <input type="number" class="prop-input" data-prop="rubber_thickness" data-convert-units value="${convertToUnit(item.rubber_thickness ?? FLIPPER_DEFAULTS.rubber_thickness).toFixed(2)}" step="${convertToUnit(0.5).toFixed(4)}">${getUnitSuffixHtml()}

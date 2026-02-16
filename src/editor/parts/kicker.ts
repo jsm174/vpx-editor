@@ -3,6 +3,7 @@ import { state, elements } from '../state.js';
 import { toScreen, getStrokeStyle, getLineWidth } from '../utils.js';
 import { createMaterialWithTexture, getSurfaceHeight } from '../../shared/3d-material-helpers.js';
 import { materialOptions, surfaceOptions } from '../../shared/options-generators.js';
+import { materialSelect } from '../../shared/property-templates.js';
 import { KICKER_DEFAULTS } from '../../shared/object-defaults.js';
 import { createMeshGeometry } from '../../shared/mesh-utils.js';
 import { RENDER_COLOR_RED, RENDER_COLOR_BLACK } from '../../shared/constants.js';
@@ -220,10 +221,7 @@ export function kickerProperties(item: unknown): string {
 
     <div class="prop-tab-content active" data-tab="visuals">
       <div class="prop-group">
-        <div class="prop-row">
-          <label class="prop-label">Material</label>
-          <select class="prop-select" data-prop="material">${materialOptions(kickerItem.material)}</select>
-        </div>
+        ${materialSelect('Material', 'material', materialOptions(kickerItem.material))}
         <div class="prop-row">
           <label class="prop-label">Display</label>
           <select class="prop-select" data-prop="kicker_type">${kickerTypeOptions(kickerItem.kicker_type || 'hole')}</select>

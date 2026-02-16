@@ -9,6 +9,7 @@ import {
   numberInput,
   checkbox,
   select,
+  materialSelect,
   propGroup,
   propTabs,
   propTabContent,
@@ -222,7 +223,7 @@ export function gateProperties(item: GateItem): string {
         ${checkbox('Visible', 'is_visible', item.is_visible !== false)}
         ${checkbox('Show Bracket', 'show_bracket', item.show_bracket !== false)}
         ${checkbox('Reflection Enabled', 'is_reflection_enabled', item.is_reflection_enabled !== false)}
-        ${select('Material', 'material', materialOptions(item.material))}
+        ${materialSelect('Material', 'material', materialOptions(item.material))}
       `)}
       ${propGroup(
         `

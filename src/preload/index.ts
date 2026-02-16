@@ -78,6 +78,9 @@ const vpxEditorAPI: VpxEditorAPI = {
   refreshMaterialManager: (): void => {
     ipcRenderer.send('refresh-material-manager');
   },
+  openMaterialManager: (materialName?: string): void => {
+    ipcRenderer.send('open-material-manager-with-selection', materialName);
+  },
   refreshSoundManager: (): void => {
     ipcRenderer.send('refresh-sound-manager');
   },

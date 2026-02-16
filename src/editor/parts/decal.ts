@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { state, elements } from '../state.js';
 import { toScreen, getLineWidth, getStrokeStyle, drawPolygon, convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { materialOptions, imageOptions, surfaceOptions } from '../../shared/options-generators.js';
+import { materialSelect } from '../../shared/property-templates.js';
 import { DECAL_DEFAULTS } from '../../shared/object-defaults.js';
 import { RENDER_COLOR_BLACK, RENDER_COLOR_BLUE, BLUEPRINT_SOLID_COLOR } from '../../shared/constants.js';
 import { registerEditable, IEditable } from './registry.js';
@@ -131,10 +132,7 @@ export function decalProperties(item: Decal): string {
 
     <div class="prop-tab-content active" data-tab="visuals">
       <div class="prop-group">
-        <div class="prop-row">
-          <label class="prop-label">Material</label>
-          <select class="prop-select" data-prop="material">${materialOptions(item.material)}</select>
-        </div>
+        ${materialSelect('Material', 'material', materialOptions(item.material))}
         <div class="prop-row">
           <label class="prop-label">Type</label>
           <select class="prop-select" data-prop="decal_type">

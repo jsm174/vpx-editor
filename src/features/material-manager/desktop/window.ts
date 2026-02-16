@@ -14,8 +14,10 @@ declare global {
           materials: Record<string, Material>;
           items: Record<string, unknown>;
           theme?: string;
+          selectMaterial?: string;
         }) => void
       ) => void;
+      onSelectMaterial: (callback: (materialName: string) => void) => void;
       onSetDisabled: (callback: (disabled: boolean) => void) => void;
       onThemeChanged: (callback: (theme: string) => void) => void;
       writeFile: (path: string, content: string) => Promise<{ success: boolean; error?: string }>;
@@ -143,7 +145,14 @@ function init(): void {
     });
     manager!.setUIDisabled(false);
     manager!.renderList('');
+    if (data.selectMaterial) {
+      manager!.selectMaterialByName(data.selectMaterial);
+    }
     document.getElementById('status-bar')!.textContent = `Loaded ${Object.keys(data.materials || {}).length} materials`;
+  });
+
+  window.materialManager.onSelectMaterial(materialName => {
+    manager?.selectMaterialByName(materialName);
   });
 
   window.materialManager.onSetDisabled(disabled => {

@@ -4,6 +4,7 @@ import { state, elements } from '../state.js';
 import { toScreen, getStrokeStyle, getLineWidth, convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions, lightOptions, renderProbeOptions } from '../../shared/options-generators.js';
+import { materialSelect } from '../../shared/property-templates.js';
 import { PRIMITIVE_DEFAULTS } from '../../shared/object-defaults.js';
 import { getWireframeMode } from '../canvas-renderer-3d.js';
 import { registerCallback, invokeCallback } from '../../shared/callbacks.js';
@@ -1034,10 +1035,7 @@ export function primitiveProperties(item: PrimitiveItem): string {
       </div>
       <div class="prop-group">
         <div class="prop-group-title">Material</div>
-        <div class="prop-row">
-          <label class="prop-label">Material</label>
-          <select class="prop-select" data-prop="material">${materialOptions(item.material)}</select>
-        </div>
+        ${materialSelect('Material', 'material', materialOptions(item.material))}
         <div class="prop-row">
           <label class="prop-label">Display Image</label>
           <input type="checkbox" class="prop-input" data-prop="display_texture" ${item.display_texture ? 'checked' : ''}>
@@ -1105,10 +1103,7 @@ export function primitiveProperties(item: PrimitiveItem): string {
           <label class="prop-label">Hit Threshold</label>
           <input type="number" class="prop-input" data-prop="threshold" value="${(item.threshold ?? PRIMITIVE_DEFAULTS.threshold).toFixed(2)}" step="0.5">
         </div>
-        <div class="prop-row">
-          <label class="prop-label">Physics Material</label>
-          <select class="prop-select" data-prop="physics_material">${materialOptions(item.physics_material)}</select>
-        </div>
+        ${materialSelect('Physics Material', 'physics_material', materialOptions(item.physics_material))}
         <div class="prop-row">
           <label class="prop-label">Overwrite Material Settings</label>
           <input type="checkbox" class="prop-input" data-prop="overwrite_physics" ${item.overwrite_physics ? 'checked' : ''}>

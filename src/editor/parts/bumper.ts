@@ -9,6 +9,7 @@ import {
   numberInput,
   checkbox,
   select,
+  materialSelect,
   propGroup,
   propTabs,
   propTabContent,
@@ -272,10 +273,10 @@ export function bumperProperties(item: Bumper): string {
       'visuals',
       `
       ${propGroup(`
-        ${select('Cap Material', 'cap_material', materialOptions(item.cap_material))}
-        ${select('Base Material', 'base_material', materialOptions(item.base_material))}
-        ${select('Skirt Material', 'socket_material', materialOptions(item.socket_material))}
-        ${select('Ring Material', 'ring_material', materialOptions(item.ring_material))}
+        ${materialSelect('Cap Material', 'cap_material', materialOptions(item.cap_material))}
+        ${materialSelect('Base Material', 'base_material', materialOptions(item.base_material))}
+        ${materialSelect('Skirt Material', 'socket_material', materialOptions(item.socket_material))}
+        ${materialSelect('Ring Material', 'ring_material', materialOptions(item.ring_material))}
         ${numberInput('Radius', 'radius', item.radius ?? BUMPER_DEFAULTS.radius, 1, { convertUnits: true })}
         ${numberInput('Height Scale', 'height_scale', item.height_scale ?? BUMPER_DEFAULTS.height_scale, 5)}
         ${numberInput('Orientation', 'orientation', item.orientation ?? BUMPER_DEFAULTS.orientation, 5)}

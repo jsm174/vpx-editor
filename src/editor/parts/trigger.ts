@@ -10,6 +10,7 @@ import {
 } from '../utils.js';
 import { createMaterial, getSurfaceHeight } from '../../shared/3d-material-helpers.js';
 import { materialOptions, surfaceOptions } from '../../shared/options-generators.js';
+import { materialSelect } from '../../shared/property-templates.js';
 import { TRIGGER_DEFAULTS } from '../../shared/object-defaults.js';
 import { createMeshGeometry } from '../../shared/mesh-utils.js';
 import {
@@ -400,10 +401,7 @@ export function triggerProperties(item: TriggerItem): string {
           <label class="prop-label">Animation Speed</label>
           <input type="number" class="prop-input" data-prop="anim_speed" value="${(item.anim_speed ?? TRIGGER_DEFAULTS.anim_speed).toFixed(2)}" step="0.1">
         </div>
-        <div class="prop-row">
-          <label class="prop-label">Material</label>
-          <select class="prop-select" data-prop="material">${materialOptions(item.material)}</select>
-        </div>
+        ${materialSelect('Material', 'material', materialOptions(item.material))}
       </div>
       <div class="prop-group">
         <div class="prop-group-title">Position</div>

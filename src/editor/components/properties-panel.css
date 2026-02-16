@@ -250,6 +250,30 @@
   top: 32px;
 }
 
+.prop-select-with-goto {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 4px;
+}
+
+.prop-select-with-goto .prop-select {
+  flex: 1;
+}
+
+.prop-goto-icon {
+  width: 12px;
+  height: 12px;
+  cursor: pointer;
+  opacity: 0.5;
+  flex-shrink: 0;
+  filter: var(--icon-filter);
+}
+
+.prop-goto-icon:hover {
+  opacity: 1;
+}
+
 .prop-tabs {
   display: flex;
   margin: 0 -12px 12px -12px;

@@ -58,6 +58,13 @@ export function select(label: string, prop: string, optionsHtml: string): string
   return propRow(label, `<select class="prop-select" data-prop="${prop}">${optionsHtml}</select>`);
 }
 
+export function materialSelect(label: string, prop: string, optionsHtml: string): string {
+  return propRow(
+    label,
+    `<div class="prop-select-with-goto"><select class="prop-select" data-prop="${prop}">${optionsHtml}</select><img src="icons/material-goto.svg" class="prop-goto-icon" data-goto-prop="${prop}" title="Open in Material Manager"></div>`
+  );
+}
+
 export function colorInput(label: string, prop: string, value: string | null | undefined): string {
   return propRow(label, `<input type="color" class="prop-color" data-prop="${prop}" value="${value || '#ffffff'}">`);
 }

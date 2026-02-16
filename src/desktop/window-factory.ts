@@ -139,7 +139,7 @@ export interface WindowFactory {
   createEditorWindow(): WindowContext;
   showAboutDialog(): void;
   openImageManagerWindow(): void;
-  openMaterialManagerWindow(): void;
+  openMaterialManagerWindow(selectMaterial?: string): void;
   openSoundManagerWindow(): void;
   openTableInfoWindow(): Promise<void>;
   openDimensionsManagerWindow(): Promise<void>;
@@ -694,7 +694,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     });
   }
 
-  function openMaterialManagerWindow(): void {
+  function openMaterialManagerWindow(selectMaterial?: string): void {
     const ctx = windowRegistry.getFocused();
     if (!ctx?.extractedDir) {
       dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
@@ -703,6 +703,9 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
 
     if (ctx.materialManagerWindow) {
       ctx.materialManagerWindow.focus();
+      if (selectMaterial) {
+        ctx.materialManagerWindow.webContents.send('select-material', selectMaterial);
+      }
       return;
     }
 
@@ -733,7 +736,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
       ctx.materialManagerWindow!.setTitle(title);
       const state = await getMaterialsState(ctx);
       if (state) {
-        ctx.materialManagerWindow!.webContents.send('init', state);
+        ctx.materialManagerWindow!.webContents.send('init', { ...state, selectMaterial });
       }
     });
 
