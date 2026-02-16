@@ -151,6 +151,7 @@ export interface VpxEditorAPI {
   onImagesChanged: (callback: IpcCallback) => void;
   onMaterialsChanged: (callback: IpcCallback) => void;
   refreshImageManager: () => void;
+  openImageManager: (imageName?: string) => void;
   refreshMaterialManager: () => void;
   openMaterialManager: (materialName?: string) => void;
   refreshSoundManager: () => void;

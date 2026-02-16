@@ -13,6 +13,7 @@ import {
 } from '../utils.js';
 import { loadTexture } from '../texture-loader.js';
 import { imageOptions } from '../../shared/options-generators.js';
+import { imageSelect } from '../../shared/property-templates.js';
 import { FLASHER_DEFAULTS } from '../../shared/object-defaults.js';
 import { PATH_SMOOTHING_ACCURACY } from '../../shared/constants.js';
 import { registerEditable, IEditable, Point } from './registry.js';
@@ -257,9 +258,8 @@ export function flasherProperties(item: Flasher): string {
           <label class="prop-label">Source</label>
           <input type="text" class="prop-input" data-prop="image_src_link" value="${item.image_src_link || ''}">
         </div>
-        <div class="prop-row" style="${isDisplay ? '' : 'display:none'}">
-          <label class="prop-label">Glass</label>
-          <select class="prop-select" data-prop="image_a">${imageOptions(item.image_a)}</select>
+        <div style="${isDisplay ? '' : 'display:none'}">
+          ${imageSelect('Glass', 'image_a', imageOptions(item.image_a))}
         </div>
         <div class="prop-row" style="${isDisplay ? '' : 'display:none'}">
           <label class="prop-label">Roughness</label>
@@ -286,13 +286,11 @@ export function flasherProperties(item: Flasher): string {
             <option value="wrap"${(item.image_alignment || 'wrap') === 'wrap' ? ' selected' : ''}>Wrap</option>
           </select>
         </div>
-        <div class="prop-row" style="${isFlasher ? '' : 'display:none'}">
-          <label class="prop-label">A</label>
-          <select class="prop-select" data-prop="image_a">${imageOptions(item.image_a)}</select>
+        <div style="${isFlasher ? '' : 'display:none'}">
+          ${imageSelect('A', 'image_a', imageOptions(item.image_a))}
         </div>
-        <div class="prop-row" style="${isFlasher ? '' : 'display:none'}">
-          <label class="prop-label">B</label>
-          <select class="prop-select" data-prop="image_b">${imageOptions(item.image_b)}</select>
+        <div style="${isFlasher ? '' : 'display:none'}">
+          ${imageSelect('B', 'image_b', imageOptions(item.image_b))}
         </div>
         <div class="prop-row" style="${isFlasher ? '' : 'display:none'}">
           <label class="prop-label">Mix</label>
@@ -319,9 +317,8 @@ export function flasherProperties(item: Flasher): string {
           <label class="prop-label">${opacityLabel}</label>
           <input type="number" class="prop-input" data-prop="alpha" data-type="int" value="${item.alpha ?? FLASHER_DEFAULTS.alpha}" step="5" min="0" max="100">
         </div>
-        <div class="prop-row" style="${isAlphaSeg ? 'display:none' : ''}">
-          <label class="prop-label">Lightmap</label>
-          <select class="prop-select" data-prop="light_map">${imageOptions(item.light_map)}</select>
+        <div style="${isAlphaSeg ? 'display:none' : ''}">
+          ${imageSelect('Lightmap', 'light_map', imageOptions(item.light_map))}
         </div>
         <div class="prop-row" style="${isAlphaSeg ? 'display:none' : ''}">
           <label class="prop-label">Additive Blend</label>

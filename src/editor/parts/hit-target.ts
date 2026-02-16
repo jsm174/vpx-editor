@@ -3,7 +3,7 @@ import { state, elements } from '../state.js';
 import { toScreen, getStrokeStyle, getLineWidth, convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
-import { materialSelect } from '../../shared/property-templates.js';
+import { materialSelect, imageSelect } from '../../shared/property-templates.js';
 import { HITTARGET_DEFAULTS } from '../../shared/object-defaults.js';
 import { createMeshGeometry } from '../../shared/mesh-utils.js';
 import { RENDER_COLOR_BLACK, RENDER_COLOR_RED } from '../../shared/constants.js';
@@ -318,10 +318,7 @@ export function hitTargetProperties(item: HitTargetItem): string {
             <option value="hit_fat_target_square"${item.target_type === 'hit_fat_target_square' ? ' selected' : ''}>HitTarget Square Fat</option>
           </select>
         </div>
-        <div class="prop-row">
-          <label class="prop-label">Image</label>
-          <select class="prop-select" data-prop="image">${imageOptions(item.image)}</select>
-        </div>
+        ${imageSelect('Image', 'image', imageOptions(item.image))}
         ${materialSelect('Material', 'material', materialOptions(item.material))}
         <div class="prop-row">
           <label class="prop-label">Drop Speed</label>

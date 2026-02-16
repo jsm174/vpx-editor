@@ -61,7 +61,14 @@ export function select(label: string, prop: string, optionsHtml: string): string
 export function materialSelect(label: string, prop: string, optionsHtml: string): string {
   return propRow(
     label,
-    `<div class="prop-select-with-goto"><select class="prop-select" data-prop="${prop}">${optionsHtml}</select><img src="icons/material-goto.svg" class="prop-goto-icon" data-goto-prop="${prop}" title="Open in Material Manager"></div>`
+    `<div class="prop-select-with-goto"><select class="prop-select" data-prop="${prop}">${optionsHtml}</select><img src="icons/goto-manager.svg" class="prop-goto-icon" data-goto-prop="${prop}" data-goto-type="material" title="Open in Material Manager"></div>`
+  );
+}
+
+export function imageSelect(label: string, prop: string, optionsHtml: string): string {
+  return propRow(
+    label,
+    `<div class="prop-select-with-goto"><select class="prop-select" data-prop="${prop}">${optionsHtml}</select><img src="icons/goto-manager.svg" class="prop-goto-icon" data-goto-prop="${prop}" data-goto-type="image" title="Open in Image Manager"></div>`
   );
 }
 

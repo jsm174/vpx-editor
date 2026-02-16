@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 import { createCommonBridge, CommonBridgeAPI } from '../../../preload/common-bridge.js';
 import type { ImageData, GameItem } from '../shared/core.js';
 
@@ -22,6 +22,7 @@ export interface ImageManagerAPI extends CommonBridgeAPI {
       gamedata: Record<string, unknown> | null;
     }) => void
   ) => void;
+  onSelectImage: (callback: (imageName: string) => void) => void;
 }
 
 const imageManagerAPI: ImageManagerAPI = {
@@ -51,6 +52,9 @@ const imageManagerAPI: ImageManagerAPI = {
   },
   onRefresh: (callback): void => {
     ipcRenderer.on('refresh', (_event, data) => callback(data));
+  },
+  onSelectImage: (callback: (imageName: string) => void): void => {
+    ipcRenderer.on('select-image', (_event: IpcRendererEvent, imageName: string) => callback(imageName));
   },
 };
 

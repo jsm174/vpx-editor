@@ -34,7 +34,7 @@ import {
   soundOptions,
   renderProbeOptions,
 } from '../shared/options-generators.js';
-import { materialSelect } from '../shared/property-templates.js';
+import { materialSelect, imageSelect } from '../shared/property-templates.js';
 
 export {
   materialOptions,
@@ -85,6 +85,18 @@ function isPositionProp(prop: string): boolean {
   return false;
 }
 
+function initGotoIcons(): void {
+  elements.propertiesContent!.querySelectorAll<HTMLElement>('.prop-select-with-goto').forEach(container => {
+    const sel = container.querySelector('select') as HTMLSelectElement;
+    const icon = container.querySelector('.prop-goto-icon') as HTMLElement;
+    if (!sel || !icon) return;
+    icon.style.display = sel.value ? '' : 'none';
+    sel.addEventListener('change', () => {
+      icon.style.display = sel.value ? '' : 'none';
+    });
+  });
+}
+
 function applyColorGradient(input: HTMLInputElement): void {
   const color = input.value;
   const r = parseInt(color.slice(1, 3), 16);
@@ -130,10 +142,7 @@ function tableProperties(gamedata: GameData): string {
       <div class="prop-group">
         <div class="prop-group-title">Playfield</div>
         ${materialSelect('Material', 'playfield_material', materialOptions(gamedata.playfield_material))}
-        <div class="prop-row">
-          <label class="prop-label">Image</label>
-          <select class="prop-select" data-prop="image">${imageOptions(gamedata.image)}</select>
-        </div>
+        ${imageSelect('Image', 'image', imageOptions(gamedata.image))}
         <div class="prop-row">
           <label class="prop-label">Reflection Strength (0..100)</label>
           <input type="number" class="prop-input" data-prop="playfield_reflection_strength" value="${Math.round((gamedata.playfield_reflection_strength || 0) * 100)}" step="1" min="0" max="100">
@@ -141,18 +150,12 @@ function tableProperties(gamedata: GameData): string {
       </div>
       <div class="prop-group">
         <div class="prop-group-title">Ball</div>
-        <div class="prop-row">
-          <label class="prop-label">Ball Image</label>
-          <select class="prop-select" data-prop="ball_image">${imageOptions(gamedata.ball_image)}</select>
-        </div>
+        ${imageSelect('Ball Image', 'ball_image', imageOptions(gamedata.ball_image))}
         <div class="prop-row">
           <label class="prop-label">Spherical Map</label>
           <input type="checkbox" class="prop-input" data-prop="ball_spherical_mapping" ${gamedata.ball_spherical_mapping !== false ? 'checked' : ''}>
         </div>
-        <div class="prop-row">
-          <label class="prop-label">Decal</label>
-          <select class="prop-select" data-prop="ball_image_front">${imageOptions(gamedata.ball_image_front)}</select>
-        </div>
+        ${imageSelect('Decal', 'ball_image_front', imageOptions(gamedata.ball_image_front))}
         <div class="prop-row">
           <label class="prop-label">Logo Mode</label>
           <input type="checkbox" class="prop-input" data-prop="ball_decal_mode" ${gamedata.ball_decal_mode ? 'checked' : ''}>
@@ -202,10 +205,7 @@ function tableProperties(gamedata: GameData): string {
     <div class="prop-tab-content" data-tab="lights">
       <div class="prop-group">
         <div class="prop-group-title">Environment Lighting</div>
-        <div class="prop-row">
-          <label class="prop-label">Image</label>
-          <select class="prop-select" data-prop="env_image">${imageOptions(gamedata.env_image)}</select>
-        </div>
+        ${imageSelect('Image', 'env_image', imageOptions(gamedata.env_image))}
         <div class="prop-row">
           <label class="prop-label">Power</label>
           <input type="number" class="prop-input" data-prop="env_emission_scale" value="${(gamedata.env_emission_scale ?? 1).toFixed(2)}" step="0.1">
@@ -424,22 +424,10 @@ function backglassProperties(gamedata: GameData): string {
           <label class="prop-label">Apply Night->Day cycle</label>
           <input type="checkbox" class="prop-input" data-prop="image_backdrop_night_day" ${gamedata.image_backdrop_night_day ? 'checked' : ''}>
         </div>
-        <div class="prop-row">
-          <label class="prop-label">DT Image</label>
-          <select class="prop-select" data-prop="backglass_image_full_desktop">${imageOptions(gamedata.backglass_image_full_desktop)}</select>
-        </div>
-        <div class="prop-row">
-          <label class="prop-label">FS Image</label>
-          <select class="prop-select" data-prop="backglass_image_full_fullscreen">${imageOptions(gamedata.backglass_image_full_fullscreen)}</select>
-        </div>
-        <div class="prop-row">
-          <label class="prop-label">FSS Image</label>
-          <select class="prop-select" data-prop="backglass_image_full_single_screen">${imageOptions(gamedata.backglass_image_full_single_screen)}</select>
-        </div>
-        <div class="prop-row">
-          <label class="prop-label">Color Grading LookupTable(256x16)</label>
-          <select class="prop-select" data-prop="image_color_grade">${imageOptions(gamedata.image_color_grade)}</select>
-        </div>
+        ${imageSelect('DT Image', 'backglass_image_full_desktop', imageOptions(gamedata.backglass_image_full_desktop))}
+        ${imageSelect('FS Image', 'backglass_image_full_fullscreen', imageOptions(gamedata.backglass_image_full_fullscreen))}
+        ${imageSelect('FSS Image', 'backglass_image_full_single_screen', imageOptions(gamedata.backglass_image_full_single_screen))}
+        ${imageSelect('Color Grading LookupTable(256x16)', 'image_color_grade', imageOptions(gamedata.image_color_grade))}
         <div class="prop-row">
           <label class="prop-label">Enable EMReels</label>
           <input type="checkbox" class="prop-input" data-prop="render_em_reels" ${gamedata.render_em_reels ? 'checked' : ''}>
@@ -788,6 +776,8 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
       });
   }
 
+  initGotoIcons();
+
   elements
     .propertiesContent!.querySelectorAll<HTMLInputElement | HTMLSelectElement>('.prop-input, .prop-select')
     .forEach(input => {
@@ -859,9 +849,12 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
     const prop = target.dataset.gotoProp;
     if (!prop) return;
     const sel = target.parentElement?.querySelector(`select[data-prop="${prop}"]`) as HTMLSelectElement;
-    const materialName = sel?.value;
-    if (materialName) {
-      window.vpxEditor.openMaterialManager(materialName);
+    const name = sel?.value;
+    if (!name) return;
+    if (target.dataset.gotoType === 'image') {
+      window.vpxEditor.openImageManager(name);
+    } else {
+      window.vpxEditor.openMaterialManager(name);
     }
   });
 
@@ -1096,6 +1089,8 @@ function setupTablePropertyHandlers(): void {
       });
   }
 
+  initGotoIcons();
+
   elements
     .propertiesContent!.querySelectorAll<HTMLInputElement | HTMLSelectElement>('.prop-input, .prop-select')
     .forEach(input => {
@@ -1232,9 +1227,12 @@ function setupTablePropertyHandlers(): void {
     const prop = target.dataset.gotoProp;
     if (!prop) return;
     const sel = target.parentElement?.querySelector(`select[data-prop="${prop}"]`) as HTMLSelectElement;
-    const materialName = sel?.value;
-    if (materialName) {
-      window.vpxEditor.openMaterialManager(materialName);
+    const name = sel?.value;
+    if (!name) return;
+    if (target.dataset.gotoType === 'image') {
+      window.vpxEditor.openImageManager(name);
+    } else {
+      window.vpxEditor.openMaterialManager(name);
     }
   });
 
@@ -1301,6 +1299,8 @@ function setupBackglassPropertyHandlers(): void {
         }
       });
   }
+
+  initGotoIcons();
 
   elements
     .propertiesContent!.querySelectorAll<HTMLInputElement | HTMLSelectElement>('.prop-input, .prop-select')
@@ -1407,6 +1407,21 @@ function setupBackglassPropertyHandlers(): void {
         c.classList.toggle('active', c.dataset.tab === tabName);
       });
     });
+  });
+
+  elements.propertiesContent!.addEventListener('click', (e: Event) => {
+    const target = e.target as HTMLElement;
+    if (!target.classList.contains('prop-goto-icon')) return;
+    const prop = target.dataset.gotoProp;
+    if (!prop) return;
+    const sel = target.parentElement?.querySelector(`select[data-prop="${prop}"]`) as HTMLSelectElement;
+    const name = sel?.value;
+    if (!name) return;
+    if (target.dataset.gotoType === 'image') {
+      window.vpxEditor.openImageManager(name);
+    } else {
+      window.vpxEditor.openMaterialManager(name);
+    }
   });
 
   const viewSelector = document.getElementById('backglass-view-selector') as HTMLSelectElement | null;

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { state, elements } from '../state.js';
 import { toScreen, getLineWidth, getStrokeStyle, drawPolygon, convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { materialOptions, imageOptions, surfaceOptions } from '../../shared/options-generators.js';
-import { materialSelect } from '../../shared/property-templates.js';
+import { materialSelect, imageSelect } from '../../shared/property-templates.js';
 import { DECAL_DEFAULTS } from '../../shared/object-defaults.js';
 import { RENDER_COLOR_BLACK, RENDER_COLOR_BLUE, BLUEPRINT_SOLID_COLOR } from '../../shared/constants.js';
 import { registerEditable, IEditable } from './registry.js';
@@ -156,10 +156,7 @@ export function decalProperties(item: Decal): string {
           <label class="prop-label">Font</label>
           <input type="text" class="prop-input" value="${item.font?.name || 'Arial'}" readonly style="background: transparent; cursor: default;">
         </div>
-        <div class="prop-row">
-          <label class="prop-label">Image</label>
-          <select class="prop-select" data-prop="image">${imageOptions(item.image)}</select>
-        </div>
+        ${imageSelect('Image', 'image', imageOptions(item.image))}
         <div class="prop-row">
           <label class="prop-label">Sizing</label>
           <select class="prop-select" data-prop="sizing_type">

@@ -995,6 +995,10 @@ ipcMain.on('refresh-image-manager', async event => {
   }
 });
 
+ipcMain.on('open-image-manager-with-selection', (_event, imageName?: string) => {
+  windowFactory.openImageManagerWindow(imageName);
+});
+
 ipcMain.on('open-material-manager-with-selection', (_event, materialName?: string) => {
   windowFactory.openMaterialManagerWindow(materialName);
 });

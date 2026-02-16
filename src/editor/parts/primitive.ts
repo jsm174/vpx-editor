@@ -4,7 +4,7 @@ import { state, elements } from '../state.js';
 import { toScreen, getStrokeStyle, getLineWidth, convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions, lightOptions, renderProbeOptions } from '../../shared/options-generators.js';
-import { materialSelect } from '../../shared/property-templates.js';
+import { materialSelect, imageSelect } from '../../shared/property-templates.js';
 import { PRIMITIVE_DEFAULTS } from '../../shared/object-defaults.js';
 import { getWireframeMode } from '../canvas-renderer-3d.js';
 import { registerCallback, invokeCallback } from '../../shared/callbacks.js';
@@ -1040,14 +1040,8 @@ export function primitiveProperties(item: PrimitiveItem): string {
           <label class="prop-label">Display Image</label>
           <input type="checkbox" class="prop-input" data-prop="display_texture" ${item.display_texture ? 'checked' : ''}>
         </div>
-        <div class="prop-row">
-          <label class="prop-label">Image</label>
-          <select class="prop-select" data-prop="image">${imageOptions(item.image)}</select>
-        </div>
-        <div class="prop-row">
-          <label class="prop-label">Normal Map</label>
-          <select class="prop-select" data-prop="normal_map">${imageOptions(item.normal_map)}</select>
-        </div>
+        ${imageSelect('Image', 'image', imageOptions(item.image))}
+        ${imageSelect('Normal Map', 'normal_map', imageOptions(item.normal_map))}
         <div class="prop-row">
           <label class="prop-label">Object Space</label>
           <input type="checkbox" class="prop-input" data-prop="object_space_normal_map" ${item.object_space_normal_map ? 'checked' : ''}>

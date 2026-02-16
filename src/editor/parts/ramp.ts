@@ -14,7 +14,7 @@ import {
 } from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
-import { materialSelect } from '../../shared/property-templates.js';
+import { materialSelect, imageSelect } from '../../shared/property-templates.js';
 import { RAMP_DEFAULTS } from '../../shared/object-defaults.js';
 import { RENDER_COLOR_BLACK, BLUEPRINT_SOLID_COLOR, PATH_SMOOTHING_ACCURACY } from '../../shared/constants.js';
 import { registerEditable, IEditable, Point } from './registry.js';
@@ -590,10 +590,7 @@ export function rampProperties(item: RampItem): string {
             <option value="flat"${(item.ramp_type || 'flat') === 'flat' ? ' selected' : ''}>Flat</option>
           </select>
         </div>
-        <div class="prop-row">
-          <label class="prop-label">Image</label>
-          <select class="prop-select" data-prop="image">${imageOptions(item.image)}</select>
-        </div>
+        ${imageSelect('Image', 'image', imageOptions(item.image))}
         ${materialSelect('Material', 'material', materialOptions(item.material))}
         <div class="prop-row">
           <label class="prop-label">Mode</label>

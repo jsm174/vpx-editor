@@ -23,7 +23,7 @@ export interface WebImageManagerDeps {
 }
 
 export interface WebImageManagerInstance {
-  open: (extractedDir: string) => Promise<void>;
+  open: (extractedDir: string, selectImage?: string) => Promise<void>;
   close: () => void;
   setTheme: (theme: string) => void;
   refresh: () => Promise<void>;
@@ -65,7 +65,7 @@ export function initWebImageManager(
   let managerInstance: ImageManagerInstance | null = null;
   let lastExtractedDir: string | null = null;
 
-  async function open(extractedDir: string): Promise<void> {
+  async function open(extractedDir: string, selectImage?: string): Promise<void> {
     lastExtractedDir = extractedDir;
     const { images, items, gamedata } = await loadImageManagerData(extractedDir, {
       readFile: deps.readFile,
@@ -175,6 +175,9 @@ export function initWebImageManager(
     await managerInstance.renderList();
     statusEl.textContent = `Loaded ${Object.keys(images).length} images`;
     modal.classList.remove('hidden');
+    if (selectImage) {
+      await managerInstance.selectImageByName(selectImage);
+    }
   }
 
   function close(): void {

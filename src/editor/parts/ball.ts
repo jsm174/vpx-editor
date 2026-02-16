@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { state, elements } from '../state.js';
 import { toScreen, getStrokeStyle, getLineWidth, convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { imageOptions } from '../../shared/options-generators.js';
+import { imageSelect } from '../../shared/property-templates.js';
 import { BALL_DEFAULTS } from '../../shared/object-defaults.js';
 import { loadTexture } from '../texture-loader.js';
 import { RENDER_COLOR_BLACK, BLUEPRINT_SOLID_COLOR } from '../../shared/constants.js';
@@ -132,18 +133,12 @@ export function ballProperties(item: BallItem): string {
           <label class="prop-label">Use Table Settings</label>
           <input type="checkbox" class="prop-input" data-prop="use_table_settings" ${item.use_table_settings ? 'checked' : ''}>
         </div>
-        <div class="prop-row">
-          <label class="prop-label">Ball Image</label>
-          <select class="prop-select" data-prop="image">${imageOptions(item.image)}</select>
-        </div>
+        ${imageSelect('Ball Image', 'image', imageOptions(item.image))}
         <div class="prop-row">
           <label class="prop-label">Spherical Map</label>
           <input type="checkbox" class="prop-input" data-prop="spherical_mapping" ${item.spherical_mapping !== false ? 'checked' : ''}>
         </div>
-        <div class="prop-row">
-          <label class="prop-label">Decal</label>
-          <select class="prop-select" data-prop="image_decal">${imageOptions(item.image_decal)}</select>
-        </div>
+        ${imageSelect('Decal', 'image_decal', imageOptions(item.image_decal))}
         <div class="prop-row">
           <label class="prop-label">Logo Mode</label>
           <input type="checkbox" class="prop-input" data-prop="decal_mode" ${item.decal_mode ? 'checked' : ''}>

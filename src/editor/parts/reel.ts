@@ -1,6 +1,7 @@
 import { state, elements } from '../state.js';
 import { toScreen, getLineWidth, getStrokeStyle } from '../utils.js';
 import { imageOptions, soundOptions } from '../../shared/options-generators.js';
+import { imageSelect } from '../../shared/property-templates.js';
 import { REEL_DEFAULTS } from '../../shared/object-defaults.js';
 import { RENDER_COLOR_BLACK, RENDER_COLOR_BLUE, BLUEPRINT_SOLID_COLOR } from '../../shared/constants.js';
 import { registerEditable, IEditable, Point } from './registry.js';
@@ -180,10 +181,7 @@ export function reelProperties(item: ReelItem): string {
           <label class="prop-label">Single Digit Range (0 -></label>
           <input type="number" class="prop-input" data-prop="digit_range" value="${item.digit_range ?? REEL_DEFAULTS.digit_range}" step="1" min="0">
         </div>
-        <div class="prop-row">
-          <label class="prop-label">Image</label>
-          <select class="prop-select" data-prop="image">${imageOptions(item.image)}</select>
-        </div>
+        ${imageSelect('Image', 'image', imageOptions(item.image))}
       </div>
       <div class="prop-group">
         <div class="prop-group-title">Image Grid</div>

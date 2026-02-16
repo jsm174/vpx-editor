@@ -138,7 +138,7 @@ interface WindowStates {
 export interface WindowFactory {
   createEditorWindow(): WindowContext;
   showAboutDialog(): void;
-  openImageManagerWindow(): void;
+  openImageManagerWindow(selectImage?: string): void;
   openMaterialManagerWindow(selectMaterial?: string): void;
   openSoundManagerWindow(): void;
   openTableInfoWindow(): Promise<void>;
@@ -637,7 +637,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     });
   }
 
-  function openImageManagerWindow(): void {
+  function openImageManagerWindow(selectImage?: string): void {
     const ctx = windowRegistry.getFocused();
     if (!ctx?.extractedDir) {
       dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
@@ -646,6 +646,9 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
 
     if (ctx.imageManagerWindow) {
       ctx.imageManagerWindow.focus();
+      if (selectImage) {
+        ctx.imageManagerWindow.webContents.send('select-image', selectImage);
+      }
       return;
     }
 
@@ -689,7 +692,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
       ctx.imageManagerWindow!.setTitle(title);
       const state = await getTableState(ctx);
       if (state) {
-        ctx.imageManagerWindow!.webContents.send('init', state);
+        ctx.imageManagerWindow!.webContents.send('init', { ...state, selectImage });
       }
     });
   }

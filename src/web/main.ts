@@ -882,12 +882,12 @@ function setupImageManagerModal(): void {
     }
   );
 
-  events.on('show-image-manager', async () => {
+  events.on('show-image-manager', async (imageName?: string) => {
     if (!state.tableLoaded) {
       document.getElementById('image-manager-status')!.textContent = 'No table loaded';
       return;
     }
-    await imageManagerInstance!.open(EXTRACTED_DIR);
+    await imageManagerInstance!.open(EXTRACTED_DIR, imageName);
   });
 }
 

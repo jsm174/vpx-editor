@@ -149,6 +149,7 @@ export const vpxEditorAPI = {
   toggleTableLock: () => {},
 
   refreshImageManager: noop,
+  openImageManager: (imageName?: string) => events.emit('show-image-manager', imageName),
   refreshMaterialManager: noop,
   openMaterialManager: (materialName?: string) => events.emit('show-material-manager', materialName),
   refreshSoundManager: noop,

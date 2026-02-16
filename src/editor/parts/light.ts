@@ -3,6 +3,7 @@ import { state, elements } from '../state.js';
 import { toScreen, generateSmoothedPath, pointInPolygon } from '../utils.js';
 import { createMaterial, getSurfaceHeight } from '../../shared/3d-material-helpers.js';
 import { imageOptions, surfaceOptions } from '../../shared/options-generators.js';
+import { imageSelect } from '../../shared/property-templates.js';
 import { createMeshGeometry } from '../../shared/mesh-utils.js';
 import { LIGHT_DEFAULTS } from '../../shared/object-defaults.js';
 import { blendColorsToHex, blendColorsToRgba } from '../../shared/color-utils.js';
@@ -422,9 +423,8 @@ export function lightProperties(item: unknown): string {
           <label class="prop-label">Transmit (0..1)</label>
           <input type="number" class="prop-input" data-prop="transmission_scale" value="${(lightItem.transmission_scale ?? LIGHT_DEFAULTS.transmission_scale).toFixed(2)}" step="0.05" min="0" max="1">
         </div>
-        <div class="prop-row render-mode-field classic-only"${!isClassic ? ' style="display:none"' : ''}>
-          <label class="prop-label">Image</label>
-          <select class="prop-select" data-prop="image">${imageOptions(lightItem.image)}</select>
+        <div class="render-mode-field classic-only"${!isClassic ? ' style="display:none"' : ''}>
+          ${imageSelect('Image', 'image', imageOptions(lightItem.image))}
         </div>
         <div class="prop-row render-mode-field classic-only"${!isClassic ? ' style="display:none"' : ''}>
           <label class="prop-label">PassThrough</label>

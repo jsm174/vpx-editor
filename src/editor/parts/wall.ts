@@ -11,7 +11,7 @@ import {
 } from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
-import { materialSelect } from '../../shared/property-templates.js';
+import { materialSelect, imageSelect } from '../../shared/property-templates.js';
 import { WALL_DEFAULTS } from '../../shared/object-defaults.js';
 import { RENDER_COLOR_BLACK, BLUEPRINT_SOLID_COLOR, PATH_SMOOTHING_ACCURACY } from '../../shared/constants.js';
 import { convertToUnit, getUnitSuffixHtml } from '../utils.js';
@@ -217,10 +217,7 @@ export function wallProperties(item: WallItem): string {
           <label class="prop-label">Top Visible</label>
           <input type="checkbox" class="prop-input" data-prop="is_top_bottom_visible" ${item.is_top_bottom_visible !== false ? 'checked' : ''}>
         </div>
-        <div class="prop-row">
-          <label class="prop-label">Top Image</label>
-          <select class="prop-select" data-prop="image">${imageOptions(item.image)}</select>
-        </div>
+        ${imageSelect('Top Image', 'image', imageOptions(item.image))}
         <div class="prop-row">
           <label class="prop-label">Display Image in Editor</label>
           <input type="checkbox" class="prop-input" data-prop="display_texture" ${item.display_texture ? 'checked' : ''}>
@@ -232,10 +229,7 @@ export function wallProperties(item: WallItem): string {
           <label class="prop-label">Side Visible</label>
           <input type="checkbox" class="prop-input" data-prop="is_side_visible" ${item.is_side_visible !== false ? 'checked' : ''}>
         </div>
-        <div class="prop-row">
-          <label class="prop-label">Side Image</label>
-          <select class="prop-select" data-prop="side_image">${imageOptions(item.side_image)}</select>
-        </div>
+        ${imageSelect('Side Image', 'side_image', imageOptions(item.side_image))}
         ${materialSelect('Side Material', 'side_material', materialOptions(item.side_material))}
         ${materialSelect('Slingshot Material', 'slingshot_material', materialOptions(item.slingshot_material))}
       </div>

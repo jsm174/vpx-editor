@@ -75,6 +75,9 @@ const vpxEditorAPI: VpxEditorAPI = {
   refreshImageManager: (): void => {
     ipcRenderer.send('refresh-image-manager');
   },
+  openImageManager: (imageName?: string): void => {
+    ipcRenderer.send('open-image-manager-with-selection', imageName);
+  },
   refreshMaterialManager: (): void => {
     ipcRenderer.send('refresh-material-manager');
   },

@@ -3,7 +3,7 @@ import { state, elements } from '../state.js';
 import { toScreen, getStrokeStyle, getLineWidth, convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { createMaterial, getSurfaceHeight } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions, surfaceOptions } from '../../shared/options-generators.js';
-import { materialSelect } from '../../shared/property-templates.js';
+import { materialSelect, imageSelect } from '../../shared/property-templates.js';
 import { PLUNGER_DEFAULTS } from '../../shared/object-defaults.js';
 import { RENDER_COLOR_GRAY, RENDER_COLOR_BLACK } from '../../shared/constants.js';
 import { registerEditable, IEditable, Point } from './registry.js';
@@ -150,10 +150,7 @@ export function plungerProperties(item: PlungerItem): string {
           </select>
         </div>
         ${materialSelect('Material', 'material', materialOptions(item.material))}
-        <div class="prop-row">
-          <label class="prop-label">Image</label>
-          <select class="prop-select" data-prop="image">${imageOptions(item.image)}</select>
-        </div>
+        ${imageSelect('Image', 'image', imageOptions(item.image))}
         <div class="prop-row">
           <label class="prop-label">Flat Frames</label>
           <input type="number" class="prop-input" data-prop="anim_frames" value="${item.anim_frames ?? PLUNGER_DEFAULTS.anim_frames}" step="1" min="1">

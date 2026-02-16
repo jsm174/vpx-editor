@@ -11,8 +11,10 @@ declare global {
           items: Record<string, GameItem>;
           gamedata: Record<string, unknown> | null;
           theme?: string;
+          selectImage?: string;
         }) => void
       ) => void;
+      onSelectImage: (callback: (imageName: string) => void) => void;
       onSetDisabled: (callback: (disabled: boolean) => void) => void;
       onThemeChanged: (callback: (theme: string) => void) => void;
       readFile: (path: string) => Promise<{ success: boolean; data?: string; error?: string }>;
@@ -156,7 +158,7 @@ function init(): void {
 
   elements.importBtn.addEventListener('click', () => manager?.importImageNative());
 
-  window.imageManager.onInit(data => {
+  window.imageManager.onInit(async data => {
     manager!.setData({
       extractedDir: data.extractedDir,
       images: data.images,
@@ -164,8 +166,18 @@ function init(): void {
       gamedata: data.gamedata,
     });
     manager!.setUIDisabled(false);
-    manager!.renderList('');
+    await manager!.renderList('');
+    if (data.selectImage) {
+      await manager!.selectImageByName(data.selectImage);
+    }
     elements.statusEl.textContent = `Loaded ${Object.keys(data.images || {}).length} images`;
+  });
+
+  window.imageManager.onSelectImage(async imageName => {
+    if (!manager) return;
+    elements.filterInput.value = '';
+    await manager.renderList('');
+    await manager.selectImageByName(imageName);
   });
 
   window.imageManager.onSetDisabled(disabled => {

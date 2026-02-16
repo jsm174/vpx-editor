@@ -356,6 +356,7 @@
         saveCollections: function() { return Promise.resolve(); },
         getGameitemsIndex: function() { return Promise.resolve([]); },
         showRenameDialog: function() {},
+        openImageManager: function(imageName) { events.emit('show-image-manager', imageName); },
         openMaterialManager: function(materialName) { events.emit('show-material-manager', materialName); }
       };
 
