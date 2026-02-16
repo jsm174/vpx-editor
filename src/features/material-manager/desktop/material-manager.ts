@@ -16,7 +16,13 @@ export interface MaterialManagerAPI extends CommonBridgeAPI {
     originalName: string
   ) => void;
   onMaterialEditorResult: (callback: (result: Record<string, unknown> | null) => void) => void;
-  onRefresh: (callback: (data: { materials: Record<string, unknown>; items: Record<string, unknown> }) => void) => void;
+  onRefresh: (
+    callback: (data: {
+      materials: Record<string, unknown>;
+      items: Record<string, unknown>;
+      gamedata: Record<string, unknown> | null;
+    }) => void
+  ) => void;
   onSelectMaterial: (callback: (materialName: string) => void) => void;
 }
 

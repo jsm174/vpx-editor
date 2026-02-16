@@ -45,6 +45,7 @@ interface MaterialsState {
   extractedDir: string;
   materials: Record<string, unknown>;
   items: Record<string, GameItem>;
+  gamedata: Record<string, unknown> | null;
   theme: string;
 }
 
@@ -385,7 +386,13 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
         } catch {}
       }
 
-      return { extractedDir: ctx.extractedDir, materials, items, theme: getActualTheme(settings.theme) };
+      let gamedata: Record<string, unknown> | null = null;
+      try {
+        const gamedataContent = await fs.promises.readFile(`${ctx.extractedDir}/gamedata.json`, 'utf-8');
+        gamedata = JSON.parse(gamedataContent);
+      } catch {}
+
+      return { extractedDir: ctx.extractedDir, materials, items, gamedata, theme: getActualTheme(settings.theme) };
     } catch (e: unknown) {
       console.error('getMaterialsState error:', e);
       return null;

@@ -35,6 +35,7 @@ export interface MaterialManagerData {
   extractedDir: string;
   materials: Record<string, Material>;
   items: Record<string, GameItem>;
+  gamedata: Record<string, unknown> | null;
 }
 
 export interface MaterialManagerElements {
@@ -75,6 +76,7 @@ export interface MaterialManagerInstance {
   setData: (data: MaterialManagerData) => void;
   setMaterials: (newMaterials: Record<string, Material>) => void;
   setItems: (newItems: Record<string, GameItem>) => void;
+  setGamedata: (newGamedata: Record<string, unknown> | null) => void;
   clearSelection: () => void;
   setUIDisabled: (disabled: boolean) => void;
   handleMaterialEditorResult: (result: Record<string, unknown> | null) => Promise<void>;
@@ -98,12 +100,19 @@ const MATERIAL_PROPERTIES = [
   { type: 'Decal', props: ['material'] },
 ];
 
+const TABLE_MATERIAL_PROPERTIES = ['playfield_material'];
+
 export async function loadMaterialManagerData(
   extractedDir: string,
   callbacks: Pick<MaterialManagerCallbacks, 'readFile'>
-): Promise<{ materials: Record<string, Material>; items: Record<string, GameItem> }> {
+): Promise<{
+  materials: Record<string, Material>;
+  items: Record<string, GameItem>;
+  gamedata: Record<string, unknown> | null;
+}> {
   let materials: Record<string, Material> = {};
   let items: Record<string, GameItem> = {};
+  let gamedata: Record<string, unknown> | null = null;
 
   try {
     const materialsJson = await callbacks.readFile(`${extractedDir}/materials.json`);
@@ -135,7 +144,14 @@ export async function loadMaterialManagerData(
     /* empty */
   }
 
-  return { materials, items };
+  try {
+    const gamedataJson = await callbacks.readFile(`${extractedDir}/gamedata.json`);
+    gamedata = JSON.parse(gamedataJson);
+  } catch {
+    /* empty */
+  }
+
+  return { materials, items, gamedata };
 }
 
 export function initMaterialManagerComponent(
@@ -145,6 +161,7 @@ export function initMaterialManagerComponent(
 ): MaterialManagerInstance {
   let materials: Record<string, Material> = initialData?.materials || {};
   let items: Record<string, GameItem> = initialData?.items || {};
+  let gamedata: Record<string, unknown> | null = initialData?.gamedata || null;
   let extractedDir = initialData?.extractedDir || '';
   let selectedMaterial: string | null = null;
   let sortColumn = 'name';
@@ -162,6 +179,13 @@ export function initMaterialManagerComponent(
       for (const prop of typeDef.props) {
         if ((item as Record<string, unknown>)[prop] === materialName) {
           usedBy.push({ name: itemName, type: item._type, property: prop });
+        }
+      }
+    }
+    if (gamedata) {
+      for (const prop of TABLE_MATERIAL_PROPERTIES) {
+        if (gamedata[prop] === materialName) {
+          usedBy.push({ name: 'Table', type: 'Table', property: prop });
         }
       }
     }
@@ -970,6 +994,7 @@ export function initMaterialManagerComponent(
     extractedDir = data.extractedDir;
     materials = data.materials || {};
     items = data.items || {};
+    gamedata = data.gamedata || null;
   }
 
   function setMaterials(newMaterials: Record<string, Material>): void {
@@ -978,6 +1003,10 @@ export function initMaterialManagerComponent(
 
   function setItems(newItems: Record<string, GameItem>): void {
     items = newItems || {};
+  }
+
+  function setGamedata(newGamedata: Record<string, unknown> | null): void {
+    gamedata = newGamedata;
   }
 
   function clearSelection(): void {
@@ -1005,6 +1034,7 @@ export function initMaterialManagerComponent(
     setData,
     setMaterials,
     setItems,
+    setGamedata,
     clearSelection,
     setUIDisabled,
     handleMaterialEditorResult,

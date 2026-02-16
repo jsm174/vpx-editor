@@ -60,7 +60,7 @@ export function initWebMaterialManager(
     const theme = resolveTheme(themeSetting);
     modal.setAttribute('data-theme', theme);
 
-    const { materials, items } = await loadMaterialManagerData(extractedDir, {
+    const { materials, items, gamedata } = await loadMaterialManagerData(extractedDir, {
       readFile: deps.readFile,
     });
 
@@ -117,6 +117,7 @@ export function initWebMaterialManager(
       extractedDir,
       materials,
       items,
+      gamedata,
     });
     materialInstance.setUIDisabled(false);
     materialInstance.renderList('');

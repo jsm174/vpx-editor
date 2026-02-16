@@ -1035,7 +1035,13 @@ ipcMain.on('refresh-material-manager', async event => {
       }
     }
 
-    ctx.materialManagerWindow.webContents.send('refresh', { materials, items });
+    let gamedata: Record<string, unknown> | null = null;
+    try {
+      const gamedataContent = await fs.promises.readFile(path.join(ctx.extractedDir, 'gamedata.json'), 'utf-8');
+      gamedata = JSON.parse(gamedataContent);
+    } catch {}
+
+    ctx.materialManagerWindow.webContents.send('refresh', { materials, items, gamedata });
   } catch (err) {
     console.error('Failed to refresh material manager:', err);
   }

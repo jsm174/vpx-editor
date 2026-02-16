@@ -43,7 +43,16 @@ export const IMAGE_PROPERTIES: { type: string; props: string[] }[] = [
   { type: 'DispReel', props: ['image'] },
 ];
 
-export const TABLE_IMAGE_PROPERTIES = ['image', 'ball_image', 'ball_image_front', 'env_image', 'color_grade_image'];
+export const TABLE_IMAGE_PROPERTIES = [
+  'image',
+  'ball_image',
+  'ball_image_front',
+  'env_image',
+  'image_color_grade',
+  'backglass_image_full_desktop',
+  'backglass_image_full_fullscreen',
+  'backglass_image_full_single_screen',
+];
 
 export const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.hdr'];
 

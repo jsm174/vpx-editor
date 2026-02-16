@@ -13,6 +13,7 @@ declare global {
           extractedDir: string;
           materials: Record<string, Material>;
           items: Record<string, unknown>;
+          gamedata: Record<string, unknown> | null;
           theme?: string;
           selectMaterial?: string;
         }) => void
@@ -41,7 +42,11 @@ declare global {
       ) => void;
       onMaterialEditorResult: (callback: (result: Record<string, unknown> | null) => void) => void;
       onRefresh: (
-        callback: (data: { materials: Record<string, unknown>; items: Record<string, unknown> }) => void
+        callback: (data: {
+          materials: Record<string, unknown>;
+          items: Record<string, unknown>;
+          gamedata: Record<string, unknown> | null;
+        }) => void
       ) => void;
     };
   }
@@ -142,6 +147,7 @@ function init(): void {
       extractedDir: data.extractedDir,
       materials: data.materials || {},
       items: (data.items as Record<string, { _type: string; name: string }>) || {},
+      gamedata: data.gamedata || null,
     });
     manager!.setUIDisabled(false);
     manager!.renderList('');
@@ -175,6 +181,7 @@ function init(): void {
     const previouslySelected = manager?.getSelectedMaterial();
     manager?.setMaterials(data.materials as Record<string, Material>);
     manager?.setItems(data.items as Record<string, { _type: string; name: string }>);
+    manager?.setGamedata(data.gamedata || null);
     manager?.clearSelection();
     manager?.renderList('');
     if (previouslySelected && (data.materials as Record<string, unknown>)[previouslySelected]) {
