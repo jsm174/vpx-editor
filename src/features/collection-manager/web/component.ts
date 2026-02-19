@@ -15,6 +15,7 @@ export interface WebCollectionManagerInstance {
   setData: (data: { extractedDir: string; collections: Collection[]; allItems: string[] }) => void;
   setUIDisabled: (disabled: boolean) => void;
   renderList: () => void;
+  selectCollection: (name: string | null) => void;
   refreshButtonStates: () => void;
 }
 

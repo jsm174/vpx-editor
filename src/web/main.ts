@@ -1018,7 +1018,7 @@ function setupCollectionManagerModal(): void {
   const modal = document.getElementById('collection-modal')!;
   const closeBtn = document.getElementById('collection-close')!;
 
-  async function openCollectionManager(): Promise<void> {
+  async function openCollectionManager(collectionName?: string): Promise<void> {
     if (!state.tableLoaded) return;
 
     const settings = (await state.platform!.storage.get<EditorSettings>('editorSettings')) || {};
@@ -1065,7 +1065,11 @@ function setupCollectionManagerModal(): void {
       allItems,
     });
     collectionInstance.setUIDisabled(false);
-    collectionInstance.renderList();
+    if (collectionName) {
+      collectionInstance.selectCollection(collectionName);
+    } else {
+      collectionInstance.renderList();
+    }
     modal.classList.remove('hidden');
   }
 

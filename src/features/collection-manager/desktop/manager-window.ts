@@ -49,6 +49,7 @@ interface InitData {
   collections: Collection[];
   items?: Record<string, unknown>;
   selectedItems?: string[];
+  selectCollection?: string;
 }
 
 async function initManager(data: InitData): Promise<void> {
@@ -105,7 +106,11 @@ async function initManager(data: InitData): Promise<void> {
     allItems,
   });
   managerInstance.setUIDisabled(false);
-  managerInstance.renderList();
+  if (data.selectCollection) {
+    managerInstance.selectCollection(data.selectCollection);
+  } else {
+    managerInstance.renderList();
+  }
 }
 
 window.vpxEditor.onInitCollectionManager?.(initManager as (data: { collections: Collection[] }) => void);
@@ -122,6 +127,12 @@ window.vpxEditor.onCollectionsChanged?.((data: Collection[], selectCollection?: 
     } else {
       managerInstance.renderList();
     }
+  }
+});
+
+window.vpxEditor.onSelectCollection?.((collectionName: string) => {
+  if (managerInstance) {
+    managerInstance.selectCollection(collectionName);
   }
 });
 

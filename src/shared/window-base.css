@@ -15,6 +15,7 @@
   --accent-hover: #1084d8;
   --canvas-bg: #2d2d2d;
   --icon-filter: invert(1);
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='4' viewBox='0 0 8 4'%3E%3Cpath fill='%23cccccc' d='M0 0l4 4 4-4z'/%3E%3C/svg%3E");
   --tooltip-bg: #1a1a1a;
   --tooltip-border: #444;
   --badge-bg: rgba(255, 255, 255, 0.1);
@@ -31,6 +32,7 @@
   --accent-hover: #106ebe;
   --canvas-bg: #e0e0e0;
   --icon-filter: invert(0);
+  --select-arrow: url('/icons/dropdown-arrow.svg');
   --tooltip-bg: #ffffff;
   --tooltip-border: #cccccc;
   --badge-bg: rgba(0, 0, 0, 0.1);
@@ -119,7 +121,7 @@ input, textarea {
   cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
-  background-image: url('/icons/dropdown-arrow.svg');
+  background-image: var(--select-arrow);
   background-repeat: no-repeat;
   background-position: right 8px center;
   padding-right: 24px;

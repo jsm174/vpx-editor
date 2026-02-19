@@ -152,6 +152,7 @@ export const vpxEditorAPI = {
   openImageManager: (imageName?: string) => events.emit('show-image-manager', imageName),
   refreshMaterialManager: noop,
   openMaterialManager: (materialName?: string) => events.emit('show-material-manager', materialName),
+  openCollectionManager: (collectionName?: string) => events.emit('show-collection-manager', collectionName),
   refreshSoundManager: noop,
 } as unknown as VpxEditorAPI;
 

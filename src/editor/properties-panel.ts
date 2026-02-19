@@ -687,14 +687,18 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
   const isLocked = item.is_locked === true;
 
   let nameValue: string;
+  const collectionName = getCollectionNameForItem(state.primarySelectedItem!);
   if (isMultiSelect) {
-    const collectionName = getCollectionNameForItem(state.primarySelectedItem!);
     const typeName = item._type;
     const count = state.selectedItems.length;
     nameValue = collectionName ? `${collectionName} [${typeName}](${count})` : `${typeName}(${count})`;
   } else {
     nameValue = item.name || state.primarySelectedItem!;
   }
+
+  const collectionGotoIcon = collectionName
+    ? `<img src="icons/goto-manager.svg" class="prop-goto-icon prop-goto-collection" data-collection="${collectionName}" title="Open in Collection Manager">`
+    : '';
 
   const lockLabel = isLocked ? 'Unlock' : 'Lock';
   const canToggleLock = !state.isTableLocked;
@@ -704,6 +708,7 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
         <label class="prop-label">Name:</label>
         <img src="icons/${isLocked ? 'locked' : 'unlocked'}.png" class="prop-lock-icon${canToggleLock ? ' prop-lock-icon-clickable' : ''}" id="lock-object-icon" alt="${isLocked ? 'Locked' : 'Unlocked'}" title="${canToggleLock ? `Click to ${lockLabel.toLowerCase()}` : 'Table is locked'}">
         <span class="prop-name-display" title="${nameValue}">${nameValue}</span>
+        ${collectionGotoIcon}
         <button class="rename-btn" id="rename-object-btn"${isLocked || isMultiSelect ? ' disabled' : ''}>Rename</button>
       </div>
     </div>
@@ -846,6 +851,11 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
   elements.propertiesContent!.addEventListener('click', (e: Event) => {
     const target = e.target as HTMLElement;
     if (!target.classList.contains('prop-goto-icon')) return;
+    const collection = target.dataset.collection;
+    if (collection) {
+      window.vpxEditor.openCollectionManager(collection);
+      return;
+    }
     const prop = target.dataset.gotoProp;
     if (!prop) return;
     const sel = target.parentElement?.querySelector(`select[data-prop="${prop}"]`) as HTMLSelectElement;

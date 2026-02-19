@@ -84,6 +84,9 @@ const vpxEditorAPI: VpxEditorAPI = {
   openMaterialManager: (materialName?: string): void => {
     ipcRenderer.send('open-material-manager-with-selection', materialName);
   },
+  openCollectionManager: (collectionName?: string): void => {
+    ipcRenderer.send('open-collection-manager-with-selection', collectionName);
+  },
   refreshSoundManager: (): void => {
     ipcRenderer.send('refresh-sound-manager');
   },
@@ -491,6 +494,9 @@ const vpxEditorAPI: VpxEditorAPI = {
   },
   onSetEditorOpen: (callback: (isOpen: boolean) => void): void => {
     ipcRenderer.on('set-editor-open', (_event: IpcRendererEvent, isOpen: boolean) => callback(isOpen));
+  },
+  onSelectCollection: (callback: (collectionName: string) => void): void => {
+    ipcRenderer.on('select-collection', (_event: IpcRendererEvent, collectionName: string) => callback(collectionName));
   },
   openCollectionEditor: (name: string): void => {
     ipcRenderer.send('open-collection-editor', name);

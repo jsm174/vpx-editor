@@ -56,7 +56,7 @@
   cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
-  background-image: url('/icons/dropdown-arrow.svg');
+  background-image: var(--select-arrow);
   background-repeat: no-repeat;
   background-position: right 8px center;
   padding-right: 24px;

@@ -154,6 +154,7 @@ export interface VpxEditorAPI {
   openImageManager: (imageName?: string) => void;
   refreshMaterialManager: () => void;
   openMaterialManager: (materialName?: string) => void;
+  openCollectionManager: (collectionName?: string) => void;
   refreshSoundManager: () => void;
   onSoundsChanged: (callback: IpcCallback) => void;
   onInfoChanged: (callback: IpcCallback<TableInfo>) => void;
@@ -317,6 +318,7 @@ export interface VpxEditorAPI {
   onCollectionsChanged: (callback: IpcCallback<Collection[]>) => void;
   onSetDisabled: (callback: IpcCallback<boolean>) => void;
   onSetEditorOpen: (callback: IpcCallback<boolean>) => void;
+  onSelectCollection: (callback: IpcCallback<string>) => void;
   openCollectionEditor: (name: string) => void;
   openCollectionPrompt: (mode: string, name: string | null) => void;
   openMaterialEditor?: (

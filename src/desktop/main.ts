@@ -1003,6 +1003,10 @@ ipcMain.on('open-material-manager-with-selection', (_event, materialName?: strin
   windowFactory.openMaterialManagerWindow(materialName);
 });
 
+ipcMain.on('open-collection-manager-with-selection', (_event, collectionName?: string) => {
+  windowFactory.openCollectionManagerWindow(collectionName);
+});
+
 ipcMain.on('refresh-material-manager', async event => {
   const ctx = getContextForManagerEvent(event);
   if (!ctx?.extractedDir || !ctx.materialManagerWindow || ctx.materialManagerWindow.isDestroyed()) return;

@@ -144,7 +144,7 @@ export interface WindowFactory {
   openSoundManagerWindow(): void;
   openTableInfoWindow(): Promise<void>;
   openDimensionsManagerWindow(): Promise<void>;
-  openCollectionManagerWindow(): void;
+  openCollectionManagerWindow(selectCollection?: string): void;
   openRenderProbeManagerWindow(): void;
   openScriptEditorWindow(ctx?: WindowContext | null): void;
   openSettingsWindow(): void;
@@ -955,7 +955,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     });
   }
 
-  function openCollectionManagerWindow(): void {
+  function openCollectionManagerWindow(selectCollection?: string): void {
     const ctx = windowRegistry.getFocused();
     if (!ctx?.extractedDir) {
       dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
@@ -964,6 +964,9 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
 
     if (ctx.collectionManagerWindow) {
       ctx.collectionManagerWindow.focus();
+      if (selectCollection) {
+        ctx.collectionManagerWindow.webContents.send('select-collection', selectCollection);
+      }
       return;
     }
 
@@ -1021,7 +1024,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
       const title = ctx.tableName ? `Collection Manager - [${ctx.tableName}.vpx]` : 'Collection Manager';
       ctx.collectionManagerWindow!.setTitle(title);
       const data = await getCollectionManagerData(ctx);
-      ctx.collectionManagerWindow!.webContents.send('init-collection-manager', data);
+      ctx.collectionManagerWindow!.webContents.send('init-collection-manager', { ...data, selectCollection });
       ctx.collectionManagerWindow!.show();
       ctx.window.webContents.send('request-selection-resend');
     });
