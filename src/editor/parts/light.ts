@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { state, elements } from '../state.js';
 import { toScreen, generateSmoothedPath, pointInPolygon } from '../utils.js';
-import { createMaterial, getSurfaceHeight } from '../../shared/3d-material-helpers.js';
+import { getSurfaceHeight } from '../../shared/3d-material-helpers.js';
 import { imageOptions, surfaceOptions } from '../../shared/options-generators.js';
 import { imageSelect } from '../../shared/property-templates.js';
 import { createMeshGeometry } from '../../shared/mesh-utils.js';
@@ -44,9 +44,7 @@ export function createLight3DMesh(item: unknown): THREE.Object3D | null {
   const center = lightItem.center || lightItem.vCenter;
   if (!center) return null;
 
-  const color = lightItem.color || LIGHT_DEFAULTS.color;
   const surfaceHeight = getSurfaceHeight(lightItem.surface);
-  const baseHeight = (lightItem.height ?? 0) + surfaceHeight;
 
   if (lightItem.is_bulb_light && !lightItem.show_bulb_mesh) {
     return null;
@@ -83,10 +81,12 @@ export function createLight3DMesh(item: unknown): THREE.Object3D | null {
       emissiveIntensity: 0.3 * intensity,
       transparent: true,
       opacity: 0.6,
+      depthWrite: false,
       side: THREE.DoubleSide,
     });
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(center.x, center.y, baseHeight + 0.5);
+    const lightHeight = (lightItem.height ?? 0) + surfaceHeight;
+    mesh.position.set(center.x, center.y, lightHeight + 0.5);
     return mesh;
   }
 
@@ -94,22 +94,30 @@ export function createLight3DMesh(item: unknown): THREE.Object3D | null {
 
   const group = new THREE.Group();
 
+  const lightColor = lightItem.color || LIGHT_DEFAULTS.color;
+
   const socketGeom = createMeshGeometry(bulbSocketMesh, { scale: meshRadius, offsetZ: 0 });
-  const socketMat = createMaterial(lightItem.socket_material, null, 0x333333);
+  const socketMat = new THREE.MeshStandardMaterial({
+    color: 0x181818,
+    roughness: 0.9,
+    side: THREE.DoubleSide,
+  });
   group.add(new THREE.Mesh(socketGeom, socketMat));
 
   const bulbGeom = createMeshGeometry(bulbLightMesh, { scale: meshRadius, offsetZ: 0 });
   const bulbMat = new THREE.MeshStandardMaterial({
-    color: color,
-    emissive: color,
-    emissiveIntensity: 0.5,
+    color: 0x000000,
+    emissive: lightColor,
+    emissiveIntensity: 0.15,
+    roughness: 0.9,
     transparent: true,
-    opacity: 0.8,
+    opacity: 0.2,
+    depthWrite: false,
     side: THREE.DoubleSide,
   });
   group.add(new THREE.Mesh(bulbGeom, bulbMat));
 
-  group.position.set(center.x, center.y, baseHeight);
+  group.position.set(center.x, center.y, surfaceHeight);
   return group;
 }
 
