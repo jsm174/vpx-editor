@@ -245,8 +245,12 @@ export function createMaterialFromVPX(
   if (imageName) {
     const imageInfo = findImageInfo(imageName);
     if (imageInfo?.is_opaque === false) {
-      matOptions.transparent = true;
+      matOptions.alphaTest = 0.5;
     }
+  }
+
+  if (matOptions.transparent) {
+    matOptions.depthWrite = false;
   }
 
   const material = new THREE.MeshStandardMaterial(matOptions);

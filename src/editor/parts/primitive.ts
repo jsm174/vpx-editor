@@ -180,6 +180,25 @@ function createPrimitiveMaterial(item: PrimitiveItem): THREE.Material {
 
   const material = createMaterial(materialName, imageName, defaultColor);
   material.wireframe = getWireframeMode();
+
+  const depthMask = item.use_depth_mask !== false && !item.add_blend;
+  material.depthWrite = depthMask;
+
+  if (item.add_blend) {
+    material.transparent = true;
+    material.blending = THREE.AdditiveBlending;
+    material.depthWrite = false;
+  } else if (item.static_rendering) {
+    material.transparent = false;
+    material.opacity = 1;
+  }
+
+  const alpha = (item.alpha ?? PRIMITIVE_DEFAULTS.alpha) / 100;
+  if (alpha < 1) {
+    material.transparent = true;
+    material.opacity = alpha;
+  }
+
   return material;
 }
 
