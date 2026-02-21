@@ -52,22 +52,27 @@ export function initWebSelectElement(
         editor_layer?: number;
         editor_layer_name?: string;
       }[];
-      for (const gi of gameitemsIndex) {
-        const fileName = gi.file_name || '';
-        if (!fileName) continue;
-        try {
-          const itemJson = await deps.readFile(`${extractedDir}/gameitems/${fileName}`);
-          const itemData = JSON.parse(itemJson);
-          const type = Object.keys(itemData)[0];
-          const item = itemData[type];
-          item._type = type;
-          item._fileName = `gameitems/${fileName}`;
-          item._layer = gi.editor_layer || 0;
-          item._layerName = gi.editor_layer_name || '';
-          items[item.name || fileName] = item;
-        } catch {
-          /* skip items that fail to load */
-        }
+      const results = await Promise.all(
+        gameitemsIndex.map(async gi => {
+          const fileName = gi.file_name || '';
+          if (!fileName) return null;
+          try {
+            const itemJson = await deps.readFile(`${extractedDir}/gameitems/${fileName}`);
+            const itemData = JSON.parse(itemJson);
+            const type = Object.keys(itemData)[0];
+            const item = itemData[type];
+            item._type = type;
+            item._fileName = `gameitems/${fileName}`;
+            item._layer = gi.editor_layer || 0;
+            item._layerName = gi.editor_layer_name || '';
+            return { key: item.name || fileName, item };
+          } catch {
+            return null;
+          }
+        })
+      );
+      for (const result of results) {
+        if (result) items[result.key] = result.item;
       }
     } catch {
       items = {};

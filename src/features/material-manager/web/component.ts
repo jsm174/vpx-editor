@@ -59,6 +59,8 @@ export function initWebMaterialManager(
     const themeSetting = await getThemeFromSettings();
     const theme = resolveTheme(themeSetting);
     modal.setAttribute('data-theme', theme);
+    document.getElementById('material-status')!.textContent = 'Loading...';
+    modal.classList.remove('hidden');
 
     const { materials, items, gamedata } = await loadMaterialManagerData(extractedDir, {
       readFile: deps.readFile,
@@ -125,7 +127,6 @@ export function initWebMaterialManager(
       materialInstance.selectMaterialByName(selectMaterial);
     }
     document.getElementById('material-status')!.textContent = `Loaded ${Object.keys(materials).length} materials`;
-    modal.classList.remove('hidden');
   }
 
   function close(): void {

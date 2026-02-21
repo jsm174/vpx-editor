@@ -1,4 +1,4 @@
-import { state, Collection } from './state.js';
+import { state, Collection, getItem } from './state.js';
 import { withUndo } from '../shared/undo-helpers.js';
 import { updateCollectionsList } from './layers-panel.js';
 import { nameEquals, includesName, findIndexByName, findByName } from '../shared/gameitem-utils.js';
@@ -49,7 +49,7 @@ export async function addItemToCollection(
   if (includesName(collection.items, itemName)) return false;
 
   return withUndo(
-    `Add ${itemName} to ${collectionName}`,
+    `${getItem(itemName)?._type || 'Item'} added to ${collectionName}`,
     async (): Promise<boolean> => {
       collection.items!.push(itemName);
       await saveCollections();
@@ -72,7 +72,7 @@ export async function removeItemFromCollection(
   if (index === -1) return false;
 
   return withUndo(
-    `Remove ${itemName} from ${collectionName}`,
+    `${getItem(itemName)?._type || 'Item'} removed from ${collectionName}`,
     async (): Promise<boolean> => {
       collection.items!.splice(index, 1);
       await saveCollections();
@@ -117,7 +117,7 @@ export async function createCollection(
   };
 
   return withUndo(
-    `Create collection ${name}`,
+    `Collection ${name} created`,
     async (): Promise<Collection> => {
       state.collections.push(newCollection);
       await saveCollections(selectAfterCreate ? uniqueName : null);
@@ -146,7 +146,7 @@ export async function deleteCollection(collectionName: string): Promise<boolean>
   if (index === -1) return false;
 
   return withUndo(
-    `Delete collection ${collectionName}`,
+    `Collection ${collectionName} deleted`,
     async (): Promise<boolean> => {
       state.collections.splice(index, 1);
 
@@ -178,7 +178,7 @@ export async function renameCollection(oldName: string, newName: string): Promis
   if (includesName(existingNames, newName)) return false;
 
   return withUndo(
-    `Rename collection ${oldName} to ${newName}`,
+    'Collection renamed',
     async (): Promise<boolean> => {
       collection.name = newName;
 
@@ -201,7 +201,7 @@ export async function reorderCollection(collectionName: string, fromIndex: numbe
   if (toIndex < 0 || toIndex >= collection.items.length) return false;
 
   return withUndo(
-    `Reorder items in ${collectionName}`,
+    `Items reordered in ${collectionName}`,
     async (): Promise<boolean> => {
       const [item] = collection.items!.splice(fromIndex, 1);
       collection.items!.splice(toIndex, 0, item);
@@ -217,7 +217,7 @@ export async function moveCollectionUp(collectionName: string): Promise<boolean>
   if (index <= 0) return false;
 
   return withUndo(
-    `Move collection ${collectionName} up`,
+    `Collection ${collectionName} moved up`,
     async (): Promise<boolean> => {
       const [collection] = state.collections.splice(index, 1);
       state.collections.splice(index - 1, 0, collection);
@@ -234,7 +234,7 @@ export async function moveCollectionDown(collectionName: string): Promise<boolea
   if (index === -1 || index >= state.collections.length - 1) return false;
 
   return withUndo(
-    `Move collection ${collectionName} down`,
+    `Collection ${collectionName} moved down`,
     async (): Promise<boolean> => {
       const [collection] = state.collections.splice(index, 1);
       state.collections.splice(index + 1, 0, collection);
@@ -254,7 +254,7 @@ export async function updateCollectionProperties(
   if (!collection) return false;
 
   return withUndo(
-    `Update collection ${collectionName} properties`,
+    `Collection ${collectionName} properties updated`,
     async (): Promise<boolean> => {
       if (properties.fire_events !== undefined) {
         collection.fire_events = properties.fire_events;
@@ -277,7 +277,7 @@ export async function setCollectionItems(collectionName: string, items: string[]
   if (!collection) return false;
 
   return withUndo(
-    `Update collection ${collectionName} items`,
+    `Collection ${collectionName} items updated`,
     async (): Promise<boolean> => {
       collection.items = [...items];
       await saveCollections();

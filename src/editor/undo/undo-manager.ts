@@ -238,7 +238,7 @@ class UndoManager {
   }
 
   async recordScriptChange(before: string, after: string): Promise<void> {
-    this.beginUndo('Edit Script');
+    this.beginUndo('Script edited');
     if (this.currentRecord) {
       this.currentRecord.scriptBefore = before;
       this.currentRecord.scriptAfter = after;
@@ -313,6 +313,7 @@ class UndoManager {
         this.undoStack.push(this.currentRecord);
         this._notifyChange();
         this._updateDirtyState();
+        this._updateStatusBar(this.currentRecord.description);
       }
 
       this.currentRecord = null;

@@ -51,7 +51,8 @@ export async function cutItem(itemName: string): Promise<boolean> {
   if (!(await copyItem(itemName))) return false;
 
   const count = itemNames.length;
-  return withUndo(count > 1 ? `Cut ${count} items` : `Cut ${itemNames[0]}`, async (): Promise<boolean> => {
+  const cutLabel = count > 1 ? `${count} items cut` : `${getItem(itemNames[0])?._type || 'Item'} cut`;
+  return withUndo(cutLabel, async (): Promise<boolean> => {
     for (const name of itemNames) {
       await deleteObject(name, true);
     }
@@ -75,7 +76,8 @@ export async function pasteItem(atOriginalLocation: boolean = false): Promise<st
     groupCenterY /= clipboardData.items.length;
 
     const count = clipboardData.items.length;
-    return withUndo(count > 1 ? `Paste ${count} items` : 'Paste', async (): Promise<string[] | null> => {
+    const pasteLabel = count > 1 ? `${count} items pasted` : `${clipboardData.items[0].type || 'Item'} pasted`;
+    return withUndo(pasteLabel, async (): Promise<string[] | null> => {
       const newNames: string[] = [];
 
       for (const itemData of clipboardData.items) {

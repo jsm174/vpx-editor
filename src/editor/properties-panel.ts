@@ -959,7 +959,8 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
     if (!primaryItem) return;
 
     const newLockState = !primaryItem.is_locked;
-    undoManager.beginUndo(newLockState ? 'Lock' : 'Unlock');
+    const lockLabel = state.selectedItems.length > 1 ? 'Items' : primaryItem._type || 'Item';
+    undoManager.beginUndo(newLockState ? `${lockLabel} locked` : `${lockLabel} unlocked`);
 
     for (const itemName of state.selectedItems) {
       const item = getItem(itemName);
@@ -1038,7 +1039,7 @@ async function updateItemProperty(itemName: string, prop: string, value: string 
     return;
   }
 
-  undoManager.beginUndo(`Change ${prop}`);
+  undoManager.beginUndo(`${prop} updated`);
   undoManager.markForUndo(itemName);
 
   const path = prop.split('.');
@@ -1066,7 +1067,7 @@ async function updateItemProperty(itemName: string, prop: string, value: string 
 
   if (result.success) {
     undoManager.endUndo();
-    elements.statusBar!.textContent = `Updated ${itemName}.${prop}`;
+    elements.statusBar!.textContent = `${prop} updated`;
     invalidateItem(itemName);
     if (state.viewMode === VIEW_MODE_3D && is3DInitialized()) {
       render3D();
@@ -1134,7 +1135,7 @@ function setupTablePropertyHandlers(): void {
           }
         }
 
-        undoManager.beginUndo(`Change table ${prop}`);
+        undoManager.beginUndo(`Table ${prop} updated`);
         undoManager.markGamedataForUndo();
 
         (state.gamedata as Record<string, unknown>)[prop!] = value;
@@ -1146,7 +1147,7 @@ function setupTablePropertyHandlers(): void {
 
         if (result.success) {
           undoManager.endUndo();
-          elements.statusBar!.textContent = `Updated table.${prop}`;
+          elements.statusBar!.textContent = `Table ${prop} updated`;
           if (prop === 'image') {
             if (value) {
               await loadBackdropImage(value as string);
@@ -1279,7 +1280,7 @@ export async function renameTable(newName: string): Promise<void> {
   const oldName = (state.gamedata as GameData).name || 'Table1';
   if (newName === oldName) return;
 
-  undoManager.beginUndo('Rename table');
+  undoManager.beginUndo('Table renamed');
   undoManager.markGamedataForUndo();
 
   (state.gamedata as GameData).name = newName;
@@ -1292,7 +1293,7 @@ export async function renameTable(newName: string): Promise<void> {
   if (result.success) {
     undoManager.endUndo();
     updatePropertiesPanel();
-    elements.statusBar!.textContent = `Renamed table to "${newName}"`;
+    elements.statusBar!.textContent = 'Table renamed';
   } else {
     undoManager.cancelUndo();
     elements.statusBar!.textContent = `Failed to rename: ${result.error}`;
@@ -1338,7 +1339,7 @@ function setupBackglassPropertyHandlers(): void {
           value = parseFloat(target.value);
         }
 
-        undoManager.beginUndo(`Change backglass ${prop}`);
+        undoManager.beginUndo(`Backglass ${prop} updated`);
         undoManager.markGamedataForUndo();
 
         (state.gamedata as Record<string, unknown>)[prop] = value;
@@ -1350,7 +1351,7 @@ function setupBackglassPropertyHandlers(): void {
 
         if (result.success) {
           undoManager.endUndo();
-          elements.statusBar!.textContent = `Updated backglass.${prop}`;
+          elements.statusBar!.textContent = `Backglass ${prop} updated`;
           const focusedInput = document.activeElement as HTMLElement;
           if (state.viewMode === VIEW_MODE_3D && is3DInitialized()) {
             refresh3DScene();
@@ -1484,7 +1485,7 @@ function setupPartGroupPropertyHandlers(groupName: string): void {
       const mask = parseInt(target.dataset.mask!);
       const checked = target.checked;
 
-      undoManager.beginUndo(`Change group visibility`);
+      undoManager.beginUndo('Group visibility updated');
       undoManager.markForUndo(groupName);
 
       let currentMask = (group.player_mode_visibility_mask as number) ?? 0xffff;
@@ -1498,7 +1499,7 @@ function setupPartGroupPropertyHandlers(groupName: string): void {
       await savePartGroup(groupName, group);
       refresh3DScene();
       undoManager.endUndo();
-      elements.statusBar!.textContent = `Updated group visibility`;
+      elements.statusBar!.textContent = 'Group visibility updated';
     });
   });
 
@@ -1526,7 +1527,7 @@ function setupPartGroupPropertyHandlers(groupName: string): void {
           if (isNaN(value)) value = target.value;
         }
 
-        undoManager.beginUndo(`Change group ${prop}`);
+        undoManager.beginUndo(`Group ${prop} updated`);
         undoManager.markForUndo(groupName);
 
         (group as Record<string, unknown>)[prop] = value;
@@ -1534,7 +1535,7 @@ function setupPartGroupPropertyHandlers(groupName: string): void {
         await savePartGroup(groupName, group);
         refresh3DScene();
         undoManager.endUndo();
-        elements.statusBar!.textContent = `Updated group.${prop}`;
+        elements.statusBar!.textContent = `Group ${prop} updated`;
       });
     });
 
@@ -1624,7 +1625,7 @@ async function updateItemReferences(itemType: string, oldName: string, newName: 
 export async function renameObject(oldName: string, newName: string): Promise<void> {
   const item = getItem(oldName);
   if (!item) {
-    elements.statusBar!.textContent = `Object "${oldName}" not found`;
+    elements.statusBar!.textContent = `Item not found`;
     return;
   }
 
@@ -1635,7 +1636,7 @@ export async function renameObject(oldName: string, newName: string): Promise<vo
   const newBaseFileName = generateUniqueFileName(type, newName, existingFileNames);
   const newFileName = `gameitems/${newBaseFileName}`;
 
-  undoManager.beginUndo(`Rename ${oldName}`);
+  undoManager.beginUndo(`${type || 'Item'} renamed`);
   undoManager.markForRename(oldName, newName, oldFileName, newFileName);
 
   const oldPath = `${state.extractedDir}/${oldFileName}`;
@@ -1665,7 +1666,7 @@ export async function renameObject(oldName: string, newName: string): Promise<vo
   const writeResult = await window.vpxEditor.writeFile(newPath, JSON.stringify(saveData, null, 2));
   if (!writeResult.success) {
     undoManager.cancelUndo();
-    elements.statusBar!.textContent = `Failed to update object file: ${writeResult.error}`;
+    elements.statusBar!.textContent = `Failed to update item file: ${writeResult.error}`;
     return;
   }
 
@@ -1705,7 +1706,7 @@ export async function renameObject(oldName: string, newName: string): Promise<vo
     render();
   }
 
-  elements.statusBar!.textContent = `Renamed "${oldName}" to "${newName}"`;
+  elements.statusBar!.textContent = `${type || 'Item'} renamed`;
 }
 
 export { updateItemProperty };

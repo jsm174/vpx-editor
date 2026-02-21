@@ -149,7 +149,7 @@ export function flipObjectX(itemName: string, renderCallback?: () => void): void
   const item = getItem(itemName);
   if (!item || !item.drag_points) return;
 
-  undoManager.beginUndo('Flip horizontal');
+  undoManager.beginUndo('Flipped horizontal');
   undoManager.markForUndo(itemName);
 
   const center = getObjectCenter(item);
@@ -174,7 +174,7 @@ export function flipObjectY(itemName: string, renderCallback?: () => void): void
   const item = getItem(itemName);
   if (!item || !item.drag_points) return;
 
-  undoManager.beginUndo('Flip vertical');
+  undoManager.beginUndo('Flipped vertical');
   undoManager.markForUndo(itemName);
 
   const center = getObjectCenter(item);

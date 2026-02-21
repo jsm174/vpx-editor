@@ -55,9 +55,9 @@ export function toggleItemLock(itemName: string): void {
 
   const itemsToToggle = includesName(state.selectedItems, itemName) ? state.selectedItems : [itemName];
   const newLockState = !item.is_locked;
-  const action = newLockState ? 'Lock' : 'Unlock';
 
-  undoManager.beginUndo(`${action}`);
+  const label = itemsToToggle.length > 1 ? 'Items' : item._type || 'Item';
+  undoManager.beginUndo(newLockState ? `${label} locked` : `${label} unlocked`);
 
   for (const name of itemsToToggle) {
     const targetItem = getItem(name);
@@ -91,7 +91,7 @@ export async function assignItemToGroup(itemName: string, groupName: string | nu
   const item = getItem(itemName);
   if (!item) return;
 
-  undoManager.beginUndo('Assign to Group');
+  undoManager.beginUndo('Group assignment changed');
   undoManager.markForUndo(itemName);
 
   item.part_group_name = groupName;
@@ -102,16 +102,13 @@ export async function assignItemToGroup(itemName: string, groupName: string | nu
   updateLayersList();
   updateItemsList();
   render();
-  elements.statusBar!.textContent = groupName
-    ? `Assigned "${itemName}" to group "${groupName}"`
-    : `Removed "${itemName}" from group`;
 }
 
 export async function drawItemInFront(itemName: string): Promise<void> {
   const item = getItem(itemName);
   if (!item || !item._fileName) return;
 
-  undoManager.beginUndo('Draw In Front');
+  undoManager.beginUndo('Draw order changed');
   undoManager.markGameitemsListForUndo();
 
   const baseFileName = item._fileName.replace('gameitems/', '');
@@ -125,14 +122,13 @@ export async function drawItemInFront(itemName: string): Promise<void> {
 
   undoManager.endUndo();
   render();
-  elements.statusBar!.textContent = `Moved "${itemName}" to front`;
 }
 
 export async function drawItemInBack(itemName: string): Promise<void> {
   const item = getItem(itemName);
   if (!item || !item._fileName) return;
 
-  undoManager.beginUndo('Draw In Back');
+  undoManager.beginUndo('Draw order changed');
   undoManager.markGameitemsListForUndo();
 
   const baseFileName = item._fileName.replace('gameitems/', '');
@@ -146,7 +142,6 @@ export async function drawItemInBack(itemName: string): Promise<void> {
 
   undoManager.endUndo();
   render();
-  elements.statusBar!.textContent = `Moved "${itemName}" to back`;
 }
 
 function getDrawingOrderIndex(name: string): number {
@@ -195,7 +190,7 @@ export async function renamePartGroup(oldName: string, newName: string): Promise
   const group = getPartGroup(oldName);
   if (!group) return;
 
-  undoManager.beginUndo(`Rename group ${oldName}`);
+  undoManager.beginUndo('Group renamed');
 
   const oldFileName = group._fileName as string;
   const oldBaseFileName = oldFileName.replace('gameitems/', '');
@@ -254,8 +249,6 @@ export async function renamePartGroup(oldName: string, newName: string): Promise
   state.selectedPartGroup = newName;
   updateLayersList();
   updatePropertiesPanel();
-  elements.statusBar!.textContent = `Renamed group "${oldName}" to "${newName}"`;
-
   requestAnimationFrame(() => {
     const groupHeader = document.querySelector(`.layer-header[data-group-name="${newName}"]`);
     if (groupHeader) {
@@ -294,7 +287,7 @@ export async function showDeletePartGroupModal(groupName: string): Promise<void>
     if (!confirmed) return;
   }
 
-  undoManager.beginUndo('Delete group');
+  undoManager.beginUndo('Group deleted');
   await deleteGroupAndMoveItems(groupName, null);
   await window.vpxEditor.writeFile(`${state.extractedDir}/gameitems.json`, JSON.stringify(state.gameitems, null, 2));
   undoManager.endUndo();
@@ -303,7 +296,6 @@ export async function showDeletePartGroupModal(groupName: string): Promise<void>
   updateLayersList();
   updatePropertiesPanel();
   render();
-  elements.statusBar!.textContent = `Deleted group "${groupName}"`;
 }
 
 export async function deleteGroupAndMoveItems(groupName: string, targetGroup: string | null): Promise<void> {

@@ -179,17 +179,17 @@ export async function createObjectAtPosition(type: string, position: Point): Pro
     setItem(obj.name as string, obj, baseFileName);
     const saved = await saveNewObject(obj);
 
+    exitCreationMode();
+
     if (saved) {
       updateItemsList('', false);
       updateLayersList();
       selectItem(obj.name as string, false, true);
-      elements.statusBar!.textContent = `Created ${type}: ${obj.name}`;
+      elements.statusBar!.textContent = `${type} created`;
     } else {
       deleteItem(obj.name as string);
       elements.statusBar!.textContent = `Failed to create ${type}`;
     }
-
-    exitCreationMode();
     state.tool = 'select';
     document.getElementById('tool-select')?.classList.add('active');
     render();

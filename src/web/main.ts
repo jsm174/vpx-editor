@@ -739,22 +739,25 @@ function setupScriptEditorModal(): void {
     try {
       const gameitemsJson = await state.platform!.fileSystem.readFile(`${EXTRACTED_DIR}/gameitems.json`);
       const gameitemsData = JSON.parse(gameitemsJson) as { file_name: string }[];
-      for (const gi of gameitemsData) {
-        const fileName = gi.file_name || '';
-        if (!fileName) continue;
-        const type = fileName.split('.')[0] || 'Unknown';
-        try {
-          const itemJson = await state.platform!.fileSystem.readFile(`${EXTRACTED_DIR}/gameitems/${fileName}`);
-          const itemData = JSON.parse(itemJson);
-          const itemType = Object.keys(itemData)[0];
-          const item = itemData[itemType];
-          if (item.name) {
-            items.push({ name: item.name, type: itemType || type });
+      const fileNames = gameitemsData.map(gi => gi.file_name || '').filter(f => f);
+      const results = await Promise.all(
+        fileNames.map(async fileName => {
+          const type = fileName.split('.')[0] || 'Unknown';
+          try {
+            const itemJson = await state.platform!.fileSystem.readFile(`${EXTRACTED_DIR}/gameitems/${fileName}`);
+            const itemData = JSON.parse(itemJson);
+            const itemType = Object.keys(itemData)[0];
+            const item = itemData[itemType];
+            if (item.name) {
+              return { name: item.name, type: itemType || type };
+            }
+          } catch {
+            /* skip */
           }
-        } catch {
-          continue;
-        }
-      }
+          return null;
+        })
+      );
+      items = results.filter((r): r is ScriptGameItem => r !== null);
     } catch {
       items = [];
     }
@@ -1001,6 +1004,31 @@ function setupCollectionManagerModal(): void {
     writeFile: (path, content) => state.platform!.fileSystem.writeFile(path, content),
     readFile: path => state.platform!.fileSystem.readFile(path),
     getSelectedItems: () => selectedItems,
+    loadAllItems: async () => {
+      try {
+        const gameitemsJson = await state.platform!.fileSystem.readFile(`${EXTRACTED_DIR}/gameitems.json`);
+        const gameitemsData = JSON.parse(gameitemsJson) as { file_name: string }[];
+        const fileNames = gameitemsData.map(gi => gi.file_name || '').filter(f => f);
+        const results = await Promise.all(
+          fileNames.map(async fileName => {
+            try {
+              const itemJson = await state.platform!.fileSystem.readFile(`${EXTRACTED_DIR}/gameitems/${fileName}`);
+              const itemData = JSON.parse(itemJson);
+              const itemType = Object.keys(itemData)[0];
+              const item = itemData[itemType];
+              return item.name || null;
+            } catch {
+              return null;
+            }
+          })
+        );
+        return results
+          .filter((name): name is string => name !== null)
+          .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+      } catch {
+        return [];
+      }
+    },
     onCollectionsChanged: async () => {
       try {
         const json = await state.platform!.fileSystem.readFile(`${EXTRACTED_DIR}/collections.json`);
@@ -1026,7 +1054,6 @@ function setupCollectionManagerModal(): void {
     modal.setAttribute('data-theme', theme);
 
     let collections: Collection[] = [];
-    let allItems: string[] = [];
 
     try {
       const collectionsJson = await state.platform!.fileSystem.readFile(`${EXTRACTED_DIR}/collections.json`);
@@ -1035,34 +1062,11 @@ function setupCollectionManagerModal(): void {
       collections = [];
     }
 
-    try {
-      const gameitemsJson = await state.platform!.fileSystem.readFile(`${EXTRACTED_DIR}/gameitems.json`);
-      const gameitemsData = JSON.parse(gameitemsJson) as { file_name: string }[];
-      for (const gi of gameitemsData) {
-        const fileName = gi.file_name || '';
-        if (!fileName) continue;
-        try {
-          const itemJson = await state.platform!.fileSystem.readFile(`${EXTRACTED_DIR}/gameitems/${fileName}`);
-          const itemData = JSON.parse(itemJson);
-          const itemType = Object.keys(itemData)[0];
-          const item = itemData[itemType];
-          if (item.name) {
-            allItems.push(item.name);
-          }
-        } catch {
-          continue;
-        }
-      }
-      allItems.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-    } catch {
-      allItems = [];
-    }
-
     selectedItems = window.selectedItems || [];
     collectionInstance.setData({
       extractedDir: EXTRACTED_DIR,
       collections,
-      allItems,
+      allItems: [],
     });
     collectionInstance.setUIDisabled(false);
     if (collectionName) {

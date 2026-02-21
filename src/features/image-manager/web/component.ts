@@ -67,13 +67,15 @@ export function initWebImageManager(
 
   async function open(extractedDir: string, selectImage?: string): Promise<void> {
     lastExtractedDir = extractedDir;
-    const { images, items, gamedata } = await loadImageManagerData(extractedDir, {
-      readFile: deps.readFile,
-    });
-
     const themeSetting = await getThemeFromSettings();
     const theme = resolveTheme(themeSetting);
     modal.setAttribute('data-theme', theme);
+    statusEl.textContent = 'Loading...';
+    modal.classList.remove('hidden');
+
+    const { images, items, gamedata } = await loadImageManagerData(extractedDir, {
+      readFile: deps.readFile,
+    });
 
     if (!managerInstance) {
       managerInstance = initImageManagerComponent(
@@ -174,7 +176,6 @@ export function initWebImageManager(
 
     await managerInstance.renderList();
     statusEl.textContent = `Loaded ${Object.keys(images).length} images`;
-    modal.classList.remove('hidden');
     if (selectImage) {
       await managerInstance.selectImageByName(selectImage);
     }

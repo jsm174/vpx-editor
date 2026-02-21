@@ -27,7 +27,7 @@ export function toggleNodeSmooth(itemName: string, nodeIndex: number): void {
   const item = getItem(itemName);
   if (!item || !item.drag_points) return;
 
-  undoManager.beginUndo('Toggle smooth');
+  undoManager.beginUndo('Smooth toggled');
   undoManager.markForUndo(itemName);
 
   const pt = item.drag_points[nodeIndex];
@@ -43,7 +43,7 @@ export function deleteNode(itemName: string, nodeIndex: number): void {
   const item = getItem(itemName);
   if (!item || !item.drag_points || item.drag_points.length <= 3) return;
 
-  undoManager.beginUndo('Delete control point');
+  undoManager.beginUndo('Control point deleted');
   undoManager.markForUndo(itemName);
 
   item.drag_points.splice(nodeIndex, 1);
@@ -61,7 +61,7 @@ export function toggleNodeSlingshot(itemName: string, nodeIndex: number): void {
   const pt = item.drag_points[nodeIndex];
   if (pt.smooth) return;
 
-  undoManager.beginUndo('Toggle slingshot');
+  undoManager.beginUndo('Slingshot toggled');
   undoManager.markForUndo(itemName);
 
   pt.is_slingshot = !pt.is_slingshot;
@@ -79,7 +79,7 @@ export function addPointToObject(itemName: string, worldX: number, worldY: numbe
   const item = getItem(itemName);
   if (!item || !item.drag_points) return;
 
-  undoManager.beginUndo('Add control point');
+  undoManager.beginUndo('Control point added');
   undoManager.markForUndo(itemName);
 
   const insertIndex = findClosestSegmentIndex(item, worldX, worldY);
@@ -108,7 +108,7 @@ export function addNode(itemName: string, worldX: number, worldY: number, smooth
   const item = getItem(itemName);
   if (!item || !item.drag_points) return;
 
-  undoManager.beginUndo('Add control point');
+  undoManager.beginUndo('Control point added');
   undoManager.markForUndo(itemName);
 
   const insertIndex = findClosestSegmentIndex(item, worldX, worldY);

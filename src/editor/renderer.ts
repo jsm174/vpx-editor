@@ -432,7 +432,7 @@ elements.canvas!.addEventListener('pointerdown', e => {
           if (nodeIndex >= 0) {
             state.selectedNode = { itemName: state.primarySelectedItem, nodeIndex };
             if (!item.is_locked && !state.isTableLocked) {
-              undoManager.beginUndo('Move control point');
+              undoManager.beginUndo('Control point moved');
               undoManager.markForUndo(state.primarySelectedItem);
               state.draggingNode = true;
               state.nodeMoved = false;
@@ -484,7 +484,11 @@ elements.canvas!.addEventListener('pointerdown', e => {
           }
           const anyUnlocked = state.selectedItems.some(name => !getItem(name)?.is_locked);
           if (anyUnlocked && !state.isTableLocked) {
-            undoManager.beginUndo('Move object');
+            undoManager.beginUndo(
+              state.selectedItems.length > 1
+                ? 'Items moved'
+                : `${getItem(state.selectedItems[0])?._type || 'Item'} moved`
+            );
             for (const itemName of state.selectedItems) {
               if (!getItem(itemName)?.is_locked) {
                 undoManager.markForUndo(itemName);
@@ -597,7 +601,7 @@ function getItemsInRect(rect: DragRect): string[] {
   return [...result];
 }
 
-function handleCanvasPointerEnd(e: PointerEvent): void {
+async function handleCanvasPointerEnd(e: PointerEvent): Promise<void> {
   elements.canvas!.releasePointerCapture(e.pointerId);
   if (dragRect.active) {
     const itemsInBox = getItemsInRect(dragRect);
@@ -615,30 +619,32 @@ function handleCanvasPointerEnd(e: PointerEvent): void {
     render();
   }
   if (state.draggingNode && state.selectedNode) {
-    if (state.nodeMoved) {
-      saveItemToFile(state.selectedNode.itemName);
-      undoManager.endUndo();
-      invalidateItem(state.selectedNode.itemName);
-    } else {
-      undoManager.cancelUndo();
-    }
+    const nodeMoved = state.nodeMoved;
+    const nodeItemName = state.selectedNode.itemName;
     state.draggingNode = false;
     state.nodeMoved = false;
-  }
-  if (state.draggingObject && state.selectedItems.length > 0) {
-    if (state.objectMoved) {
-      for (const itemName of state.selectedItems) {
-        if (!getItem(itemName)?.is_locked) {
-          saveItemToFile(itemName);
-          invalidateItem(itemName);
-        }
-      }
-      undoManager.endUndo();
+    if (nodeMoved) {
+      await saveItemToFile(nodeItemName);
+      await undoManager.endUndo();
+      invalidateItem(nodeItemName);
     } else {
       undoManager.cancelUndo();
     }
+  }
+  if (state.draggingObject && state.selectedItems.length > 0) {
+    const objectMoved = state.objectMoved;
+    const itemsToSave = objectMoved ? state.selectedItems.filter(name => !getItem(name)?.is_locked) : [];
     state.draggingObject = false;
     state.objectMoved = false;
+    if (objectMoved) {
+      for (const itemName of itemsToSave) {
+        await saveItemToFile(itemName);
+        invalidateItem(itemName);
+      }
+      await undoManager.endUndo();
+    } else {
+      undoManager.cancelUndo();
+    }
   }
   state.isDragging = false;
   if (state.tool !== 'magnify' && (e.altKey || state.tool === 'pan')) {
@@ -761,7 +767,9 @@ elements.canvas!.addEventListener('contextmenu', e => {
             });
             if (itemsToDelete.length === 0) return;
             undoManager.beginUndo(
-              itemsToDelete.length > 1 ? `Delete ${itemsToDelete.length} items` : `Delete ${itemsToDelete[0]}`
+              itemsToDelete.length > 1
+                ? `${itemsToDelete.length} items deleted`
+                : `${getItem(itemsToDelete[0])?._type || 'Item'} deleted`
             );
             for (const name of itemsToDelete) {
               await deleteObject(name, true);
@@ -1099,7 +1107,9 @@ document.addEventListener('keydown', async e => {
       });
       if (itemsToDelete.length > 0) {
         undoManager.beginUndo(
-          itemsToDelete.length > 1 ? `Delete ${itemsToDelete.length} items` : `Delete ${itemsToDelete[0]}`
+          itemsToDelete.length > 1
+            ? `${itemsToDelete.length} items deleted`
+            : `${getItem(itemsToDelete[0])?._type || 'Item'} deleted`
         );
         (async () => {
           for (const name of itemsToDelete) {
@@ -1506,7 +1516,9 @@ window.vpxEditor.onDeleteSelected?.(async () => {
   if (itemsToDelete.length === 0) return;
 
   undoManager.beginUndo(
-    itemsToDelete.length > 1 ? `Delete ${itemsToDelete.length} items` : `Delete ${itemsToDelete[0]}`
+    itemsToDelete.length > 1
+      ? `${itemsToDelete.length} items deleted`
+      : `${getItem(itemsToDelete[0])?._type || 'Item'} deleted`
   );
   for (const name of itemsToDelete) {
     await deleteObject(name, true);
@@ -1542,7 +1554,7 @@ window.vpxEditor.onUndoEnd?.(async () => {
 window.vpxEditor.onCollectionsChanged?.(async collections => {
   const needsUndo = !undoManager.currentRecord;
   if (needsUndo) {
-    undoManager.beginUndo('Edit collection');
+    undoManager.beginUndo('Collection edited');
     undoManager.markCollectionsForUndo();
   }
   state.collections = collections as typeof state.collections;
@@ -1808,36 +1820,41 @@ async function initViewSettings(): Promise<void> {
 
 initViewSettings();
 
-function handleDocumentPointerEnd(): void {
+async function handleDocumentPointerEnd(): Promise<void> {
   if (state.isDragging) {
     state.isDragging = false;
     setCanvasCursor(getToolCursor());
   }
   if (state.draggingNode) {
-    if (state.nodeMoved && state.selectedNode) {
-      saveItemToFile(state.selectedNode.itemName);
-      undoManager.endUndo();
-      invalidateItem(state.selectedNode.itemName);
-    } else {
-      undoManager.cancelUndo();
-    }
+    const nodeMoved = state.nodeMoved;
+    const nodeItemName = state.selectedNode?.itemName;
     state.draggingNode = false;
     state.nodeMoved = false;
-  }
-  if (state.draggingObject) {
-    if (state.objectMoved && state.selectedItems.length > 0) {
-      for (const itemName of state.selectedItems) {
-        if (!getItem(itemName)?.is_locked) {
-          saveItemToFile(itemName);
-          invalidateItem(itemName);
-        }
-      }
-      undoManager.endUndo();
+    if (nodeMoved && nodeItemName) {
+      await saveItemToFile(nodeItemName);
+      await undoManager.endUndo();
+      invalidateItem(nodeItemName);
     } else {
       undoManager.cancelUndo();
     }
+  }
+  if (state.draggingObject) {
+    const objectMoved = state.objectMoved;
+    const itemsToSave =
+      objectMoved && state.selectedItems.length > 0
+        ? state.selectedItems.filter(name => !getItem(name)?.is_locked)
+        : [];
     state.draggingObject = false;
     state.objectMoved = false;
+    if (objectMoved && itemsToSave.length > 0) {
+      for (const itemName of itemsToSave) {
+        await saveItemToFile(itemName);
+        invalidateItem(itemName);
+      }
+      await undoManager.endUndo();
+    } else if (!objectMoved) {
+      undoManager.cancelUndo();
+    }
   }
   state.ctrlZoomHandled = false;
 }
@@ -1890,8 +1907,8 @@ window.vpxEditor.onSaveTransform?.(data => {
   const currentTransform = backupDragPoints(item);
   restoreDragPoints(item, originalDragPoints);
 
-  const typeName = data.type.charAt(0).toUpperCase() + data.type.slice(1);
-  undoManager.beginUndo(typeName);
+  const typeMap: Record<string, string> = { rotate: 'Rotated', scale: 'Scaled', translate: 'Translated' };
+  undoManager.beginUndo(typeMap[data.type] || data.type);
   undoManager.markForUndo(transformItemName);
 
   restoreDragPoints(item, currentTransform);

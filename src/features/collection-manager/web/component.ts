@@ -7,6 +7,7 @@ export interface WebCollectionManagerDeps {
   writeFile: (path: string, content: string) => Promise<void>;
   readFile: (path: string) => Promise<string>;
   getSelectedItems: () => string[];
+  loadAllItems?: () => Promise<string[]>;
   onCollectionsChanged: () => void;
   onClose: () => void;
 }
@@ -75,6 +76,7 @@ export function initWebCollectionManager(deps: WebCollectionManagerDeps): WebCol
     writeFile: deps.writeFile,
     readFile: deps.readFile,
     getSelectedItems: deps.getSelectedItems,
+    loadAllItems: deps.loadAllItems,
     onCollectionsChanged: deps.onCollectionsChanged,
     onClose: deps.onClose,
   });

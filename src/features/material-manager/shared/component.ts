@@ -127,18 +127,23 @@ export async function loadMaterialManagerData(
   try {
     const gameitemsJson = await callbacks.readFile(`${extractedDir}/gameitems.json`);
     const gameitemsList = JSON.parse(gameitemsJson) as { file_name: string }[];
-    for (const gi of gameitemsList) {
-      const fileName = gi.file_name || '';
-      try {
-        const itemJson = await callbacks.readFile(`${extractedDir}/gameitems/${fileName}`);
-        const itemData = JSON.parse(itemJson);
-        const type = Object.keys(itemData)[0];
-        const item = itemData[type];
-        item._type = type;
-        items[item.name || fileName] = item;
-      } catch {
-        /* skip */
-      }
+    const fileNames = gameitemsList.map(gi => gi.file_name || '').filter(f => f);
+    const results = await Promise.all(
+      fileNames.map(async fileName => {
+        try {
+          const itemJson = await callbacks.readFile(`${extractedDir}/gameitems/${fileName}`);
+          const itemData = JSON.parse(itemJson);
+          const type = Object.keys(itemData)[0];
+          const item = itemData[type];
+          item._type = type;
+          return { key: item.name || fileName, item };
+        } catch {
+          return null;
+        }
+      })
+    );
+    for (const result of results) {
+      if (result) items[result.key] = result.item;
     }
   } catch {
     /* empty */

@@ -350,6 +350,7 @@ export interface CollectionManagerCallbacks {
   writeFile: (path: string, content: string) => Promise<void>;
   readFile: (path: string) => Promise<string>;
   getSelectedItems?: () => string[];
+  loadAllItems?: () => Promise<string[]>;
   onCollectionsChanged?: () => void;
   onClose?: () => void;
   openEditorWindow?: (name: string) => void;
@@ -521,9 +522,13 @@ export function initCollectionManagerComponent(
       elements.fromSelectionBtn.disabled = !hasItemSelection || uiDisabled;
   }
 
-  function openEditor(collectionName: string): void {
+  async function openEditor(collectionName: string): Promise<void> {
     const collection = collections.find(c => c.name === collectionName);
     if (!collection) return;
+
+    if (allItems.length === 0 && callbacks.loadAllItems) {
+      allItems = await callbacks.loadAllItems();
+    }
 
     editorCollection = collectionName;
     const collectionItems = collection.items || [];

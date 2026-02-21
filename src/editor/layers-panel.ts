@@ -330,7 +330,7 @@ async function toggleGroupVisibility(items: ItemEntry[]): Promise<void> {
   const allHidden = items.every(({ item }) => item.editor_layer_visibility === false);
   const action = allHidden ? 'Show' : 'Hide';
 
-  undoManager.beginUndo(`${action} layer items`);
+  undoManager.beginUndo(action === 'Show' ? 'Layer items shown' : 'Layer items hidden');
 
   for (const { name, item } of items) {
     undoManager.markForUndo(name);
@@ -350,7 +350,7 @@ async function toggleItemVisibility(name: string): Promise<void> {
   const isHidden = item.editor_layer_visibility === false;
   const action = isHidden ? 'Show' : 'Hide';
 
-  undoManager.beginUndo(`${action} ${name}`);
+  undoManager.beginUndo(action === 'Show' ? `${item._type || 'Item'} shown` : `${item._type || 'Item'} hidden`);
   undoManager.markForUndo(name);
 
   item.editor_layer_visibility = isHidden ? undefined : false;
@@ -382,7 +382,7 @@ async function reassignItemToGroup(itemName: string, groupName: string | null): 
 
   if (item.part_group_name === groupName) return;
 
-  undoManager.beginUndo('Move item to group');
+  undoManager.beginUndo(`${item._type || 'Item'} moved to group`);
   undoManager.markForUndo(itemName);
 
   item.part_group_name = groupName ?? undefined;
@@ -406,7 +406,6 @@ async function reassignItemToGroup(itemName: string, groupName: string | null): 
     treeControl.expandedIds.add(`group:${groupName}`);
   }
   updateLayersList();
-  elements.statusBar!.textContent = groupName ? `Moved ${itemName} to ${groupName}` : `Unassigned ${itemName}`;
 }
 
 function isDescendantGroup(parentName: string | null, childName: string): boolean {
@@ -425,7 +424,7 @@ async function reassignGroupToGroup(groupName: string, newParentName: string | n
 
   if (group.part_group_name === newParentName) return;
 
-  undoManager.beginUndo('Move group');
+  undoManager.beginUndo('Group moved');
   undoManager.markForUndo(groupName);
 
   group.part_group_name = newParentName ?? undefined;
@@ -448,9 +447,6 @@ async function reassignGroupToGroup(groupName: string, newParentName: string | n
     treeControl.expandedIds.add(`group:${newParentName}`);
   }
   updateLayersList();
-  elements.statusBar!.textContent = newParentName
-    ? `Moved group ${groupName} to ${newParentName}`
-    : `Moved group ${groupName} to root`;
 }
 
 function isNameUnique(name: string): boolean {
@@ -522,7 +518,7 @@ async function addPartGroup(): Promise<void> {
 
     await window.vpxEditor.writeFile(`${state.extractedDir}/gameitems.json`, JSON.stringify(state.gameitems, null, 2));
 
-    undoManager.beginUndo('Add group');
+    undoManager.beginUndo('Group added');
     undoManager.markForCreate(name);
     undoManager.endUndo();
 
@@ -530,7 +526,7 @@ async function addPartGroup(): Promise<void> {
       treeControl.expandedIds.add(`group:${name}`);
     }
     updateLayersList();
-    elements.statusBar!.textContent = `Created group "${name}"`;
+    elements.statusBar!.textContent = 'Group added';
   } catch (err: unknown) {
     console.error('Failed to add group:', err);
     elements.statusBar!.textContent = `Failed to add group: ${(err as Error).message}`;

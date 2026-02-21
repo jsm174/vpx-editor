@@ -240,9 +240,7 @@ export async function saveItemToFile(itemName: string): Promise<boolean> {
     JSON.stringify(saveData, null, 2)
   );
 
-  if (result.success) {
-    (elements.statusBar as HTMLElement).textContent = `Saved ${itemName}`;
-  } else {
+  if (!result.success) {
     (elements.statusBar as HTMLElement).textContent = `Failed to save ${itemName}`;
   }
   return result.success;

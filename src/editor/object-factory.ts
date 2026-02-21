@@ -158,7 +158,7 @@ export async function saveNewObject(obj: GameItem, skipUndo: boolean = false): P
     undoManager.markForCreate(obj.name as string);
     return saveNewObjectInternal(obj);
   }
-  undoManager.beginUndo(`Create ${obj._type}`);
+  undoManager.beginUndo(`${obj._type} created`);
   undoManager.markForCreate(obj.name as string);
   const success = await saveNewObjectInternal(obj);
   if (!success) {
@@ -214,7 +214,7 @@ export async function deleteObject(name: string, skipUndo: boolean = false): Pro
     return deleteObjectInternal(name);
   }
 
-  undoManager.beginUndo(`Delete ${name}`);
+  undoManager.beginUndo(`${getItem(name)?._type || 'Item'} deleted`);
   undoManager.markForDelete(name);
   const success = await deleteObjectInternal(name);
   undoManager.endUndo();
