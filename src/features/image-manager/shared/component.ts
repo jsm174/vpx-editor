@@ -34,6 +34,7 @@ export interface ImageManagerCallbacks {
   undoMarkForUndo?: (itemName: string) => void;
   undoMarkGamedata?: () => void;
   openRenamePrompt?: (currentName: string, existingNames: string[]) => void;
+  renderHdrToDataUrl?: (data: Uint8Array, ext: string) => Promise<string | null>;
 }
 
 export async function loadImageManagerData(
@@ -194,7 +195,6 @@ export function initImageManagerComponent(
     if (imageInfoCache[imageName]) return imageInfoCache[imageName];
 
     for (const ext of IMAGE_EXTENSIONS) {
-      if (ext === '.hdr') continue;
       const imagePath = `${extractedDir}/images/${imageName}${ext}`;
       try {
         const result = await callbacks.getImageInfo(imagePath);
@@ -218,12 +218,22 @@ export function initImageManagerComponent(
 
   async function loadThumbnail(imageName: string, imgEl: HTMLImageElement): Promise<void> {
     for (const ext of IMAGE_EXTENSIONS) {
-      if (ext === '.hdr') continue;
       const imagePath = `${extractedDir}/images/${imageName}${ext}`;
       try {
         const data = await callbacks.readBinaryFile(imagePath);
+        if (!data) continue;
+
+        if ((ext === '.hdr' || ext === '.exr') && callbacks.renderHdrToDataUrl) {
+          const dataUrl = await callbacks.renderHdrToDataUrl(data, ext);
+          if (dataUrl) {
+            imgEl.src = dataUrl;
+            return;
+          }
+          continue;
+        }
+
         const mime = IMAGE_MIME_TYPES[ext];
-        if (mime && data) {
+        if (mime) {
           const blob = new Blob([new Uint8Array(data)], { type: mime });
           const url = URL.createObjectURL(blob);
           imgEl.src = url;
@@ -238,12 +248,28 @@ export function initImageManagerComponent(
 
   async function loadPreview(imageName: string): Promise<void> {
     for (const ext of IMAGE_EXTENSIONS) {
-      if (ext === '.hdr') continue;
       const imagePath = `${extractedDir}/images/${imageName}${ext}`;
       try {
         const data = await callbacks.readBinaryFile(imagePath);
+        if (!data) continue;
+
+        if ((ext === '.hdr' || ext === '.exr') && callbacks.renderHdrToDataUrl) {
+          const dataUrl = await callbacks.renderHdrToDataUrl(data, ext);
+          if (dataUrl) {
+            if ((previewImg as HTMLImageElement & { _blobUrl?: string })._blobUrl) {
+              URL.revokeObjectURL((previewImg as HTMLImageElement & { _blobUrl?: string })._blobUrl!);
+              (previewImg as HTMLImageElement & { _blobUrl?: string })._blobUrl = undefined;
+            }
+            previewImg.src = dataUrl;
+            previewImg.style.display = 'block';
+            if (previewPlaceholder) previewPlaceholder.style.display = 'none';
+            return;
+          }
+          continue;
+        }
+
         const mime = IMAGE_MIME_TYPES[ext];
-        if (mime && data) {
+        if (mime) {
           const blob = new Blob([new Uint8Array(data)], { type: mime });
           const url = URL.createObjectURL(blob);
           if ((previewImg as HTMLImageElement & { _blobUrl?: string })._blobUrl) {

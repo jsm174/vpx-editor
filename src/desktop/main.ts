@@ -16,6 +16,7 @@ import type { ClipboardData } from '../types/data.js';
 import type { PanelSettings, TransformData } from '../types/ipc.js';
 
 import { Collection } from '../features/collection-manager/shared/operations.js';
+import { getImageDimensions } from '../features/image-manager/shared/core.js';
 import {
   DEFAULT_THEME,
   DEFAULT_GRID_SIZE,
@@ -604,54 +605,8 @@ ipcMain.handle('get-image-info', async (_event, imagePath: string) => {
   try {
     const stats = await fs.promises.stat(imagePath);
     const buffer = await fs.promises.readFile(imagePath);
-
-    let width = 0,
-      height = 0;
-    const ext = path.extname(imagePath).toLowerCase();
-
-    if (ext === '.png') {
-      if (buffer.length >= 24 && buffer[0] === 0x89 && buffer[1] === 0x50) {
-        width = buffer.readUInt32BE(16);
-        height = buffer.readUInt32BE(20);
-      }
-    } else if (ext === '.jpg' || ext === '.jpeg') {
-      let i = 2;
-      while (i < buffer.length - 9) {
-        if (buffer[i] !== 0xff) break;
-        const marker = buffer[i + 1];
-        if (marker === 0xc0 || marker === 0xc1 || marker === 0xc2) {
-          height = buffer.readUInt16BE(i + 5);
-          width = buffer.readUInt16BE(i + 7);
-          break;
-        }
-        const len = buffer.readUInt16BE(i + 2);
-        i += 2 + len;
-      }
-    } else if (ext === '.webp') {
-      if (buffer.length >= 30 && buffer.toString('ascii', 0, 4) === 'RIFF') {
-        const format = buffer.toString('ascii', 12, 16);
-        if (format === 'VP8 ') {
-          if (buffer.length >= 30 && buffer[23] === 0x9d && buffer[24] === 0x01 && buffer[25] === 0x2a) {
-            width = buffer.readUInt16LE(26) & 0x3fff;
-            height = buffer.readUInt16LE(28) & 0x3fff;
-          }
-        } else if (format === 'VP8L') {
-          const bits = buffer.readUInt32LE(21);
-          width = (bits & 0x3fff) + 1;
-          height = ((bits >> 14) & 0x3fff) + 1;
-        } else if (format === 'VP8X') {
-          width = buffer.readUIntLE(24, 3) + 1;
-          height = buffer.readUIntLE(27, 3) + 1;
-        }
-      }
-    } else if (ext === '.bmp') {
-      if (buffer.length >= 26) {
-        width = buffer.readUInt32LE(18);
-        height = Math.abs(buffer.readInt32LE(22));
-      }
-    }
-
-    return { success: true, width, height, size: stats.size };
+    const dims = getImageDimensions(buffer);
+    return { success: true, width: dims?.width ?? 0, height: dims?.height ?? 0, size: stats.size };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message };
   }
@@ -666,7 +621,7 @@ ipcMain.handle('import-image', async event => {
   const win = BrowserWindow.fromWebContents(event.sender) || ctx.window;
   const result = await dialog.showOpenDialog(win, {
     properties: ['openFile'],
-    filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp'] }],
+    filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'hdr', 'exr'] }],
   });
 
   if (result.canceled || result.filePaths.length === 0) {

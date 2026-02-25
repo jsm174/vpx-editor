@@ -1,10 +1,12 @@
 import * as THREE from 'three';
 import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import { state } from './state.js';
 import { VIEW_MODE_3D } from '../shared/constants.js';
 import { getMetalEnvMap } from './canvas-renderer-3d.js';
 
 const exrLoader = new EXRLoader();
+const rgbeLoader = new RGBELoader();
 
 interface LoadQueueItem {
   imageName: string;
@@ -120,7 +122,7 @@ async function loadTextureInternal(imageName: string): Promise<THREE.Texture | n
     return state.textureCache.get(imageName) ?? null;
   }
 
-  const extensions = ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.exr'];
+  const extensions = ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.exr', '.hdr'];
 
   for (const ext of extensions) {
     const imagePath = `${state.extractedDir}/images/${imageName}${ext}`;
@@ -134,16 +136,13 @@ async function loadTextureInternal(imageName: string): Promise<THREE.Texture | n
               ? new Uint8Array(result.data)
               : new Uint8Array(Object.values(result.data));
 
-        if (ext === '.exr') {
+        if (ext === '.exr' || ext === '.hdr') {
           try {
-            const exrData = exrLoader.parse(uint8Array.buffer as ArrayBuffer);
-            const texture = new THREE.DataTexture(
-              exrData.data,
-              exrData.width,
-              exrData.height,
-              exrData.format,
-              exrData.type
-            );
+            const parsed =
+              ext === '.exr'
+                ? exrLoader.parse(uint8Array.buffer as ArrayBuffer)
+                : (rgbeLoader as any).parse(uint8Array.buffer as ArrayBuffer);
+            const texture = new THREE.DataTexture(parsed.data, parsed.width, parsed.height, parsed.format, parsed.type);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
             texture.flipY = false;

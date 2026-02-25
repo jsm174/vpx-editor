@@ -1,7 +1,12 @@
 import { initImageManagerComponent, loadImageManagerData, type ImageManagerInstance } from '../shared/component';
-import type { ImageData, GameItem } from '../shared/core';
+import { getImageDimensions, hdrFloatDataToDataUrl, type ImageData, type GameItem } from '../shared/core';
 import { initWebPrompt } from '../../prompt/web/component';
+import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import templateHtml from './template.html?raw';
+
+const exrLoader = new EXRLoader();
+const rgbeLoader = new RGBELoader();
 
 export type { ImageManagerInstance };
 
@@ -57,7 +62,7 @@ export function initWebImageManager(
 
   const imageFileInput = document.createElement('input');
   imageFileInput.type = 'file';
-  imageFileInput.accept = 'image/png,image/jpeg,image/webp,image/bmp,.png,.jpg,.jpeg,.webp,.bmp';
+  imageFileInput.accept = 'image/png,image/jpeg,image/webp,image/bmp,.png,.jpg,.jpeg,.webp,.bmp,.hdr,.exr';
   imageFileInput.multiple = true;
   imageFileInput.style.display = 'none';
   document.body.appendChild(imageFileInput);
@@ -99,28 +104,23 @@ export function initWebImageManager(
           getImageInfo: async path => {
             try {
               const data = await deps.readBinaryFile(path);
-              let width = 0,
-                height = 0;
-              if (data[0] === 0x89 && data[1] === 0x50) {
-                width = (data[16] << 24) | (data[17] << 16) | (data[18] << 8) | data[19];
-                height = (data[20] << 24) | (data[21] << 16) | (data[22] << 8) | data[23];
-              } else if (data[0] === 0xff && data[1] === 0xd8) {
-                let offset = 2;
-                while (offset < data.length) {
-                  if (data[offset] !== 0xff) break;
-                  const marker = data[offset + 1];
-                  if (marker === 0xc0 || marker === 0xc2) {
-                    height = (data[offset + 5] << 8) | data[offset + 6];
-                    width = (data[offset + 7] << 8) | data[offset + 8];
-                    break;
-                  }
-                  const length = (data[offset + 2] << 8) | data[offset + 3];
-                  offset += 2 + length;
-                }
-              }
-              return { success: width > 0 && height > 0, width, height };
+              const dims = getImageDimensions(data);
+              return dims ? { success: true, width: dims.width, height: dims.height } : { success: false };
             } catch {
               return { success: false };
+            }
+          },
+          renderHdrToDataUrl: async (data: Uint8Array, ext: string): Promise<string | null> => {
+            try {
+              const buffer =
+                data.buffer.byteLength === data.byteLength
+                  ? data.buffer
+                  : data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+              const parsed = ext === '.exr' ? (exrLoader as any).parse(buffer) : (rgbeLoader as any).parse(buffer);
+              const isHalf = parsed.data instanceof Uint16Array;
+              return hdrFloatDataToDataUrl(parsed.width, parsed.height, parsed.data, isHalf);
+            } catch {
+              return null;
             }
           },
           renameFile: deps.renameFile,
