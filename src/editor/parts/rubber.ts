@@ -18,6 +18,51 @@ import { convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { registerEditable, IEditable, Point } from './registry.js';
 import { getDragPointCoords } from '../../types/game-objects.js';
 
+function crossV(
+  ax: number,
+  ay: number,
+  az: number,
+  bx: number,
+  by: number,
+  bz: number
+): { x: number; y: number; z: number } {
+  return { x: ay * bz - az * by, y: az * bx - ax * bz, z: ax * by - ay * bx };
+}
+
+function normalizeV(v: { x: number; y: number; z: number }): { x: number; y: number; z: number } {
+  const len = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+  if (len < 1e-10) return v;
+  return { x: v.x / len, y: v.y / len, z: v.z / len };
+}
+
+function rotateAxisAngle(
+  point: { x: number; y: number; z: number },
+  axis: { x: number; y: number; z: number },
+  angleDeg: number
+): { x: number; y: number; z: number } {
+  const u = normalizeV(axis);
+  const rad = (angleDeg * Math.PI) / 180.0;
+  const sinA = Math.sin(rad);
+  const cosA = Math.cos(rad);
+  const omc = 1.0 - cosA;
+
+  const r0x = u.x * u.x + cosA * (1 - u.x * u.x);
+  const r0y = u.x * u.y * omc - sinA * u.z;
+  const r0z = u.x * u.z * omc + sinA * u.y;
+  const r1x = u.x * u.y * omc + sinA * u.z;
+  const r1y = u.y * u.y + cosA * (1 - u.y * u.y);
+  const r1z = u.y * u.z * omc - sinA * u.x;
+  const r2x = u.x * u.z * omc - sinA * u.y;
+  const r2y = u.y * u.z * omc + sinA * u.x;
+  const r2z = u.z * u.z + cosA * (1 - u.z * u.z);
+
+  return {
+    x: point.x * r0x + point.y * r0y + point.z * r0z,
+    y: point.x * r1x + point.y * r1y + point.z * r1z,
+    z: point.x * r2x + point.y * r2y + point.z * r2z,
+  };
+}
+
 export function createRubber3DMesh(item: unknown): THREE.Object3D | null {
   const rubberItem = item as {
     drag_points?: Array<{ x: number; y: number }>;
@@ -44,17 +89,99 @@ export function createRubber3DMesh(item: unknown): THREE.Object3D | null {
   const smoothed = smoothedResult;
   if (smoothed.length < 2) return null;
 
-  const pathPoints = smoothed.map(v => new THREE.Vector3(v.x, v.y, height));
+  const numRings = smoothed.length;
+  const numSegments = 13;
+  const numVertices = numRings * numSegments;
+  const numIndices = 6 * numVertices;
+  const radius = thickness * 0.5;
 
-  const curve = new THREE.CatmullRomCurve3(pathPoints, true);
-  const tubeGeom = new THREE.TubeGeometry(curve, pathPoints.length * 2, thickness / 2, 8, true);
+  const positions = new Float32Array(numVertices * 3);
+  const uvs = new Float32Array(numVertices * 2);
+  const indices = new Uint32Array(numIndices);
+
+  const invNR = 1.0 / numRings;
+  const invNS = 1.0 / numSegments;
+
+  let prevB = { x: 0, y: 0, z: 0 };
+
+  for (let i = 0; i < numRings; i++) {
+    const i2 = i === numRings - 1 ? 0 : i + 1;
+    const mid = smoothed[i];
+    const midNext = smoothed[i2];
+
+    const tangent = { x: midNext.x - mid.x, y: midNext.y - mid.y, z: 0 };
+
+    let normal: { x: number; y: number; z: number };
+    let binorm: { x: number; y: number; z: number };
+
+    if (i === 0) {
+      const up = { x: midNext.x + mid.x, y: midNext.y + mid.y, z: height * 2 };
+      normal = crossV(tangent.x, tangent.y, tangent.z, up.x, up.y, up.z);
+      binorm = crossV(tangent.x, tangent.y, tangent.z, normal.x, normal.y, normal.z);
+    } else {
+      normal = crossV(prevB.x, prevB.y, prevB.z, tangent.x, tangent.y, tangent.z);
+      binorm = crossV(tangent.x, tangent.y, tangent.z, normal.x, normal.y, normal.z);
+    }
+
+    binorm = normalizeV(binorm);
+    normal = normalizeV(normal);
+    prevB = binorm;
+
+    const u = i * invNR;
+
+    for (let j = 0; j < numSegments; j++) {
+      const idx = i * numSegments + j;
+      const v = (j + u) * invNS;
+      const angleDeg = j * (360.0 * invNS);
+      const tmp = rotateAxisAngle(normal, tangent, angleDeg);
+
+      positions[idx * 3] = mid.x + tmp.x * radius;
+      positions[idx * 3 + 1] = mid.y + tmp.y * radius;
+      positions[idx * 3 + 2] = height + tmp.z * radius;
+
+      uvs[idx * 2] = u;
+      uvs[idx * 2 + 1] = v;
+    }
+  }
+
+  for (let i = 0; i < numRings; i++) {
+    for (let j = 0; j < numSegments; j++) {
+      const q0 = i * numSegments + j;
+      const q1 = j !== numSegments - 1 ? i * numSegments + j + 1 : i * numSegments;
+      let q2: number;
+      let q3: number;
+
+      if (i !== numRings - 1) {
+        q2 = (i + 1) * numSegments + j;
+        q3 = j !== numSegments - 1 ? (i + 1) * numSegments + j + 1 : (i + 1) * numSegments;
+      } else {
+        q2 = j;
+        q3 = j !== numSegments - 1 ? j + 1 : 0;
+      }
+
+      const off = (i * numSegments + j) * 6;
+      indices[off] = q0;
+      indices[off + 1] = q1;
+      indices[off + 2] = q2;
+      indices[off + 3] = q3;
+      indices[off + 4] = q2;
+      indices[off + 5] = q1;
+    }
+  }
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geom.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  geom.setIndex(new THREE.BufferAttribute(indices, 1));
+  geom.computeVertexNormals();
+
   const material = createMaterial(rubberItem.material, rubberItem.image);
-  const mesh = new THREE.Mesh(tubeGeom, material);
+  const mesh = new THREE.Mesh(geom, material);
 
   if (rotX !== 0 || rotY !== 0 || rotZ !== 0) {
+    geom.computeBoundingBox();
     const center = new THREE.Vector3();
-    tubeGeom.computeBoundingBox();
-    tubeGeom.boundingBox!.getCenter(center);
+    geom.boundingBox!.getCenter(center);
 
     mesh.position.set(-center.x, -center.y, -center.z);
 
