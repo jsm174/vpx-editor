@@ -175,6 +175,14 @@ export const menuSchema: MenuItemSchema[] = [
         disabledWhen: ['isLocked', 'dialogOpen'],
       },
       {
+        id: 'cut',
+        label: 'Cut',
+        accelerator: 'CmdOrCtrl+X',
+        action: 'cut',
+        requires: ['hasSelection'],
+        disabledWhen: ['isLocked', 'dialogOpen'],
+      },
+      {
         id: 'copy',
         label: 'Copy',
         accelerator: 'CmdOrCtrl+C',

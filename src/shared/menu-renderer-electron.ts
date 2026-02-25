@@ -186,6 +186,17 @@ function createActionHandler(
         ctx?.window.webContents.send('toggle-lock');
       };
 
+    case 'cut':
+      return (_menuItem, baseWindow) => {
+        const focusedWindow = baseWindow instanceof BrowserWindow ? baseWindow : undefined;
+        const editorCtx = windowRegistry.getByWindow(focusedWindow);
+        if (editorCtx) {
+          editorCtx.window.webContents.send('cut');
+        } else if (focusedWindow) {
+          focusedWindow.webContents.cut();
+        }
+      };
+
     case 'copy':
       return (_menuItem, baseWindow) => {
         const focusedWindow = baseWindow instanceof BrowserWindow ? baseWindow : undefined;

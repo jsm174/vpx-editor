@@ -955,6 +955,7 @@ redoBtn?.addEventListener('click', async () => {
 document.addEventListener('keydown', async e => {
   const target = e.target as HTMLElement | null;
   if (target?.tagName === 'INPUT') return;
+  if (state.scriptEditorOpen) return;
 
   if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 'z') {
     e.preventDefault();
