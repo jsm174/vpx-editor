@@ -40,6 +40,196 @@ interface RampShapeData {
   rampTypeLower: string;
 }
 
+interface Vertex3D {
+  x: number;
+  y: number;
+  z: number;
+}
+
+function crossV(
+  ax: number,
+  ay: number,
+  az: number,
+  bx: number,
+  by: number,
+  bz: number
+): { x: number; y: number; z: number } {
+  return { x: ay * bz - az * by, y: az * bx - ax * bz, z: ax * by - ay * bx };
+}
+
+function normalizeV(v: { x: number; y: number; z: number }): { x: number; y: number; z: number } {
+  const len = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+  if (len < 1e-10) return v;
+  return { x: v.x / len, y: v.y / len, z: v.z / len };
+}
+
+function rotateAxisAngle(
+  point: { x: number; y: number; z: number },
+  axis: { x: number; y: number; z: number },
+  angleDeg: number
+): { x: number; y: number; z: number } {
+  const u = normalizeV(axis);
+  const rad = (angleDeg * Math.PI) / 180.0;
+  const sinA = Math.sin(rad);
+  const cosA = Math.cos(rad);
+  const omc = 1.0 - cosA;
+
+  const r0x = u.x * u.x + cosA * (1 - u.x * u.x);
+  const r0y = u.x * u.y * omc - sinA * u.z;
+  const r0z = u.x * u.z * omc + sinA * u.y;
+  const r1x = u.x * u.y * omc + sinA * u.z;
+  const r1y = u.y * u.y + cosA * (1 - u.y * u.y);
+  const r1z = u.y * u.z * omc - sinA * u.x;
+  const r2x = u.x * u.z * omc - sinA * u.y;
+  const r2y = u.y * u.z * omc + sinA * u.x;
+  const r2z = u.z * u.z + cosA * (1 - u.z * u.z);
+
+  return {
+    x: point.x * r0x + point.y * r0y + point.z * r0z,
+    y: point.x * r1x + point.y * r1y + point.z * r1z,
+    z: point.x * r2x + point.y * r2y + point.z * r2z,
+  };
+}
+
+function createWireRingMesh(
+  midPoints: { x: number; y: number }[],
+  heights: number[],
+  wireDiameter: number,
+  material: THREE.Material
+): THREE.Mesh {
+  const numRings = midPoints.length;
+  const numSegments = 13;
+  const numVertices = numRings * numSegments;
+  const numIndices = 6 * (numRings - 1) * numSegments;
+  const radius = wireDiameter * 0.5;
+
+  const positions = new Float32Array(numVertices * 3);
+  const uvs = new Float32Array(numVertices * 2);
+  const indices = new Uint32Array(numIndices);
+
+  const invNR = 1.0 / numRings;
+  const invNS = 1.0 / numSegments;
+  let prevB = { x: 0, y: 0, z: 0 };
+
+  for (let i = 0, index = 0; i < numRings; i++) {
+    const i2 = i === numRings - 1 ? i : i + 1;
+    const h = heights[i];
+
+    let tangent = {
+      x: midPoints[i2].x - midPoints[i].x,
+      y: midPoints[i2].y - midPoints[i].y,
+      z: heights[i2] - heights[i],
+    };
+    if (i === numRings - 1) {
+      tangent = {
+        x: midPoints[i].x - midPoints[i - 1].x,
+        y: midPoints[i].y - midPoints[i - 1].y,
+        z: heights[i] - heights[i - 1],
+      };
+    }
+
+    let normal: { x: number; y: number; z: number };
+    let binorm: { x: number; y: number; z: number };
+
+    if (i === 0) {
+      const up = { x: midPoints[i2].x + midPoints[i].x, y: midPoints[i2].y + midPoints[i].y, z: heights[i2] - h };
+      normal = crossV(tangent.x, tangent.y, tangent.z, up.x, up.y, up.z);
+      binorm = crossV(tangent.x, tangent.y, tangent.z, normal.x, normal.y, normal.z);
+    } else {
+      normal = crossV(prevB.x, prevB.y, prevB.z, tangent.x, tangent.y, tangent.z);
+      binorm = crossV(tangent.x, tangent.y, tangent.z, normal.x, normal.y, normal.z);
+    }
+
+    binorm = normalizeV(binorm);
+    normal = normalizeV(normal);
+    prevB = binorm;
+
+    const u = i * invNR;
+    for (let j = 0; j < numSegments; j++, index++) {
+      const v = (j + u) * invNS;
+      const angleDeg = j * (360.0 * invNS);
+      const tmp = rotateAxisAngle(normal, tangent, angleDeg);
+
+      positions[index * 3] = midPoints[i].x + tmp.x * radius;
+      positions[index * 3 + 1] = midPoints[i].y + tmp.y * radius;
+      positions[index * 3 + 2] = h + tmp.z * radius;
+
+      uvs[index * 2] = u;
+      uvs[index * 2 + 1] = v;
+    }
+  }
+
+  for (let i = 0; i < numRings - 1; i++) {
+    for (let j = 0; j < numSegments; j++) {
+      const q0 = i * numSegments + j;
+      const q1 = j !== numSegments - 1 ? i * numSegments + j + 1 : i * numSegments;
+      const q2 = (i + 1) * numSegments + j;
+      const q3 = j !== numSegments - 1 ? (i + 1) * numSegments + j + 1 : (i + 1) * numSegments;
+
+      const off = (i * numSegments + j) * 6;
+      indices[off] = q0;
+      indices[off + 1] = q1;
+      indices[off + 2] = q2;
+      indices[off + 3] = q3;
+      indices[off + 4] = q2;
+      indices[off + 5] = q1;
+    }
+  }
+
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geom.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  geom.setIndex(new THREE.BufferAttribute(indices, 1));
+  geom.computeVertexNormals();
+  return new THREE.Mesh(geom, material);
+}
+
+function computeRampNormal(path: Vertex3D[], i: number): { nx: number; ny: number } {
+  const cvertex = path.length;
+  const vprev = path[i > 0 ? i - 1 : i];
+  const vmiddle = path[i];
+  const vnext = path[i < cvertex - 1 ? i + 1 : i];
+
+  const v1normal = { x: vprev.y - vmiddle.y, y: vmiddle.x - vprev.x };
+  const v2normal = { x: vmiddle.y - vnext.y, y: vnext.x - vmiddle.x };
+
+  const len1 = Math.sqrt(v1normal.x * v1normal.x + v1normal.y * v1normal.y);
+  if (len1 > 0.0001) {
+    v1normal.x /= len1;
+    v1normal.y /= len1;
+  }
+
+  const len2 = Math.sqrt(v2normal.x * v2normal.x + v2normal.y * v2normal.y);
+  if (len2 > 0.0001) {
+    v2normal.x /= len2;
+    v2normal.y /= len2;
+  }
+
+  if (i === cvertex - 1) {
+    return { nx: v1normal.x, ny: v1normal.y };
+  } else if (i === 0) {
+    return { nx: v2normal.x, ny: v2normal.y };
+  } else if (Math.abs(v1normal.x - v2normal.x) < 0.0001 && Math.abs(v1normal.y - v2normal.y) < 0.0001) {
+    return { nx: v1normal.x, ny: v1normal.y };
+  } else {
+    const A = vprev.y - vmiddle.y;
+    const B = vmiddle.x - vprev.x;
+    const C = A * (v1normal.x - vprev.x) + B * (v1normal.y - vprev.y);
+
+    const D = vnext.y - vmiddle.y;
+    const E = vmiddle.x - vnext.x;
+    const F = D * (v2normal.x - vnext.x) + E * (v2normal.y - vnext.y);
+
+    const det = A * E - B * D;
+    const inv_det = det !== 0 ? 1.0 / det : 0;
+
+    const intersectx = (B * F - E * C) * inv_det;
+    const intersecty = (C * D - A * F) * inv_det;
+
+    return { nx: vmiddle.x - intersectx, ny: vmiddle.y - intersecty };
+  }
+}
+
 interface RampItem {
   drag_points?: DragPoint[];
   ramp_type?: string;
@@ -108,70 +298,43 @@ export function createRamp3DMesh(item: RampItem): THREE.Group | null {
       pathLengths.push(totalLength);
     }
 
-    const createWirePath = (offset: number, zOffset: number = 0): THREE.Vector3[] => {
-      const pathPoints = [];
+    const buildWire = (offset: number, zOffset: number = 0): void => {
+      const midPoints: { x: number; y: number }[] = [];
+      const heights: number[] = [];
       for (let i = 0; i < smoothedPath.length; i++) {
         const p = smoothedPath[i];
         const t = totalLength > 0 ? pathLengths[i] / totalLength : 0;
-        const height = p.z + heightBottom + t * (heightTop - heightBottom) + zOffset;
-
-        let nx = 0,
-          ny = 1;
-        if (i < smoothedPath.length - 1) {
-          const next = smoothedPath[i + 1];
-          const dx = next.x - p.x;
-          const dy = next.y - p.y;
-          const len = Math.sqrt(dx * dx + dy * dy);
-          if (len > 0) {
-            nx = dy / len;
-            ny = -dx / len;
-          }
-        } else if (i > 0) {
-          const prev = smoothedPath[i - 1];
-          const dx = p.x - prev.x;
-          const dy = p.y - prev.y;
-          const len = Math.sqrt(dx * dx + dy * dy);
-          if (len > 0) {
-            nx = dy / len;
-            ny = -dx / len;
-          }
-        }
-
-        pathPoints.push(new THREE.Vector3(p.x + nx * offset, p.y + ny * offset, height));
+        const h = p.z + heightBottom + t * (heightTop - heightBottom) + zOffset;
+        const { nx, ny } = computeRampNormal(smoothedPath, i);
+        midPoints.push({ x: p.x + nx * offset, y: p.y + ny * offset });
+        heights.push(h);
       }
-      return pathPoints;
-    };
-
-    const addWire = (path: THREE.Vector3[]): void => {
-      if (path.length >= 2) {
-        const curve = new THREE.CatmullRomCurve3(path, false);
-        const segments = Math.min(path.length, 64);
-        const geom = new THREE.TubeGeometry(curve, segments, wireDiameter / 2, 8, false);
-        group.add(new THREE.Mesh(geom, wireMat));
+      if (midPoints.length >= 2) {
+        group.add(createWireRingMesh(midPoints, heights, wireDiameter, wireMat));
       }
     };
 
     if (rampType === 'one_wire') {
-      addWire(createWirePath(0));
+      buildWire(0);
     } else if (rampType === 'two_wire') {
-      addWire(createWirePath(wireDistanceX / 2));
-      addWire(createWirePath(-wireDistanceX / 2));
+      buildWire(wireDistanceX / 2);
+      buildWire(-wireDistanceX / 2);
     } else if (rampType === 'three_wire_left') {
-      addWire(createWirePath(wireDistanceX / 2));
-      addWire(createWirePath(-wireDistanceX / 2));
-      addWire(createWirePath(wireDistanceX / 2, wireDistanceY / 2));
+      buildWire(wireDistanceX / 2);
+      buildWire(-wireDistanceX / 2);
+      buildWire(wireDistanceX / 2, wireDistanceY / 2);
     } else if (rampType === 'three_wire_right') {
-      addWire(createWirePath(wireDistanceX / 2));
-      addWire(createWirePath(-wireDistanceX / 2));
-      addWire(createWirePath(-wireDistanceX / 2, wireDistanceY / 2));
+      buildWire(wireDistanceX / 2);
+      buildWire(-wireDistanceX / 2);
+      buildWire(-wireDistanceX / 2, wireDistanceY / 2);
     } else if (rampType === 'four_wire') {
-      addWire(createWirePath(wireDistanceX / 2));
-      addWire(createWirePath(-wireDistanceX / 2));
-      addWire(createWirePath(wireDistanceX / 2, wireDistanceY / 2));
-      addWire(createWirePath(-wireDistanceX / 2, wireDistanceY / 2));
+      buildWire(wireDistanceX / 2);
+      buildWire(-wireDistanceX / 2);
+      buildWire(wireDistanceX / 2, wireDistanceY / 2);
+      buildWire(-wireDistanceX / 2, wireDistanceY / 2);
     } else {
-      addWire(createWirePath(wireDistanceX / 2));
-      addWire(createWirePath(-wireDistanceX / 2));
+      buildWire(wireDistanceX / 2);
+      buildWire(-wireDistanceX / 2);
     }
 
     return group;
@@ -196,27 +359,8 @@ export function createRamp3DMesh(item: RampItem): THREE.Group | null {
     const width = widthBottom + t * (widthTop - widthBottom);
     const height = p.z + heightBottom + t * (heightTop - heightBottom);
 
-    let nx = 0,
-      ny = 1;
-    if (i < smoothedPath.length - 1) {
-      const next = smoothedPath[i + 1];
-      const dx = next.x - p.x;
-      const dy = next.y - p.y;
-      const len = Math.sqrt(dx * dx + dy * dy);
-      if (len > 0) {
-        nx = dy / len;
-        ny = -dx / len;
-      }
-    } else if (i > 0) {
-      const prev = smoothedPath[i - 1];
-      const dx = p.x - prev.x;
-      const dy = p.y - prev.y;
-      const len = Math.sqrt(dx * dx + dy * dy);
-      if (len > 0) {
-        nx = dy / len;
-        ny = -dx / len;
-      }
-    }
+    const { nx, ny } = computeRampNormal(smoothedPath, i);
+
     vertices.push({
       left: new THREE.Vector3(p.x + (nx * width) / 2, p.y + (ny * width) / 2, height),
       right: new THREE.Vector3(p.x - (nx * width) / 2, p.y - (ny * width) / 2, height),
