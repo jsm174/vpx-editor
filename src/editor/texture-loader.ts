@@ -1,7 +1,10 @@
 import * as THREE from 'three';
+import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
 import { state } from './state.js';
 import { VIEW_MODE_3D } from '../shared/constants.js';
 import { getMetalEnvMap } from './canvas-renderer-3d.js';
+
+const exrLoader = new EXRLoader();
 
 interface LoadQueueItem {
   imageName: string;
@@ -47,6 +50,7 @@ function colorBrightness(hex: string): number {
 let maxTextureSize = 2048;
 const builtinTextureCache: Map<string, THREE.Texture> = new Map();
 const LOAD_BATCH_SIZE = 2;
+const pendingLoads = new Map<string, Promise<THREE.Texture | null>>();
 
 const loadQueue: LoadQueueItem[] = [];
 let isProcessingQueue = false;
@@ -70,10 +74,17 @@ export async function loadTexture(imageName: string): Promise<THREE.Texture | nu
     return null;
   }
 
-  return new Promise(resolve => {
+  const pending = pendingLoads.get(imageName);
+  if (pending) return pending;
+
+  const promise = new Promise<THREE.Texture | null>(resolve => {
     loadQueue.push({ imageName, resolve });
     scheduleProcessQueue();
   });
+  pendingLoads.set(imageName, promise);
+  promise.then(() => pendingLoads.delete(imageName));
+
+  return promise;
 }
 
 function scheduleProcessQueue(): void {
@@ -109,7 +120,7 @@ async function loadTextureInternal(imageName: string): Promise<THREE.Texture | n
     return state.textureCache.get(imageName) ?? null;
   }
 
-  const extensions = ['.png', '.jpg', '.jpeg', '.webp', '.bmp'];
+  const extensions = ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.exr'];
 
   for (const ext of extensions) {
     const imagePath = `${state.extractedDir}/images/${imageName}${ext}`;
@@ -122,6 +133,31 @@ async function loadTextureInternal(imageName: string): Promise<THREE.Texture | n
             : Array.isArray(result.data)
               ? new Uint8Array(result.data)
               : new Uint8Array(Object.values(result.data));
+
+        if (ext === '.exr') {
+          try {
+            const exrData = exrLoader.parse(uint8Array.buffer as ArrayBuffer);
+            const texture = new THREE.DataTexture(
+              exrData.data,
+              exrData.width,
+              exrData.height,
+              exrData.format,
+              exrData.type
+            );
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.flipY = false;
+            texture.generateMipmaps = false;
+            texture.minFilter = THREE.LinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.needsUpdate = true;
+
+            state.textureCache.set(imageName, texture);
+            return texture;
+          } catch {
+            continue;
+          }
+        }
 
         const mimeTypes: MimeTypes = {
           '.png': 'image/png',
@@ -288,6 +324,12 @@ export function createMaterialFromVPX(
 
   if (imageName && state.showMaterials) {
     loadTexture(imageName).then((texture: THREE.Texture | null) => {
+      if (!texture) {
+        if (material.emissiveIntensity > 0) {
+          material.visible = false;
+        }
+        return;
+      }
       if (texture) {
         material.map = texture;
         if (material.emissiveIntensity > 0) {
