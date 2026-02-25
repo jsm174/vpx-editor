@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { state, elements } from '../state.js';
 import { toScreen, getStrokeStyle, getLineWidth, convertToUnit, getUnitSuffixHtml } from '../utils.js';
-import { createMaterial } from '../../shared/3d-material-helpers.js';
+import { createMaterial, applyDisableLighting } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
 import { materialSelect, imageSelect } from '../../shared/property-templates.js';
 import { HITTARGET_DEFAULTS } from '../../shared/object-defaults.js';
@@ -117,6 +117,7 @@ export function createHitTarget3DMesh(item: HitTargetItem): THREE.Mesh | null {
 
   const geometry = createMeshGeometry(meshData, { scaleX: size.x, scaleY: size.y, scaleZ: size.z, rotation: rotZ });
   const material = createMaterial(item.material, item.image);
+  applyDisableLighting(material, item.disable_lighting_top_old ?? 0);
   const mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(pos.x, pos.y, (pos.z || 0) + 0.5);
 

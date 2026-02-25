@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { state, elements } from '../state.js';
 import { toScreen, getStrokeStyle, getLineWidth, convertToUnit, getUnitSuffixHtml } from '../utils.js';
-import { createMaterial } from '../../shared/3d-material-helpers.js';
+import { createMaterial, applyDisableLighting } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions, lightOptions, renderProbeOptions } from '../../shared/options-generators.js';
 import { materialSelect, imageSelect } from '../../shared/property-templates.js';
 import { PRIMITIVE_DEFAULTS } from '../../shared/object-defaults.js';
@@ -198,6 +198,8 @@ function createPrimitiveMaterial(item: PrimitiveItem): THREE.Material {
     material.transparent = true;
     material.opacity = alpha;
   }
+
+  applyDisableLighting(material, item.disable_lighting_top_old ?? 0);
 
   return material;
 }

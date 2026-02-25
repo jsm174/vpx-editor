@@ -14,11 +14,34 @@ interface MimeTypes {
 
 interface VPXMaterial {
   base_color?: string;
+  glossy_color?: string;
+  clearcoat_color?: string;
   roughness?: number;
   opacity_active?: boolean;
   opacity?: number;
   type?: string;
   is_metal?: boolean;
+}
+
+function vpxRoughnessToPBR(vpxRoughness: number): number {
+  const glossyPower = Math.pow(2, 10 * vpxRoughness + 1);
+  return Math.sqrt(2 / (glossyPower + 2));
+}
+
+function getEnvIntensity(): number {
+  const gd = state.gamedata as { env_emission_scale?: number; global_emission_scale?: number } | null;
+  if (!gd) return 0.5;
+  const envScale = gd.env_emission_scale ?? 1.0;
+  const globalScale = gd.global_emission_scale ?? 1.0;
+  return envScale * globalScale;
+}
+
+function colorBrightness(hex: string): number {
+  const c = parseInt(hex.replace('#', ''), 16);
+  const r = ((c >> 16) & 0xff) / 255;
+  const g = ((c >> 8) & 0xff) / 255;
+  const b = (c & 0xff) / 255;
+  return Math.max(r, g, b);
 }
 
 let maxTextureSize = 2048;
@@ -220,7 +243,7 @@ export function createMaterialFromVPX(
     }
 
     if (vpxMaterial.roughness !== undefined) {
-      matOptions.roughness = vpxMaterial.roughness;
+      matOptions.roughness = vpxRoughnessToPBR(vpxMaterial.roughness);
     }
 
     if (vpxMaterial.opacity_active && vpxMaterial.opacity !== undefined && vpxMaterial.opacity < 1.0) {
@@ -230,11 +253,19 @@ export function createMaterialFromVPX(
 
     const isMetal = vpxMaterial.is_metal || vpxMaterial.type?.toLowerCase() === 'metal';
     if (isMetal) {
-      matOptions.metalness = 0.8;
+      matOptions.metalness = 1.0;
       matOptions.envMap = getMetalEnvMap();
-      matOptions.envMapIntensity = 0.3;
+      matOptions.envMapIntensity = Math.max(getEnvIntensity(), 0.5);
+      if (vpxMaterial.clearcoat_color && matOptions.roughness !== undefined) {
+        const cc = colorBrightness(vpxMaterial.clearcoat_color);
+        matOptions.roughness = matOptions.roughness * (1.0 - cc * 0.5);
+      }
     } else {
       matOptions.metalness = 0.0;
+      if (vpxMaterial.glossy_color && matOptions.roughness !== undefined) {
+        const glossy = colorBrightness(vpxMaterial.glossy_color);
+        matOptions.roughness = matOptions.roughness + (1.0 - glossy) * (0.9 - matOptions.roughness);
+      }
     }
   } else {
     matOptions.color = defaultColor;
@@ -259,6 +290,9 @@ export function createMaterialFromVPX(
     loadTexture(imageName).then((texture: THREE.Texture | null) => {
       if (texture) {
         material.map = texture;
+        if (material.emissiveIntensity > 0) {
+          material.emissiveMap = texture;
+        }
         material.needsUpdate = true;
       }
     });

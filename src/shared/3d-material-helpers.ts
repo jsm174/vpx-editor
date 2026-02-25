@@ -54,6 +54,18 @@ export function createMaterialWithTexture(
   return mat;
 }
 
+export function applyDisableLighting(material: THREE.MeshStandardMaterial, disableLightingTop: number): void {
+  if (disableLightingTop <= 0) return;
+  material.emissive.copy(material.color);
+  material.emissiveIntensity = disableLightingTop;
+  if (disableLightingTop >= 1.0) {
+    material.color.setScalar(0);
+    material.metalness = 0;
+    material.roughness = 1;
+    material.envMapIntensity = 0;
+  }
+}
+
 export function addMesh(group: THREE.Group, geometry: THREE.BufferGeometry, material: THREE.Material): THREE.Mesh {
   const mesh = new THREE.Mesh(geometry, material);
   group.add(mesh);

@@ -9,7 +9,7 @@ import {
   pointInPolygon,
   drawPolygon,
 } from '../utils.js';
-import { createMaterial } from '../../shared/3d-material-helpers.js';
+import { createMaterial, applyDisableLighting } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
 import { materialSelect, imageSelect } from '../../shared/property-templates.js';
 import { WALL_DEFAULTS } from '../../shared/object-defaults.js';
@@ -105,6 +105,7 @@ export function createWall3DMesh(item: WallItem): THREE.Mesh | null {
   shape.closePath();
 
   const material = createMaterial(item.top_material || item.side_material, item.image || item.side_image);
+  applyDisableLighting(material, item.disable_lighting_top_old ?? 0);
 
   if (!sideVisible && topVisible) {
     const geometry = new THREE.ShapeGeometry(shape);
