@@ -70,12 +70,13 @@ export function findImageUsage(
   gamedata: Record<string, unknown> | null
 ): ImageUsage[] {
   const usedBy: ImageUsage[] = [];
+  const lowerName = imageName.toLowerCase();
 
   for (const [itemName, item] of Object.entries(items)) {
     const typeDef = IMAGE_PROPERTIES.find(p => p.type === item._type);
     if (!typeDef) continue;
     for (const prop of typeDef.props) {
-      if (item[prop] === imageName) {
+      if (typeof item[prop] === 'string' && (item[prop] as string).toLowerCase() === lowerName) {
         usedBy.push({ name: itemName, type: item._type, property: prop });
       }
     }
@@ -83,7 +84,7 @@ export function findImageUsage(
 
   if (gamedata) {
     for (const prop of TABLE_IMAGE_PROPERTIES) {
-      if (gamedata[prop] === imageName) {
+      if (typeof gamedata[prop] === 'string' && (gamedata[prop] as string).toLowerCase() === lowerName) {
         usedBy.push({ name: 'Table', type: 'Table', property: prop });
       }
     }

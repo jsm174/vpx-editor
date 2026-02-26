@@ -834,8 +834,9 @@ ipcMain.handle(
       };
 
       const props = imageProps[itemType] || [];
+      const lowerOld = oldImage.toLowerCase();
       for (const prop of props) {
-        if (item[prop] === oldImage) {
+        if (typeof item[prop] === 'string' && item[prop].toLowerCase() === lowerOld) {
           item[prop] = newImage;
         }
       }

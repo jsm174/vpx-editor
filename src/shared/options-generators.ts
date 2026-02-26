@@ -1,9 +1,10 @@
 import { state } from '../editor/state.js';
 
 function buildOptions(names: string[], currentValue: string | null | undefined): string {
+  const lowerValue = currentValue?.toLowerCase() ?? '';
   let html = `<option value=""${!currentValue ? ' selected' : ''}></option>`;
   for (const name of names) {
-    const selected = name === currentValue ? ' selected' : '';
+    const selected = name.toLowerCase() === lowerValue ? ' selected' : '';
     html += `<option value="${name}"${selected}>${name}</option>`;
   }
   return html;

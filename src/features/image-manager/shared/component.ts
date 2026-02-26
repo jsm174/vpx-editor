@@ -572,12 +572,14 @@ export function initImageManagerComponent(
     callbacks.undoBegin?.(`Rename image ${oldName}`);
     callbacks.undoMarkImages?.();
 
+    const lowerOldName = oldName.toLowerCase();
     const affectedItems: string[] = [];
     for (const [itemName, item] of Object.entries(items)) {
       const typeDef = IMAGE_PROPERTIES.find(p => p.type === item._type);
       if (!typeDef) continue;
       for (const prop of typeDef.props) {
-        if ((item as Record<string, unknown>)[prop] === oldName) {
+        const val = (item as Record<string, unknown>)[prop];
+        if (typeof val === 'string' && val.toLowerCase() === lowerOldName) {
           affectedItems.push(itemName);
           callbacks.undoMarkForUndo?.(itemName);
           break;
@@ -588,7 +590,8 @@ export function initImageManagerComponent(
     let gamedataWillChange = false;
     if (gamedata) {
       for (const prop of TABLE_IMAGE_PROPERTIES) {
-        if (gamedata[prop] === oldName) {
+        const val = gamedata[prop];
+        if (typeof val === 'string' && val.toLowerCase() === lowerOldName) {
           gamedataWillChange = true;
           break;
         }
@@ -623,7 +626,8 @@ export function initImageManagerComponent(
 
       let itemModified = false;
       for (const prop of typeDef.props) {
-        if ((item as Record<string, unknown>)[prop] === oldName) {
+        const val = (item as Record<string, unknown>)[prop];
+        if (typeof val === 'string' && val.toLowerCase() === lowerOldName) {
           (item as Record<string, unknown>)[prop] = newName;
           itemModified = true;
         }
@@ -638,7 +642,8 @@ export function initImageManagerComponent(
     if (gamedata) {
       let gamedataModified = false;
       for (const prop of TABLE_IMAGE_PROPERTIES) {
-        if (gamedata[prop] === oldName) {
+        const val = gamedata[prop];
+        if (typeof val === 'string' && val.toLowerCase() === lowerOldName) {
           gamedata[prop] = newName;
           gamedataModified = true;
         }
@@ -692,11 +697,13 @@ export function initImageManagerComponent(
     callbacks.undoBegin?.(`Rename image ${oldName}`);
     callbacks.undoMarkImages?.();
 
+    const lowerOld = oldName.toLowerCase();
     for (const [itemName, item] of Object.entries(items)) {
       const typeDef = IMAGE_PROPERTIES.find(p => p.type === item._type);
       if (!typeDef) continue;
       for (const prop of typeDef.props) {
-        if ((item as Record<string, unknown>)[prop] === oldName) {
+        const val = (item as Record<string, unknown>)[prop];
+        if (typeof val === 'string' && val.toLowerCase() === lowerOld) {
           callbacks.undoMarkForUndo?.(itemName);
           break;
         }
@@ -706,7 +713,8 @@ export function initImageManagerComponent(
     let gamedataWillChange = false;
     if (gamedata) {
       for (const prop of TABLE_IMAGE_PROPERTIES) {
-        if (gamedata[prop] === oldName) {
+        const val = gamedata[prop];
+        if (typeof val === 'string' && val.toLowerCase() === lowerOld) {
           gamedataWillChange = true;
           break;
         }
@@ -741,7 +749,8 @@ export function initImageManagerComponent(
 
       let itemModified = false;
       for (const prop of typeDef.props) {
-        if ((item as Record<string, unknown>)[prop] === oldName) {
+        const val = (item as Record<string, unknown>)[prop];
+        if (typeof val === 'string' && val.toLowerCase() === lowerOld) {
           (item as Record<string, unknown>)[prop] = newName;
           itemModified = true;
         }
@@ -756,7 +765,8 @@ export function initImageManagerComponent(
     if (gamedata) {
       let gamedataModified = false;
       for (const prop of TABLE_IMAGE_PROPERTIES) {
-        if (gamedata[prop] === oldName) {
+        const val = gamedata[prop];
+        if (typeof val === 'string' && val.toLowerCase() === lowerOld) {
           gamedata[prop] = newName;
           gamedataModified = true;
         }
