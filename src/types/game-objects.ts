@@ -289,7 +289,7 @@ export interface Light extends GameObject {
   blink_interval: number;
   depth_bias: number;
   surface?: string;
-  off_image?: string;
+  image?: string;
   drag_points?: DragPoint[];
   is_round_light: boolean;
   is_backglass?: boolean;

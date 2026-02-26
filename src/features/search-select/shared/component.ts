@@ -180,7 +180,7 @@ function getItemData(name: string, item: Record<string, unknown>, collections: C
       break;
 
     case 'Light':
-      image = isValidString(item.off_image as string) ? (item.off_image as string) : '';
+      image = isValidString(item.image as string) ? (item.image as string) : '';
       material = '';
       collidable = item.is_collidable ? 'X' : ' ';
       visible = item.visible ? 'X' : ' ';

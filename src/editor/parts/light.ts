@@ -40,7 +40,7 @@ export function createLight3DMesh(item: unknown): THREE.Object3D | null {
     mesh_radius?: number;
     socket_material?: string;
     surface?: string;
-    off_image?: string;
+    image?: string;
   };
 
   const center = lightItem.center || lightItem.vCenter;
@@ -97,8 +97,8 @@ export function createLight3DMesh(item: unknown): THREE.Object3D | null {
       side: THREE.DoubleSide,
     });
 
-    if (state.showMaterials && lightItem.off_image) {
-      loadTexture(lightItem.off_image).then(texture => {
+    if (state.showMaterials && lightItem.image) {
+      loadTexture(lightItem.image).then(texture => {
         if (texture) {
           material.map = texture;
           material.emissiveMap = texture;
@@ -355,7 +355,7 @@ export function lightProperties(item: unknown): string {
     bulb_halo_height?: number;
     bulb_modulate_vs_add?: number;
     transmission_scale?: number;
-    off_image?: string;
+    image?: string;
     is_image_mode?: boolean;
     show_bulb_mesh?: boolean;
     static_bulb_mesh?: boolean;
@@ -455,7 +455,7 @@ export function lightProperties(item: unknown): string {
           <input type="number" class="prop-input" data-prop="transmission_scale" value="${(lightItem.transmission_scale ?? LIGHT_DEFAULTS.transmission_scale).toFixed(2)}" step="0.05" min="0" max="1">
         </div>
         <div class="render-mode-field classic-only"${!isClassic ? ' style="display:none"' : ''}>
-          ${imageSelect('Image', 'off_image', imageOptions(lightItem.off_image))}
+          ${imageSelect('Image', 'image', imageOptions(lightItem.image))}
         </div>
         <div class="prop-row render-mode-field classic-only"${!isClassic ? ' style="display:none"' : ''}>
           <label class="prop-label">PassThrough</label>

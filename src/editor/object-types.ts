@@ -30,7 +30,7 @@ interface LightDefaults {
   is_timer_enabled: boolean;
   timer_interval: number;
   blink_pattern: string;
-  off_image: string;
+  image: string;
   blink_interval: number;
   intensity: number;
   transmission_scale: number;
@@ -587,7 +587,7 @@ export const objectTypes: ObjectTypes = {
       is_timer_enabled: false,
       timer_interval: 100,
       blink_pattern: '10',
-      off_image: '',
+      image: '',
       blink_interval: 125,
       intensity: 10.0,
       transmission_scale: 0.0,
