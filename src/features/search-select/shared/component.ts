@@ -23,6 +23,12 @@ export interface SelectElementCallbacks {
   onClose: () => void;
 }
 
+export interface SelectElementInstance {
+  updateData: (items: Record<string, Record<string, unknown>>, collections: Collection[]) => void;
+  setDisabled: (disabled: boolean) => void;
+  setSelectionHighlights: (selectedItems: string[]) => void;
+}
+
 const COLUMNS = [
   { key: 'name', label: 'Name', width: 200 },
   { key: 'type', label: 'Type', width: 70 },
@@ -174,7 +180,7 @@ function getItemData(name: string, item: Record<string, unknown>, collections: C
       break;
 
     case 'Light':
-      image = isValidString(item.image as string) ? (item.image as string) : '';
+      image = isValidString(item.off_image as string) ? (item.off_image as string) : '';
       material = '';
       collidable = item.is_collidable ? 'X' : ' ';
       visible = item.visible ? 'X' : ' ';
@@ -368,7 +374,7 @@ export function initSelectElementComponent(
   items: Record<string, Record<string, unknown>>,
   collections: Collection[],
   callbacks: SelectElementCallbacks
-): { updateData: (items: Record<string, Record<string, unknown>>, collections: Collection[]) => void } {
+): SelectElementInstance {
   let tableData: SelectElementItem[] = [];
   let filteredData: SelectElementItem[] = [];
   let sortColumn = 0;
@@ -559,7 +565,8 @@ export function initSelectElementComponent(
   selectBtn.addEventListener('click', selectElements);
 
   theadRow.querySelectorAll('th').forEach(th => {
-    th.addEventListener('click', () => {
+    th.addEventListener('click', (e: Event) => {
+      if ((e.target as HTMLElement).classList.contains('resize-handle')) return;
       const col = parseInt(th.dataset.col!);
       if (sortColumn === col) {
         sortAscending = !sortAscending;
@@ -569,6 +576,45 @@ export function initSelectElementComponent(
       }
       renderTable();
     });
+
+    const handle = document.createElement('div');
+    handle.className = 'resize-handle';
+    th.appendChild(handle);
+  });
+
+  let resizingCol: HTMLElement | null = null;
+  let startX = 0;
+  let startWidth = 0;
+
+  container.addEventListener('mousedown', (e: Event) => {
+    const target = e.target as HTMLElement;
+    if (target.classList.contains('resize-handle')) {
+      const me = e as MouseEvent;
+      resizingCol = target.parentElement;
+      startX = me.pageX;
+      startWidth = resizingCol!.offsetWidth;
+      target.classList.add('resizing');
+      document.body.style.cursor = 'col-resize';
+      me.preventDefault();
+    }
+  });
+
+  document.addEventListener('mousemove', (e: MouseEvent) => {
+    if (resizingCol) {
+      const diff = e.pageX - startX;
+      const newWidth = Math.max(30, startWidth + diff);
+      resizingCol.style.width = newWidth + 'px';
+      resizingCol.style.minWidth = newWidth + 'px';
+      resizingCol.style.maxWidth = newWidth + 'px';
+    }
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (resizingCol) {
+      container.querySelectorAll('.resize-handle').forEach(h => h.classList.remove('resizing'));
+      document.body.style.cursor = '';
+      resizingCol = null;
+    }
   });
 
   container.addEventListener('keydown', e => {
@@ -590,6 +636,26 @@ export function initSelectElementComponent(
       collections.push(...newCollections);
       buildTableData();
       renderTable();
+    },
+    setDisabled: (disabled: boolean) => {
+      if (disabled) {
+        for (const key of Object.keys(items)) delete items[key];
+        collections.length = 0;
+        tableData = [];
+        filteredData = [];
+        tbody.innerHTML = '';
+        filterInput.value = '';
+        filterInput.disabled = true;
+        statusBar.textContent = 'No table loaded';
+      } else {
+        filterInput.disabled = false;
+      }
+    },
+    setSelectionHighlights: (selectedItems: string[]) => {
+      tbody.querySelectorAll('tr').forEach(row => {
+        row.classList.toggle('selected', selectedItems.includes((row as HTMLElement).dataset.name!));
+      });
+      updateStatus();
     },
   };
 }
