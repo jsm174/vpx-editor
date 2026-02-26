@@ -824,7 +824,7 @@ ipcMain.handle(
         Plunger: ['image'],
         Kicker: ['image'],
         Trigger: ['image'],
-        Light: ['image', 'image_off'],
+        Light: ['off_image'],
         HitTarget: ['image'],
         Rubber: ['image'],
         Flasher: ['image_a', 'image_b'],

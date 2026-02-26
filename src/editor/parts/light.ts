@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { state, elements } from '../state.js';
 import { toScreen, generateSmoothedPath, pointInPolygon } from '../utils.js';
 import { getSurfaceHeight } from '../../shared/3d-material-helpers.js';
+import { loadTexture } from '../texture-loader.js';
 import { imageOptions, surfaceOptions } from '../../shared/options-generators.js';
 import { imageSelect } from '../../shared/property-templates.js';
 import { createMeshGeometry } from '../../shared/mesh-utils.js';
@@ -39,6 +40,7 @@ export function createLight3DMesh(item: unknown): THREE.Object3D | null {
     mesh_radius?: number;
     socket_material?: string;
     surface?: string;
+    off_image?: string;
   };
 
   const center = lightItem.center || lightItem.vCenter;
@@ -73,6 +75,16 @@ export function createLight3DMesh(item: unknown): THREE.Object3D | null {
       geometry = new THREE.CircleGeometry(falloff, 32);
     }
 
+    const tableWidth = ((state.gamedata?.right as number) || 952) - ((state.gamedata?.left as number) || 0);
+    const tableHeight = ((state.gamedata?.bottom as number) || 2162) - ((state.gamedata?.top as number) || 0);
+    const posAttr = geometry.getAttribute('position');
+    const uvs = new Float32Array(posAttr.count * 2);
+    for (let i = 0; i < posAttr.count; i++) {
+      uvs[i * 2] = (posAttr.getX(i) + center.x) / tableWidth;
+      uvs[i * 2 + 1] = (posAttr.getY(i) + center.y) / tableHeight;
+    }
+    geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+
     const blendedColor = blendColorsToHex(lightItem.color, lightItem.color2);
     const intensity = lightItem.intensity ?? LIGHT_DEFAULTS.intensity;
     const material = new THREE.MeshStandardMaterial({
@@ -84,6 +96,17 @@ export function createLight3DMesh(item: unknown): THREE.Object3D | null {
       depthWrite: false,
       side: THREE.DoubleSide,
     });
+
+    if (state.showMaterials && lightItem.off_image) {
+      loadTexture(lightItem.off_image).then(texture => {
+        if (texture) {
+          material.map = texture;
+          material.emissiveMap = texture;
+          material.needsUpdate = true;
+        }
+      });
+    }
+
     const mesh = new THREE.Mesh(geometry, material);
     const lightHeight = (lightItem.height ?? 0) + surfaceHeight;
     mesh.position.set(center.x, center.y, lightHeight + 0.5);
@@ -332,8 +355,8 @@ export function lightProperties(item: unknown): string {
     bulb_halo_height?: number;
     bulb_modulate_vs_add?: number;
     transmission_scale?: number;
-    image?: string;
-    image_mode?: boolean;
+    off_image?: string;
+    is_image_mode?: boolean;
     show_bulb_mesh?: boolean;
     static_bulb_mesh?: boolean;
     mesh_radius?: number;
@@ -432,11 +455,11 @@ export function lightProperties(item: unknown): string {
           <input type="number" class="prop-input" data-prop="transmission_scale" value="${(lightItem.transmission_scale ?? LIGHT_DEFAULTS.transmission_scale).toFixed(2)}" step="0.05" min="0" max="1">
         </div>
         <div class="render-mode-field classic-only"${!isClassic ? ' style="display:none"' : ''}>
-          ${imageSelect('Image', 'image', imageOptions(lightItem.image))}
+          ${imageSelect('Image', 'off_image', imageOptions(lightItem.off_image))}
         </div>
         <div class="prop-row render-mode-field classic-only"${!isClassic ? ' style="display:none"' : ''}>
           <label class="prop-label">PassThrough</label>
-          <input type="checkbox" class="prop-input" data-prop="image_mode" ${lightItem.image_mode ? 'checked' : ''}>
+          <input type="checkbox" class="prop-input" data-prop="is_image_mode" ${lightItem.is_image_mode ? 'checked' : ''}>
         </div>
       </div>
       <div class="prop-group">

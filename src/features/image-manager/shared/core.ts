@@ -34,7 +34,7 @@ export const IMAGE_PROPERTIES: { type: string; props: string[] }[] = [
   { type: 'Plunger', props: ['image'] },
   { type: 'Kicker', props: ['image'] },
   { type: 'Trigger', props: ['image'] },
-  { type: 'Light', props: ['image', 'image_off'] },
+  { type: 'Light', props: ['off_image'] },
   { type: 'HitTarget', props: ['image'] },
   { type: 'Rubber', props: ['image'] },
   { type: 'Flasher', props: ['image_a', 'image_b'] },
