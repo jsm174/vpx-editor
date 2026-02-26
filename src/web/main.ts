@@ -404,27 +404,27 @@ function setupKeyboardShortcuts(): void {
       events.emit('toggle-script-editor');
     }
 
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'L') {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'l') {
       e.preventDefault();
       events.emit('toggle-lock');
     }
 
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'V') {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'v') {
       e.preventDefault();
       events.emit('paste-at-original');
     }
 
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'E') {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'e') {
       e.preventDefault();
       events.emit('show-select-element');
     }
 
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'D') {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
       e.preventDefault();
       events.emit('show-drawing-order', 'hit');
     }
 
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'S') {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 's') {
       e.preventDefault();
       events.emit('show-drawing-order', 'select');
     }
