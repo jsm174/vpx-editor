@@ -16,13 +16,15 @@ import { initWebAbout } from '../features/about/web/component';
 import { initWebTransform } from '../features/transform/web/component';
 import { initWebMeshImport } from '../features/mesh-import/web/component';
 import {
-  VPINBALL_API,
   parseScriptFunctions,
+  parseScriptVariables,
+  registerVbsCompletionProvider,
   generateEventHandler,
   findEventHandler,
   getEventsForItemType,
   injectScriptEditorTemplate,
   type ParsedFunction,
+  type ParsedVariable,
   type ScriptGameItem,
 } from '../features/script-editor/web/component';
 import { initWebImageManager } from '../features/image-manager/web/component';
@@ -567,6 +569,7 @@ function setupScriptEditorModal(): void {
   let monacoLoaded = false;
   let tableItems: ScriptGameItem[] = [];
   let parsedFunctions: ParsedFunction[] = [];
+  let parsedVariables: ParsedVariable[] = [];
   let saveTimeout: ReturnType<typeof setTimeout> | null = null;
   let isTableLocked = false;
 
@@ -578,6 +581,7 @@ function setupScriptEditorModal(): void {
     if (!editor) return;
     const code = editor.getValue();
     parsedFunctions = parseScriptFunctions(code);
+    parsedVariables = parseScriptVariables(code);
     functionList.innerHTML = '<option value="">(Select Function)</option>';
     for (const fn of parsedFunctions) {
       const opt = document.createElement('option');
@@ -675,42 +679,11 @@ function setupScriptEditorModal(): void {
         require(['vs/editor/editor.main'], () => {
           monacoLoaded = true;
 
-          monaco.languages.registerCompletionItemProvider('vb', {
-            provideCompletionItems: () => {
-              const suggestions: import('monaco-editor').languages.CompletionItem[] = [];
-              for (const item of tableItems) {
-                suggestions.push({
-                  label: item.name,
-                  kind: monaco.languages.CompletionItemKind.Variable,
-                  insertText: item.name,
-                  detail: item.type,
-                  range: undefined as unknown as import('monaco-editor').IRange,
-                });
-              }
-              for (const api of VPINBALL_API) {
-                suggestions.push({
-                  label: api,
-                  kind: monaco.languages.CompletionItemKind.Function,
-                  insertText: api,
-                  detail: 'VPinball API',
-                  range: undefined as unknown as import('monaco-editor').IRange,
-                });
-              }
-              for (const fn of parsedFunctions) {
-                suggestions.push({
-                  label: fn.name,
-                  kind:
-                    fn.type === 'sub'
-                      ? monaco.languages.CompletionItemKind.Method
-                      : monaco.languages.CompletionItemKind.Function,
-                  insertText: fn.name,
-                  detail: fn.type,
-                  range: undefined as unknown as import('monaco-editor').IRange,
-                });
-              }
-              return { suggestions };
-            },
-          });
+          registerVbsCompletionProvider(monaco, () => ({
+            tableItems,
+            parsedFunctions,
+            parsedVariables,
+          }));
 
           resolve();
         });
@@ -758,6 +731,11 @@ function setupScriptEditorModal(): void {
         })
       );
       items = results.filter((r): r is ScriptGameItem => r !== null);
+      const gamedataJson = await state.platform!.fileSystem.readFile(`${EXTRACTED_DIR}/gamedata.json`);
+      const gamedata = JSON.parse(gamedataJson);
+      if (gamedata.name) {
+        items.push({ name: gamedata.name, type: 'Table' });
+      }
     } catch {
       items = [];
     }

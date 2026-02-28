@@ -34,34 +34,6 @@ export const ITEM_EVENTS: Record<string, string[]> = {
   Ball: ['Init'],
 };
 
-export const VPINBALL_API = [
-  'PlaySound',
-  'StopSound',
-  'PlayMusic',
-  'MusicVolume',
-  'GetBalls',
-  'CreateBall',
-  'DestroyBall',
-  'ActiveBall',
-  'GameTime',
-  'SystemTime',
-  'GetPlayerHWnd',
-  'UserDirectory',
-  'TablesDirectory',
-  'NudgeGetCalibration',
-  'NudgeSetCalibration',
-  'Nudge',
-  'GetCustomParam',
-  'FireKnocker',
-  'QuitPlayer',
-  'AddObject',
-  'Version',
-  'VPBuildVersion',
-  'VersionMajor',
-  'VersionMinor',
-  'VersionRevision',
-];
-
 export function parseScriptFunctions(code: string): ParsedFunction[] {
   const functions: ParsedFunction[] = [];
   const lines = code.split('\n');

@@ -6,10 +6,11 @@ export {
   findEventHandler,
   getEventsForItemType,
   ITEM_EVENTS,
-  VPINBALL_API,
   type ParsedFunction,
   type ScriptGameItem,
 } from '../shared/core';
+
+export { registerVbsCompletionProvider, parseScriptVariables, type ParsedVariable } from '../shared/vbs-api';
 
 let templateInjected = false;
 

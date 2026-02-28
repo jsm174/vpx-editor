@@ -1173,6 +1173,13 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
           } catch {}
         }
       } catch {}
+      try {
+        const gamedataContent = await fs.promises.readFile(`${localCtx.extractedDir}/gamedata.json`, 'utf-8');
+        const gamedata = JSON.parse(gamedataContent);
+        if (gamedata.name) {
+          gameitems.push({ name: gamedata.name, type: 'Table' });
+        }
+      } catch {}
       localCtx.scriptEditorWindow!.webContents.send('init', {
         script: script || '',
         extractedDir: localCtx.extractedDir,
