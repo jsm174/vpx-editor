@@ -155,6 +155,11 @@ export async function loadTable(): Promise<void> {
       if (itemInfo.editor_layer_visibility !== undefined) {
         item.editor_layer_visibility = itemInfo.editor_layer_visibility;
       }
+      if (type === 'Flipper' && 'return' in item && !('return_' in item)) {
+        (item as Record<string, unknown>)['return_'] = (item as Record<string, unknown>)['return'];
+        delete (item as Record<string, unknown>)['return'];
+      }
+
       const itemName = item.name || itemInfo.file_name;
       setItem(itemName, item, itemInfo.file_name);
 
