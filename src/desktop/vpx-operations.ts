@@ -696,22 +696,26 @@ export async function playTable(deps: PlayDeps & SaveDeps & AssembleDeps): Promi
   ctx.window.webContents.send('status', 'Building table for play...');
   ctx.window.webContents.send('console-open');
 
-  await fs.promises.rm(playDir, { recursive: true, force: true });
   await fs.promises.mkdir(playDir, { recursive: true });
 
   const b2sPattern = `${ctx.tableName}.directb2s`.toLowerCase();
   const files = await fs.promises.readdir(vpxDir);
   const b2sFile = files.find(f => f.toLowerCase() === b2sPattern);
   if (b2sFile) {
-    await fs.promises.copyFile(path.join(vpxDir, b2sFile), path.join(playDir, b2sFile));
-    sendConsoleOutput(ctx, 'info', `Copied ${b2sFile}`);
+    const destB2s = path.join(playDir, b2sFile);
+    if (!(await fileExists(destB2s))) {
+      await fs.promises.copyFile(path.join(vpxDir, b2sFile), destB2s);
+      sendConsoleOutput(ctx, 'info', `Copied ${b2sFile}`);
+    }
   }
 
   const pinmameDir = path.join(vpxDir, 'pinmame');
   if (await fileExists(pinmameDir)) {
     const destPinmame = path.join(playDir, 'pinmame');
-    await fs.copy(pinmameDir, destPinmame);
-    sendConsoleOutput(ctx, 'info', 'Copied pinmame folder');
+    if (!(await fileExists(destPinmame))) {
+      await fs.copy(pinmameDir, destPinmame);
+      sendConsoleOutput(ctx, 'info', 'Copied pinmame folder');
+    }
   }
 
   await runAssembleThenPlay(ctx, playVpxPath, settings);
