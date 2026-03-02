@@ -16,17 +16,11 @@ import { initWebAbout } from '../features/about/web/component';
 import { initWebTransform } from '../features/transform/web/component';
 import { initWebMeshImport } from '../features/mesh-import/web/component';
 import {
-  parseScriptFunctions,
-  parseScriptVariables,
   registerVbsCompletionProvider,
-  generateEventHandler,
-  findEventHandler,
-  getEventsForItemType,
   injectScriptEditorTemplate,
-  type ParsedFunction,
-  type ParsedVariable,
   type ScriptGameItem,
 } from '../features/script-editor/web/component';
+import { ScriptEditorController } from '../features/script-editor/shared/editor-controller';
 import { initWebImageManager } from '../features/image-manager/web/component';
 import { initWebSoundManager } from '../features/sound-manager/web/component';
 import { initWebTableInfo } from '../features/table-info/web/component';
@@ -558,115 +552,29 @@ function setupScriptEditorModal(): void {
   const modal = document.getElementById('script-editor-modal')!;
   const closeBtn = document.getElementById('script-editor-close')!;
   const container = document.getElementById('script-editor-container')!;
-  const statusEl = document.getElementById('script-status')!;
-  const cursorPosEl = document.getElementById('script-cursor-pos')!;
   const titleEl = modal.querySelector('.script-editor-title')!;
-  const itemList = document.getElementById('script-item-list') as HTMLSelectElement;
-  const eventList = document.getElementById('script-event-list') as HTMLSelectElement;
-  const functionList = document.getElementById('script-function-list') as HTMLSelectElement;
 
-  let editor: import('monaco-editor').editor.IStandaloneCodeEditor | null = null;
   let monacoLoaded = false;
-  let tableItems: ScriptGameItem[] = [];
-  let parsedFunctions: ParsedFunction[] = [];
-  let parsedVariables: ParsedVariable[] = [];
-  let saveTimeout: ReturnType<typeof setTimeout> | null = null;
-  let isTableLocked = false;
 
-  function setStatus(msg: string): void {
-    statusEl.textContent = msg;
-  }
-
-  function updateFunctionList(): void {
-    if (!editor) return;
-    const code = editor.getValue();
-    parsedFunctions = parseScriptFunctions(code);
-    parsedVariables = parseScriptVariables(code);
-    functionList.innerHTML = '<option value="">(Select Function)</option>';
-    for (const fn of parsedFunctions) {
-      const opt = document.createElement('option');
-      opt.value = String(fn.line);
-      opt.textContent = fn.name;
-      functionList.appendChild(opt);
-    }
-  }
-
-  function populateItemList(items: ScriptGameItem[]): void {
-    tableItems = items || [];
-    itemList.innerHTML = '<option value="">(All Items)</option>';
-    const sortedItems = [...tableItems].sort((a, b) => a.name.localeCompare(b.name));
-    for (const item of sortedItems) {
-      const opt = document.createElement('option');
-      opt.value = item.name;
-      opt.dataset.type = item.type;
-      opt.textContent = item.name;
-      itemList.appendChild(opt);
-    }
-  }
-
-  function updateEventList(itemType: string): void {
-    eventList.innerHTML = '<option value="">(Select Event)</option>';
-    const evts = getEventsForItemType(itemType);
-    for (const evt of evts) {
-      const opt = document.createElement('option');
-      opt.value = evt;
-      opt.textContent = '_' + evt;
-      eventList.appendChild(opt);
-    }
-  }
-
-  async function saveScript(): Promise<void> {
-    if (!editor || !state.tableLoaded) return;
-
-    const content = editor.getValue();
-    const scriptPath = `${EXTRACTED_DIR}/script.vbs`;
-
-    try {
-      await state.platform!.fileSystem.writeFile(scriptPath, content);
-      setStatus('Saved');
-      events.emit('script-changed');
-    } catch (error) {
-      setStatus(`Save failed: ${error}`);
-    }
-  }
-
-  function scheduleAutoSave(): void {
-    if (saveTimeout) clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(() => {
-      saveScript();
-    }, 500);
-  }
-
-  function goToOrCreateEventHandler(itemName: string, eventName: string): void {
-    if (!editor || !itemName || !eventName) return;
-
-    const code = editor.getValue();
-    const result = findEventHandler(code, itemName, eventName);
-
-    if (result.found) {
-      editor.revealLineInCenter(result.line);
-      editor.setPosition({ lineNumber: result.line, column: 1 });
-      editor.focus();
-      return;
-    }
-
-    if (isTableLocked) return;
-
-    const newSub = generateEventHandler(itemName, eventName);
-    const model = editor.getModel();
-    if (!model) return;
-
-    const lastLine = model.getLineCount();
-    model.applyEdits([
-      {
-        range: new monaco.Range(lastLine, model.getLineMaxColumn(lastLine), lastLine, model.getLineMaxColumn(lastLine)),
-        text: newSub,
+  const controller = new ScriptEditorController(
+    {
+      container,
+      functionList: document.getElementById('script-function-list') as HTMLSelectElement,
+      itemList: document.getElementById('script-item-list') as HTMLSelectElement,
+      eventList: document.getElementById('script-event-list') as HTMLSelectElement,
+      statusEl: document.getElementById('script-status')!,
+      cursorPosEl: document.getElementById('script-cursor-pos')!,
+    },
+    {
+      save: async (content: string) => {
+        if (!state.tableLoaded) throw new Error('No table loaded');
+        await state.platform!.fileSystem.writeFile(`${EXTRACTED_DIR}/script.vbs`, content);
       },
-    ]);
-    editor.revealLineInCenter(lastLine + 2);
-    editor.setPosition({ lineNumber: lastLine + 2, column: 2 });
-    editor.focus();
-  }
+      onSaveSuccess: () => events.emit('script-changed'),
+    }
+  );
+
+  controller.setupSelectListeners();
 
   async function loadMonaco(): Promise<void> {
     if (monacoLoaded) return;
@@ -678,13 +586,7 @@ function setupScriptEditorModal(): void {
         require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
         require(['vs/editor/editor.main'], () => {
           monacoLoaded = true;
-
-          registerVbsCompletionProvider(monaco, () => ({
-            tableItems,
-            parsedFunctions,
-            parsedVariables,
-          }));
-
+          registerVbsCompletionProvider(monaco, () => controller.getCompletionState());
           resolve();
         });
       };
@@ -693,17 +595,13 @@ function setupScriptEditorModal(): void {
   }
 
   async function openScriptEditor(): Promise<void> {
-    if (!state.tableLoaded) {
-      setStatus('No table loaded');
-      return;
-    }
+    if (!state.tableLoaded) return;
 
     await loadMonaco();
 
-    const scriptPath = `${EXTRACTED_DIR}/script.vbs`;
     let content = '';
     try {
-      content = await state.platform!.fileSystem.readFile(scriptPath);
+      content = await state.platform!.fileSystem.readFile(`${EXTRACTED_DIR}/script.vbs`);
     } catch {
       content = '';
     }
@@ -740,7 +638,7 @@ function setupScriptEditorModal(): void {
       items = [];
     }
 
-    populateItemList(items);
+    controller.populateItemList(items);
 
     const settings = (await state.platform!.storage.get<EditorSettings>('editorSettings')) || {};
     const theme = resolveTheme(settings.theme);
@@ -749,85 +647,19 @@ function setupScriptEditorModal(): void {
     titleEl.textContent = state.currentFileName ? `Script Editor - [${state.currentFileName}]` : 'Script Editor';
 
     container.innerHTML = '';
-    const monacoTheme = theme === 'light' ? 'vs' : 'vs-dark';
-
-    editor = monaco.editor.create(container, {
-      value: content,
-      language: 'vb',
-      theme: monacoTheme,
-      automaticLayout: true,
-      fontSize: 14,
-      fontFamily: "'Consolas', 'Monaco', 'Menlo', monospace",
-      lineNumbers: 'on',
-      minimap: { enabled: true },
-      scrollBeyondLastLine: false,
-      wordWrap: 'off',
-      tabSize: 4,
-      insertSpaces: false,
-      renderWhitespace: 'selection',
-      bracketPairColorization: { enabled: true },
-    });
-
-    let updateTimeout: ReturnType<typeof setTimeout> | null = null;
-    editor.onDidChangeModelContent(() => {
-      scheduleAutoSave();
-      if (updateTimeout) clearTimeout(updateTimeout);
-      updateTimeout = setTimeout(updateFunctionList, 500);
-    });
-
-    editor.onDidChangeCursorPosition(e => {
-      cursorPosEl.textContent = `Ln ${e.position.lineNumber}, Col ${e.position.column}`;
-    });
-
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-      if (saveTimeout) clearTimeout(saveTimeout);
-      saveScript();
-    });
-
-    setStatus('Ready');
-    updateFunctionList();
     modal.classList.remove('hidden');
+    controller.createEditor(monaco, content, theme);
     events.emit('script-editor-opened');
   }
 
   function closeScriptEditor(): void {
-    if (saveTimeout) {
-      clearTimeout(saveTimeout);
-      saveScript();
-    }
-    if (editor) {
-      editor.dispose();
-      editor = null;
-    }
+    controller.flushPendingSave();
+    controller.saveCursorAndDispose();
     modal.classList.add('hidden');
     events.emit('script-editor-closed');
   }
 
   closeBtn.addEventListener('click', closeScriptEditor);
-
-  itemList.addEventListener('change', e => {
-    const selectedOption = (e.target as HTMLSelectElement).selectedOptions[0];
-    const itemType = selectedOption?.dataset?.type || '';
-    updateEventList(itemType);
-  });
-
-  eventList.addEventListener('change', e => {
-    const itemName = itemList.value;
-    const eventName = (e.target as HTMLSelectElement).value;
-    if (itemName && eventName) {
-      goToOrCreateEventHandler(itemName, eventName);
-      (e.target as HTMLSelectElement).value = '';
-    }
-  });
-
-  functionList.addEventListener('change', e => {
-    const line = parseInt((e.target as HTMLSelectElement).value, 10);
-    if (editor && line) {
-      editor.revealLineInCenter(line);
-      editor.setPosition({ lineNumber: line, column: 1 });
-      editor.focus();
-    }
-  });
 
   document.addEventListener('keydown', e => {
     if (!modal.classList.contains('hidden') && e.key === 'Escape') {

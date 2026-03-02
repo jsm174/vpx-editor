@@ -1,16 +1,8 @@
 import templateHtml from './template.html?raw';
 
-export {
-  parseScriptFunctions,
-  generateEventHandler,
-  findEventHandler,
-  getEventsForItemType,
-  ITEM_EVENTS,
-  type ParsedFunction,
-  type ScriptGameItem,
-} from '../shared/core';
+export { type ScriptGameItem } from '../shared/core';
 
-export { registerVbsCompletionProvider, parseScriptVariables, type ParsedVariable } from '../shared/vbs-api';
+export { registerVbsCompletionProvider } from '../shared/vbs-api';
 
 let templateInjected = false;
 

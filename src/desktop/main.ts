@@ -269,6 +269,13 @@ ipcMain.on('toggle-script-editor', event => {
   }
 });
 
+ipcMain.on('script-editor-cursor-position', (event, position: { lineNumber: number; column: number }) => {
+  const ctx = windowRegistry.getByChildWindow(BrowserWindow.fromWebContents(event.sender));
+  if (ctx) {
+    ctx.scriptEditorCursorPosition = position;
+  }
+});
+
 ipcMain.on('can-close-response', (event, canClose) => {
   const ctx = windowRegistry.getByChildWindow(BrowserWindow.fromWebContents(event.sender));
   if (!ctx) return;

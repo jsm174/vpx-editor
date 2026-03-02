@@ -1187,6 +1187,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
         gameitems,
         tableName: localCtx.tableName,
         isLocked: localCtx.isTableLocked,
+        cursorPosition: localCtx.scriptEditorCursorPosition,
       });
     });
   }

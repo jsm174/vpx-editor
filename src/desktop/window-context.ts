@@ -43,6 +43,7 @@ export class WindowContext implements WindowContextState, WindowContextChildWind
   public is3DMode: boolean;
   public scriptEditorWindow: BrowserWindow | null;
   public scriptEditorClosePending: boolean;
+  public scriptEditorCursorPosition: { lineNumber: number; column: number } | null;
   public closeConfirmed: boolean;
   public imageManagerWindow: BrowserWindow | null;
   public materialManagerWindow: BrowserWindow | null;
@@ -68,6 +69,7 @@ export class WindowContext implements WindowContextState, WindowContextChildWind
 
     this.scriptEditorWindow = null;
     this.scriptEditorClosePending = false;
+    this.scriptEditorCursorPosition = null;
     this.closeConfirmed = false;
     this.imageManagerWindow = null;
     this.materialManagerWindow = null;

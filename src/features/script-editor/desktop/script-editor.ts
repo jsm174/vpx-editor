@@ -8,6 +8,7 @@ export interface ScriptEditorAPI {
   notifyScriptChanged: () => void;
   onCheckCanClose: (callback: () => void) => void;
   respondCanClose: (canClose: boolean) => void;
+  saveCursorPosition: (position: { lineNumber: number; column: number }) => void;
   onScriptUndone: (callback: (content: string) => void) => void;
   showUnsavedChangesDialog: () => Promise<string>;
 }
@@ -31,6 +32,9 @@ const scriptEditorAPI: ScriptEditorAPI = {
   },
   respondCanClose: (canClose: boolean): void => {
     ipcRenderer.send('can-close-response', canClose);
+  },
+  saveCursorPosition: (position: { lineNumber: number; column: number }): void => {
+    ipcRenderer.send('script-editor-cursor-position', position);
   },
   onScriptUndone: (callback: (content: string) => void): void => {
     ipcRenderer.on('script-undone', (_event: IpcRendererEvent, content: string) => callback(content));
