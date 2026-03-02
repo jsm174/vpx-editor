@@ -1005,7 +1005,9 @@ document.addEventListener('keydown', async e => {
     return;
   }
 
-  const isConsoleFocused = document.activeElement === consoleOutput;
+  const isConsoleFocused =
+    document.activeElement === consoleOutput ||
+    (consoleOutput != null && consoleOutput.contains(window.getSelection()?.anchorNode ?? null));
 
   if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 'a') {
     e.preventDefault();
