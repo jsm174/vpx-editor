@@ -21,7 +21,7 @@ jobs:
       sha7: ${{ steps.version.outputs.sha7 }}
       tag: ${{ steps.version.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - id: version
@@ -43,10 +43,10 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
@@ -91,18 +91,18 @@ jobs:
           cp out/make/zip/darwin/arm64/*.zip tmp/vpx-editor-macos-arm64-${{ needs.version.outputs.tag }}.zip
 
       - name: Upload macOS DMG
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vpx-editor-macos-arm64-${{ needs.version.outputs.tag }}.dmg
           path: tmp/*.dmg
-          if-no-files-found: error
+          archive: false
 
       - name: Upload macOS ZIP
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vpx-editor-macos-arm64-${{ needs.version.outputs.tag }}.zip
           path: tmp/*.zip
-          if-no-files-found: error
+          archive: false
 
   build-linux:
     runs-on: ubuntu-latest
@@ -112,10 +112,10 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
@@ -151,32 +151,32 @@ jobs:
           cp out/make/flatpak/x86_64/com.github.jsm174.vpxeditor_${{ needs.version.outputs.tag }}_x86_64.flatpak tmp/vpx-editor-linux-x64-${{ needs.version.outputs.tag }}.flatpak
 
       - name: Upload Linux ZIP
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vpx-editor-linux-x64-${{ needs.version.outputs.tag }}.zip
           path: tmp/*.zip
-          if-no-files-found: error
+          archive: false
 
       - name: Upload Linux DEB
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vpx-editor-linux-x64-${{ needs.version.outputs.tag }}.deb
           path: tmp/*.deb
-          if-no-files-found: error
+          archive: false
 
       - name: Upload Linux RPM
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vpx-editor-linux-x64-${{ needs.version.outputs.tag }}.rpm
           path: tmp/*.rpm
-          if-no-files-found: error
+          archive: false
 
       - name: Upload Linux Flatpak
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vpx-editor-linux-x64-${{ needs.version.outputs.tag }}.flatpak
           path: tmp/*.flatpak
-          if-no-files-found: error
+          archive: false
 
   build-windows:
     runs-on: windows-latest
@@ -186,10 +186,10 @@ jobs:
       packages: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
@@ -217,18 +217,18 @@ jobs:
           cp out/make/zip/win32/x64/*.zip tmp/vpx-editor-windows-x64-${{ needs.version.outputs.tag }}.zip
 
       - name: Upload Windows installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: vpx-editor-windows-x64-${{ needs.version.outputs.tag }}.exe
+          name: vpx-editor-windows-x64-${{ needs.version.outputs.tag }}-setup.exe
           path: tmp/*.exe
-          if-no-files-found: error
+          archive: false
 
       - name: Upload Windows ZIP
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vpx-editor-windows-x64-${{ needs.version.outputs.tag }}.zip
           path: tmp/*.zip
-          if-no-files-found: error
+          archive: false
 
   build-web:
     runs-on: ubuntu-latest
@@ -240,10 +240,10 @@ jobs:
       id-token: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
@@ -266,11 +266,11 @@ jobs:
 
       - name: Setup Pages
         if: github.ref_name == 'master'
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
 
       - name: Upload artifact
         if: github.ref_name == 'master'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: dist-web
 
