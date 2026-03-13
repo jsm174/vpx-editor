@@ -497,7 +497,8 @@ ipcMain.handle('write-file', async (event, filePath: string, content: string) =>
     await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
     await fs.promises.writeFile(filePath, content, 'utf-8');
     const ctx = windowRegistry.getContextFromEvent(event);
-    if (filePath.includes('/gameitems/') || filePath.endsWith('/gameitems.json')) {
+    const normalizedPath = filePath.replaceAll('\\', '/');
+    if (normalizedPath.includes('/gameitems/') || normalizedPath.endsWith('/gameitems.json')) {
       if (ctx?.searchSelectWindow) {
         updateSearchSelectWindow(ctx);
       }
@@ -734,7 +735,11 @@ ipcMain.handle('delete-file', async (event, filePath: string) => {
   try {
     await fs.promises.unlink(filePath);
     const ctx = getContextForManagerEvent(event);
-    if (ctx?.searchSelectWindow && (filePath.includes('/gameitems/') || filePath.endsWith('/gameitems.json'))) {
+    const normalizedPath = filePath.replaceAll('\\', '/');
+    if (
+      ctx?.searchSelectWindow &&
+      (normalizedPath.includes('/gameitems/') || normalizedPath.endsWith('/gameitems.json'))
+    ) {
       updateSearchSelectWindow(ctx);
     }
     return { success: true };
@@ -1068,7 +1073,7 @@ ipcMain.on('script-undone', async event => {
   const ctx = windowRegistry.getContextFromEvent(event);
   if (ctx?.scriptEditorWindow && ctx?.extractedDir) {
     try {
-      const content = await fs.promises.readFile(`${ctx.extractedDir}/script.vbs`, 'utf-8');
+      const content = await fs.promises.readFile(`${ctx.extractedDir}${path.sep}script.vbs`, 'utf-8');
       ctx.scriptEditorWindow.webContents.send('script-undone', content);
     } catch {
       ctx.scriptEditorWindow.webContents.send('script-undone', '');
@@ -1218,12 +1223,12 @@ ipcMain.handle('save-table-info', async (event, data: { info: unknown; screensho
   if (!ctx?.extractedDir) return { success: false, error: 'No table open' };
 
   try {
-    await fs.promises.writeFile(`${ctx.extractedDir}/info.json`, JSON.stringify(data.info, null, 2));
+    await fs.promises.writeFile(`${ctx.extractedDir}${path.sep}info.json`, JSON.stringify(data.info, null, 2));
 
     ctx.window.webContents.send('info-changed', data.info);
 
     if (data.screenshot !== undefined) {
-      const gamedataPath = `${ctx.extractedDir}/gamedata.json`;
+      const gamedataPath = `${ctx.extractedDir}${path.sep}gamedata.json`;
       const gamedataContent = await fs.promises.readFile(gamedataPath, 'utf-8');
       const gamedata = JSON.parse(gamedataContent);
       gamedata.screen_shot = data.screenshot;
@@ -1243,7 +1248,7 @@ ipcMain.handle('save-collections', async (event, collections: unknown[]) => {
   const ctx = windowRegistry.getContextFromEvent(event);
   if (!ctx?.extractedDir) return;
 
-  await fs.promises.writeFile(`${ctx.extractedDir}/collections.json`, JSON.stringify(collections, null, 2));
+  await fs.promises.writeFile(`${ctx.extractedDir}${path.sep}collections.json`, JSON.stringify(collections, null, 2));
   ctx.window.webContents.send('collections-changed', { collections });
 });
 
@@ -1254,12 +1259,15 @@ ipcMain.on(
     if (!tableInfoCtx?.extractedDir) return;
 
     try {
-      await fs.promises.writeFile(`${tableInfoCtx.extractedDir}/info.json`, JSON.stringify(data.info, null, 2));
+      await fs.promises.writeFile(
+        `${tableInfoCtx.extractedDir}${path.sep}info.json`,
+        JSON.stringify(data.info, null, 2)
+      );
 
       tableInfoCtx.window.webContents.send('info-changed', data.info);
 
       if (data.screenshot !== data.originalScreenshot) {
-        const gamedataPath = `${tableInfoCtx.extractedDir}/gamedata.json`;
+        const gamedataPath = `${tableInfoCtx.extractedDir}${path.sep}gamedata.json`;
         const gamedataContent = await fs.promises.readFile(gamedataPath, 'utf-8');
         const gamedata = JSON.parse(gamedataContent);
 
@@ -1324,7 +1332,7 @@ ipcMain.on(
     ctx.window.webContents.send('undo-begin', `Edit collection ${data.originalName}`);
     ctx.window.webContents.send('undo-mark-collections');
 
-    const collectionsPath = `${ctx.extractedDir}/collections.json`;
+    const collectionsPath = `${ctx.extractedDir}${path.sep}collections.json`;
     let collections: Collection[] = [];
     if (fs.existsSync(collectionsPath)) {
       const content = await fs.promises.readFile(collectionsPath, 'utf-8');
@@ -1415,7 +1423,7 @@ ipcMain.on('collection-prompt-submit', async (_event, name: string) => {
     ctx.window.webContents.send('undo-begin', `Create collection ${name}`);
     ctx.window.webContents.send('undo-mark-collections');
 
-    const collectionsPath = `${ctx.extractedDir}/collections.json`;
+    const collectionsPath = `${ctx.extractedDir}${path.sep}collections.json`;
     let collections: Collection[] = [];
     if (fs.existsSync(collectionsPath)) {
       const content = await fs.promises.readFile(collectionsPath, 'utf-8');
@@ -1444,7 +1452,7 @@ ipcMain.on('collection-prompt-submit', async (_event, name: string) => {
     ctx.window.webContents.send('undo-begin', `Rename collection ${currentName}`);
     ctx.window.webContents.send('undo-mark-collections');
 
-    const collectionsPath = `${ctx.extractedDir}/collections.json`;
+    const collectionsPath = `${ctx.extractedDir}${path.sep}collections.json`;
     let collections: Collection[] = [];
     if (fs.existsSync(collectionsPath)) {
       const content = await fs.promises.readFile(collectionsPath, 'utf-8');
@@ -1532,7 +1540,7 @@ ipcMain.on('prompt-submit', async (_event, name: string) => {
       ctx.window.webContents.send('undo-begin', `Create collection ${name}`);
       ctx.window.webContents.send('undo-mark-collections');
 
-      const collectionsPath = `${ctx.extractedDir}/collections.json`;
+      const collectionsPath = `${ctx.extractedDir}${path.sep}collections.json`;
       let collections: Collection[] = [];
       if (fs.existsSync(collectionsPath)) {
         const content = await fs.promises.readFile(collectionsPath, 'utf-8');
@@ -1561,7 +1569,7 @@ ipcMain.on('prompt-submit', async (_event, name: string) => {
       ctx.window.webContents.send('undo-begin', `Rename collection ${currentName}`);
       ctx.window.webContents.send('undo-mark-collections');
 
-      const collectionsPath = `${ctx.extractedDir}/collections.json`;
+      const collectionsPath = `${ctx.extractedDir}${path.sep}collections.json`;
       let collections: Collection[] = [];
       if (fs.existsSync(collectionsPath)) {
         const content = await fs.promises.readFile(collectionsPath, 'utf-8');
@@ -1626,7 +1634,7 @@ ipcMain.on('save-drawing-order', async (_event, data: { mode: string; items: { n
   if (!ctx?.extractedDir) return;
 
   try {
-    const gameitemsPath = `${ctx.extractedDir}/gameitems.json`;
+    const gameitemsPath = path.join(ctx.extractedDir, 'gameitems.json');
     const gameitemsContent = await fs.promises.readFile(gameitemsPath, 'utf-8');
     const gameitems = JSON.parse(gameitemsContent);
 
@@ -1679,7 +1687,7 @@ ipcMain.handle(
     if (!ctx?.extractedDir) return { success: false, error: 'No table open' };
 
     try {
-      const gamedataPath = `${ctx.extractedDir}/gamedata.json`;
+      const gamedataPath = `${ctx.extractedDir}${path.sep}gamedata.json`;
       const gamedataContent = await fs.promises.readFile(gamedataPath, 'utf-8');
       const gamedata = JSON.parse(gamedataContent);
 
@@ -2227,12 +2235,12 @@ async function getSearchSelectState(ctx: WindowContext | null) {
   if (!ctx?.extractedDir) return null;
 
   try {
-    const gameitemsContent = await fs.promises.readFile(`${ctx.extractedDir}/gameitems.json`, 'utf-8');
+    const gameitemsContent = await fs.promises.readFile(path.join(ctx.extractedDir, 'gameitems.json'), 'utf-8');
     const gameitems = JSON.parse(gameitemsContent);
     const items: Record<string, unknown> = {};
 
     for (const gi of gameitems) {
-      const itemPath = `${ctx.extractedDir}/gameitems/${gi.file_name}`;
+      const itemPath = path.join(ctx.extractedDir, 'gameitems', gi.file_name);
       try {
         const itemContent = await fs.promises.readFile(itemPath, 'utf-8');
         const itemData = JSON.parse(itemContent);
@@ -2250,7 +2258,7 @@ async function getSearchSelectState(ctx: WindowContext | null) {
 
     let collections: Collection[] = [];
     try {
-      const collectionsContent = await fs.promises.readFile(`${ctx.extractedDir}/collections.json`, 'utf-8');
+      const collectionsContent = await fs.promises.readFile(`${ctx.extractedDir}${path.sep}collections.json`, 'utf-8');
       collections = JSON.parse(collectionsContent);
     } catch {
       console.log('No collections.json found');
@@ -2305,7 +2313,7 @@ function updateCollectionEditorWindow(ctx: WindowContext) {
     if (!win || win.isDestroyed()) return;
     if (!ctx?.extractedDir) return;
 
-    const gameitemsDir = `${ctx.extractedDir}/gameitems`;
+    const gameitemsDir = `${ctx.extractedDir}${path.sep}gameitems`;
     const allItems: string[] = [];
     if (fs.existsSync(gameitemsDir)) {
       const files = await fs.promises.readdir(gameitemsDir);
@@ -2324,7 +2332,7 @@ function updateCollectionEditorWindow(ctx: WindowContext) {
     }
     allItems.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
 
-    const collectionsPath = `${ctx.extractedDir}/collections.json`;
+    const collectionsPath = `${ctx.extractedDir}${path.sep}collections.json`;
     let collections: Collection[] = [];
     if (fs.existsSync(collectionsPath)) {
       const content = await fs.promises.readFile(collectionsPath, 'utf-8');
@@ -2348,7 +2356,7 @@ ipcMain.handle('save-script', async (event, content: string) => {
   const ctx = windowRegistry.getContextFromEvent(event);
   if (!ctx?.extractedDir) return { success: false, error: 'No table open' };
   try {
-    const scriptPath = `${ctx.extractedDir}/script.vbs`;
+    const scriptPath = `${ctx.extractedDir}${path.sep}script.vbs`;
     let oldContent = '';
     try {
       oldContent = await fs.promises.readFile(scriptPath, 'utf-8');

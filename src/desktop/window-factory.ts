@@ -280,22 +280,22 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     if (!ctx?.extractedDir) return null;
 
     try {
-      const gamedataContent = await fs.promises.readFile(`${ctx.extractedDir}/gamedata.json`, 'utf-8');
+      const gamedataContent = await fs.promises.readFile(`${ctx.extractedDir}${path.sep}gamedata.json`, 'utf-8');
       const gamedata = JSON.parse(gamedataContent);
 
-      const imagesContent = await fs.promises.readFile(`${ctx.extractedDir}/images.json`, 'utf-8');
+      const imagesContent = await fs.promises.readFile(`${ctx.extractedDir}${path.sep}images.json`, 'utf-8');
       const imagesArray: ImageData[] = JSON.parse(imagesContent);
       const images: Record<string, ImageData> = {};
       for (const img of imagesArray) {
         images[img.name] = img;
       }
 
-      const gameitemsContent = await fs.promises.readFile(`${ctx.extractedDir}/gameitems.json`, 'utf-8');
+      const gameitemsContent = await fs.promises.readFile(path.join(ctx.extractedDir, 'gameitems.json'), 'utf-8');
       const gameitems: { file_name: string }[] = JSON.parse(gameitemsContent);
 
       const items: Record<string, GameItem> = {};
       for (const itemInfo of gameitems) {
-        const itemPath = `${ctx.extractedDir}/gameitems/${itemInfo.file_name}`;
+        const itemPath = path.join(ctx.extractedDir, 'gameitems', itemInfo.file_name);
         try {
           const itemContent = await fs.promises.readFile(itemPath, 'utf-8');
           const itemData = JSON.parse(itemContent);
@@ -316,13 +316,13 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     if (!ctx?.extractedDir) return null;
 
     try {
-      const gameitemsContent = await fs.promises.readFile(`${ctx.extractedDir}/gameitems.json`, 'utf-8');
+      const gameitemsContent = await fs.promises.readFile(path.join(ctx.extractedDir, 'gameitems.json'), 'utf-8');
       const gameitems: { file_name: string; editor_layer?: number; editor_layer_name?: string }[] =
         JSON.parse(gameitemsContent);
       const items: Record<string, GameItem> = {};
 
       for (const gi of gameitems) {
-        const itemPath = `${ctx.extractedDir}/gameitems/${gi.file_name}`;
+        const itemPath = path.join(ctx.extractedDir, 'gameitems', gi.file_name);
         try {
           const itemContent = await fs.promises.readFile(itemPath, 'utf-8');
           const itemData = JSON.parse(itemContent);
@@ -341,7 +341,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
 
       let collections: Collection[] = [];
       try {
-        const collectionsContent = await fs.promises.readFile(`${ctx.extractedDir}/collections.json`, 'utf-8');
+        const collectionsContent = await fs.promises.readFile(path.join(ctx.extractedDir, 'collections.json'), 'utf-8');
         collections = JSON.parse(collectionsContent);
       } catch {
         console.log('No collections.json found');
@@ -363,19 +363,19 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     if (!ctx?.extractedDir) return null;
 
     try {
-      const materialsContent = await fs.promises.readFile(`${ctx.extractedDir}/materials.json`, 'utf-8');
+      const materialsContent = await fs.promises.readFile(path.join(ctx.extractedDir, 'materials.json'), 'utf-8');
       const materialsArray: { name: string }[] = JSON.parse(materialsContent);
       const materials: Record<string, unknown> = {};
       for (const mat of materialsArray) {
         materials[mat.name] = mat;
       }
 
-      const gameitemsContent = await fs.promises.readFile(`${ctx.extractedDir}/gameitems.json`, 'utf-8');
+      const gameitemsContent = await fs.promises.readFile(path.join(ctx.extractedDir, 'gameitems.json'), 'utf-8');
       const gameitems: { file_name: string }[] = JSON.parse(gameitemsContent);
 
       const items: Record<string, GameItem> = {};
       for (const itemInfo of gameitems) {
-        const itemPath = `${ctx.extractedDir}/gameitems/${itemInfo.file_name}`;
+        const itemPath = path.join(ctx.extractedDir, 'gameitems', itemInfo.file_name);
         try {
           const itemContent = await fs.promises.readFile(itemPath, 'utf-8');
           const itemData = JSON.parse(itemContent);
@@ -388,7 +388,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
 
       let gamedata: Record<string, unknown> | null = null;
       try {
-        const gamedataContent = await fs.promises.readFile(`${ctx.extractedDir}/gamedata.json`, 'utf-8');
+        const gamedataContent = await fs.promises.readFile(`${ctx.extractedDir}${path.sep}gamedata.json`, 'utf-8');
         gamedata = JSON.parse(gamedataContent);
       } catch {}
 
@@ -403,7 +403,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     if (!ctx?.extractedDir) return null;
 
     try {
-      const soundsContent = await fs.promises.readFile(`${ctx.extractedDir}/sounds.json`, 'utf-8');
+      const soundsContent = await fs.promises.readFile(`${ctx.extractedDir}${path.sep}sounds.json`, 'utf-8');
       const sounds = JSON.parse(soundsContent);
       return { extractedDir: ctx.extractedDir, sounds, theme: getActualTheme(settings.theme) };
     } catch (e: unknown) {
@@ -416,13 +416,13 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     if (!ctx?.extractedDir) return null;
 
     try {
-      const infoContent = await fs.promises.readFile(`${ctx.extractedDir}/info.json`, 'utf-8');
+      const infoContent = await fs.promises.readFile(`${ctx.extractedDir}${path.sep}info.json`, 'utf-8');
       const info = JSON.parse(infoContent);
 
-      const gamedataContent = await fs.promises.readFile(`${ctx.extractedDir}/gamedata.json`, 'utf-8');
+      const gamedataContent = await fs.promises.readFile(`${ctx.extractedDir}${path.sep}gamedata.json`, 'utf-8');
       const gamedata = JSON.parse(gamedataContent);
 
-      const imagesContent = await fs.promises.readFile(`${ctx.extractedDir}/images.json`, 'utf-8');
+      const imagesContent = await fs.promises.readFile(`${ctx.extractedDir}${path.sep}images.json`, 'utf-8');
       const images = JSON.parse(imagesContent);
 
       return { extractedDir: ctx.extractedDir, info, gamedata, images, theme: settings.theme };
@@ -436,7 +436,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     if (!ctx?.extractedDir) return null;
 
     try {
-      const gamedataContent = await fs.promises.readFile(`${ctx.extractedDir}/gamedata.json`, 'utf-8');
+      const gamedataContent = await fs.promises.readFile(`${ctx.extractedDir}${path.sep}gamedata.json`, 'utf-8');
       const gamedata = JSON.parse(gamedataContent);
 
       const csvPath = app.isPackaged
@@ -456,14 +456,14 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     if (!ctx?.extractedDir) return { collections: [], items: {}, selectedItems: [] };
 
     try {
-      const collectionsPath = `${ctx.extractedDir}/collections.json`;
+      const collectionsPath = path.join(ctx.extractedDir, 'collections.json');
       let collections: Collection[] = [];
       if (fs.existsSync(collectionsPath)) {
         const content = await fs.promises.readFile(collectionsPath, 'utf-8');
         collections = JSON.parse(content);
       }
 
-      const gameitemsDir = `${ctx.extractedDir}/gameitems`;
+      const gameitemsDir = `${ctx.extractedDir}${path.sep}gameitems`;
       const items: Record<string, { _type: string }> = {};
       if (fs.existsSync(gameitemsDir)) {
         const files = await fs.promises.readdir(gameitemsDir);
@@ -489,7 +489,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     if (!ctx?.extractedDir) return null;
 
     try {
-      const probesPath = `${ctx.extractedDir}/renderprobes.json`;
+      const probesPath = `${ctx.extractedDir}${path.sep}renderprobes.json`;
       let probes: RenderProbe[] = [];
 
       if (fs.existsSync(probesPath)) {
@@ -512,7 +512,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
   async function getScriptContent(ctx: WindowContext | null): Promise<string | null> {
     if (!ctx?.extractedDir) return null;
     try {
-      const scriptPath = `${ctx.extractedDir}/script.vbs`;
+      const scriptPath = `${ctx.extractedDir}${path.sep}script.vbs`;
       const content = await fs.promises.readFile(scriptPath, 'utf-8');
       return content;
     } catch {
@@ -1157,12 +1157,15 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
       const script = await getScriptContent(localCtx);
       let gameitems: { name: string; type: string }[] = [];
       try {
-        const gameitemsContent = await fs.promises.readFile(`${localCtx.extractedDir}/gameitems.json`, 'utf-8');
+        const gameitemsContent = await fs.promises.readFile(
+          path.join(localCtx.extractedDir!, 'gameitems.json'),
+          'utf-8'
+        );
         const gameitemsData: { file_name: string }[] = JSON.parse(gameitemsContent);
         for (const gi of gameitemsData) {
           if (!gi.file_name) continue;
           try {
-            const itemPath = `${localCtx.extractedDir}/gameitems/${gi.file_name}`;
+            const itemPath = path.join(localCtx.extractedDir!, 'gameitems', gi.file_name);
             const itemContent = await fs.promises.readFile(itemPath, 'utf-8');
             const itemData = JSON.parse(itemContent);
             const type = Object.keys(itemData)[0];
@@ -1174,7 +1177,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
         }
       } catch {}
       try {
-        const gamedataContent = await fs.promises.readFile(`${localCtx.extractedDir}/gamedata.json`, 'utf-8');
+        const gamedataContent = await fs.promises.readFile(`${localCtx.extractedDir}${path.sep}gamedata.json`, 'utf-8');
         const gamedata = JSON.parse(gamedataContent);
         if (gamedata.name) {
           gameitems.push({ name: gamedata.name, type: 'Table' });
@@ -1544,7 +1547,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
       return;
     }
 
-    const collectionsPath = `${ctx.extractedDir}/collections.json`;
+    const collectionsPath = path.join(ctx.extractedDir, 'collections.json');
     let collections: Collection[] = [];
     if (fs.existsSync(collectionsPath)) {
       const content = await fs.promises.readFile(collectionsPath, 'utf-8');
@@ -1554,7 +1557,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     const collection = collections.find(c => c.name === collectionName);
     if (!collection) return;
 
-    const gameitemsDir = `${ctx.extractedDir}/gameitems`;
+    const gameitemsDir = `${ctx.extractedDir}${path.sep}gameitems`;
     const allItems: string[] = [];
     if (fs.existsSync(gameitemsDir)) {
       const files = await fs.promises.readdir(gameitemsDir);
@@ -1717,7 +1720,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     collectionPromptMode = mode;
     collectionPromptCurrentName = currentName || '';
 
-    const collectionsPath = `${ctx.extractedDir}/collections.json`;
+    const collectionsPath = path.join(ctx.extractedDir, 'collections.json');
     let collections: Collection[] = [];
     if (fs.existsSync(collectionsPath)) {
       const content = await fs.promises.readFile(collectionsPath, 'utf-8');

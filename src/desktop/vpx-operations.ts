@@ -149,7 +149,7 @@ async function runVpinAssemble(
   for (let i = 0; i < diskFiles.length; i++) {
     const fullPath = path.join(workDir, diskFiles[i]);
     const data = await fs.promises.readFile(fullPath);
-    const vpxPath = '/vpx/' + diskFiles[i];
+    const vpxPath = '/vpx/' + diskFiles[i].replaceAll('\\', '/');
     files[vpxPath] = data;
     if ((i + 1) % 10 === 0 || i === totalFiles - 1) {
       onProgress?.(`Reading files... ${i + 1}/${totalFiles}`);
@@ -737,11 +737,7 @@ async function runAssembleThenPlay(ctx: WindowContext, vpxPath: string, settings
 }
 
 export function launchVPinball(ctx: WindowContext, vpxPath: string, settings: Settings): void {
-  const vpinballArgs: string[] = [];
-  if (process.platform === 'win32') {
-    vpinballArgs.push('-Minimized');
-  }
-  vpinballArgs.push('-play', vpxPath);
+  const vpinballArgs = ['-play', vpxPath];
   let spawnCmd: string;
   let spawnArgs: string[];
 
