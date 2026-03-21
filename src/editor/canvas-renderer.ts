@@ -1,6 +1,13 @@
 import { state, elements, isItemVisible, isItemSelected, dragRect, getItem, getItemByFileName } from './state.js';
 import type { GameItem, DragPoint } from './state.js';
-import { toScreen, updateZoomDisplay, initHitTestHandlers, HitTestHandler } from './utils.js';
+import {
+  toScreen,
+  updateZoomDisplay,
+  initHitTestHandlers,
+  HitTestHandler,
+  convertToUnit,
+  getUnitCompactSuffix,
+} from './utils.js';
 import { objectTypes } from './object-types.js';
 import {
   BACKGLASS_WIDTH,
@@ -274,6 +281,8 @@ export function render(): void {
     ctx.strokeRect(start.x, start.y, end.x - start.x, end.y - start.y);
     ctx.setLineDash([]);
   }
+
+  renderMeasurement(ctx);
 }
 
 function renderGrid(playWidth: number, playHeight: number): void {
@@ -396,4 +405,56 @@ function renderControlPoints(item: ItemWithDragPoints, itemName: string): void {
     ctx.lineWidth = 1;
     ctx.stroke();
   }
+}
+
+function renderMeasurement(ctx: CanvasRenderingContext2D): void {
+  const m = state.measure;
+  if (!m) return;
+
+  const s = toScreen(m.start.x, m.start.y);
+  ctx.fillStyle = '#ff4444';
+  ctx.beginPath();
+  ctx.arc(s.x, s.y, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (!m.end) return;
+
+  const e = toScreen(m.end.x, m.end.y);
+
+  ctx.strokeStyle = '#ff4444';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  ctx.moveTo(s.x, s.y);
+  ctx.lineTo(e.x, e.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#ff4444';
+  ctx.beginPath();
+  ctx.arc(e.x, e.y, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  const dx = m.end.x - m.start.x;
+  const dy = m.end.y - m.start.y;
+  const distVPU = Math.sqrt(dx * dx + dy * dy);
+  const displayDist = convertToUnit(distVPU);
+  const label = `${displayDist.toFixed(2)}${getUnitCompactSuffix()}`;
+
+  const midX = (s.x + e.x) / 2;
+  const midY = (s.y + e.y) / 2;
+
+  ctx.font = '12px sans-serif';
+  const metrics = ctx.measureText(label);
+  const pad = 4;
+  const textWidth = metrics.width + pad * 2;
+  const textHeight = 16 + pad * 2;
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+  ctx.fillRect(midX - textWidth / 2, midY - textHeight / 2, textWidth, textHeight);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, midX, midY);
 }

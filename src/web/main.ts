@@ -195,7 +195,8 @@ function enhanceApi(): void {
   };
 
   api.getGridSize = async () => {
-    return (await state.platform!.storage.get<number>('gridSize')) || 50;
+    const settings = await state.platform!.storage.get<EditorSettings>('editorSettings');
+    return settings?.gridSize || 50;
   };
 
   api.getTextureQuality = async () => {

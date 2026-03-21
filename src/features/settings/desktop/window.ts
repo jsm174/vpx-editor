@@ -8,9 +8,27 @@ import {
   DEFAULT_GRID_SIZE,
   DEFAULT_TEXTURE_QUALITY,
   DEFAULT_UNIT_CONVERSION,
+  UNIT_CONVERSION_INCHES,
+  UNIT_CONVERSION_MM,
+  UNIT_CONVERSION_VPU,
 } from '../../../shared/constants.js';
+import { vpUnitsToUnit, unitToVpUnits, getUnitLabelFor } from '../../../shared/unit-conversion.js';
 import { setupThemeListener, setupKeyboardShortcuts } from '../../../shared/window-utils.js';
 import type { EditorSettings } from '../../../types/ipc.js';
+
+const GRID_SIZE_MIN_VPU = 5;
+const GRID_SIZE_MAX_VPU = 500;
+
+function getGridUnitDisplay(unit: string): { step: number; decimals: number } {
+  switch (unit) {
+    case UNIT_CONVERSION_INCHES:
+      return { step: 0.1, decimals: 3 };
+    case UNIT_CONVERSION_MM:
+      return { step: 1, decimals: 2 };
+    default:
+      return { step: 1, decimals: 2 };
+  }
+}
 
 let originalTheme: string = DEFAULT_THEME;
 
@@ -22,6 +40,7 @@ const colorSelectLocked = document.getElementById('settings-color-select-locked'
 const colorFill = document.getElementById('settings-color-fill') as HTMLInputElement;
 const colorBackground = document.getElementById('settings-color-background') as HTMLInputElement;
 const gridSizeInput = document.getElementById('settings-grid-size') as HTMLInputElement;
+const gridSizeSuffix = document.getElementById('settings-grid-size-suffix') as HTMLElement;
 const defaultColorsBtn = document.getElementById('settings-default-colors') as HTMLButtonElement;
 const themeSelect = document.getElementById('settings-theme') as HTMLSelectElement;
 const textureQualitySelect = document.getElementById('settings-texture-quality') as HTMLSelectElement;
@@ -34,6 +53,16 @@ const unitConversionSelect = document.getElementById('settings-unit-conversion')
 
 let vpinballValid: boolean = true;
 let gridSizeValid: boolean = true;
+let gridSizeVpu: number = DEFAULT_GRID_SIZE;
+
+function applyGridUnit(unit: string): void {
+  const { step, decimals } = getGridUnitDisplay(unit);
+  gridSizeInput.step = String(step);
+  gridSizeInput.min = vpUnitsToUnit(GRID_SIZE_MIN_VPU, unit).toFixed(decimals);
+  gridSizeInput.max = vpUnitsToUnit(GRID_SIZE_MAX_VPU, unit).toFixed(decimals);
+  gridSizeInput.value = vpUnitsToUnit(gridSizeVpu, unit).toFixed(decimals);
+  gridSizeSuffix.textContent = unit === UNIT_CONVERSION_VPU ? '' : `(${getUnitLabelFor(unit)})`;
+}
 
 async function validatePath(input: HTMLInputElement): Promise<boolean> {
   const pathVal = input.value.trim();
@@ -48,9 +77,17 @@ async function validatePath(input: HTMLInputElement): Promise<boolean> {
   return result.valid;
 }
 
-function validateGridSize(): boolean {
-  const val = parseInt(gridSizeInput.value, 10);
-  const valid = !isNaN(val) && val >= 5 && val <= 500;
+function readGridSizeFromInput(): void {
+  const unit = unitConversionSelect.value || DEFAULT_UNIT_CONVERSION;
+  const displayed = parseFloat(gridSizeInput.value);
+  if (!isNaN(displayed)) {
+    gridSizeVpu = unitToVpUnits(displayed, unit);
+  }
+}
+
+function validateGridSizeRange(): boolean {
+  const displayed = parseFloat(gridSizeInput.value);
+  const valid = !isNaN(displayed) && gridSizeVpu >= GRID_SIZE_MIN_VPU && gridSizeVpu <= GRID_SIZE_MAX_VPU;
   gridSizeInput.classList.toggle('invalid', !valid);
   gridSizeValid = valid;
   return valid;
@@ -58,7 +95,7 @@ function validateGridSize(): boolean {
 
 async function validateAll(): Promise<void> {
   vpinballValid = await validatePath(vpinballPathInput);
-  validateGridSize();
+  validateGridSizeRange();
   okBtn.disabled = !vpinballValid || !gridSizeValid;
 }
 
@@ -72,10 +109,11 @@ window.vpxEditor.onInitSettings?.(data => {
   colorSelectLocked.value = editorColors.elementSelectLocked || DEFAULT_ELEMENT_SELECT_LOCKED_COLOR;
   colorFill.value = editorColors.elementFill || DEFAULT_ELEMENT_FILL_COLOR;
   colorBackground.value = editorColors.tableBackground || DEFAULT_TABLE_BACKGROUND_COLOR;
-  gridSizeInput.value = String(settingsData.gridSize || DEFAULT_GRID_SIZE);
+  gridSizeVpu = settingsData.gridSize || DEFAULT_GRID_SIZE;
   themeSelect.value = settingsData.theme || DEFAULT_THEME;
   textureQualitySelect.value = String(settingsData.textureQuality || DEFAULT_TEXTURE_QUALITY);
   unitConversionSelect.value = settingsData.unitConversion || DEFAULT_UNIT_CONVERSION;
+  applyGridUnit(unitConversionSelect.value);
 
   originalTheme = settingsData.theme || DEFAULT_THEME;
 
@@ -102,7 +140,15 @@ defaultColorsBtn.onclick = (): void => {
 };
 
 vpinballPathInput.oninput = validateAll;
-gridSizeInput.oninput = validateAll;
+gridSizeInput.oninput = (): void => {
+  readGridSizeFromInput();
+  validateAll();
+};
+
+unitConversionSelect.onchange = (): void => {
+  applyGridUnit(unitConversionSelect.value);
+  validateGridSizeRange();
+};
 
 btnBrowseVpinball.onclick = async (): Promise<void> => {
   const result: string | null = await window.vpxEditor.browseExecutable('VPinballX');
@@ -113,8 +159,9 @@ btnBrowseVpinball.onclick = async (): Promise<void> => {
 };
 
 okBtn.onclick = async (): Promise<void> => {
+  readGridSizeFromInput();
   const settings: EditorSettings = {
-    gridSize: parseInt(gridSizeInput.value, 10) || 50,
+    gridSize: gridSizeVpu,
     vpinballPath: vpinballPathInput.value,
     theme: themeSelect.value,
     alwaysDrawDragPoints: drawDragpoints.checked,
