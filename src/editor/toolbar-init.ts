@@ -139,25 +139,53 @@ export function setUIEnabled(enabled: boolean): void {
   }
 }
 
-export function exitCreationMode(): void {
+export type ToolName = 'select' | 'pan' | 'magnify' | 'measure';
+
+const TOOL_BUTTON_IDS: Record<ToolName, string> = {
+  select: 'tool-select',
+  pan: 'tool-pan',
+  magnify: 'tool-magnify',
+  measure: 'tool-measure',
+};
+
+const TOOL_CURSORS: Record<ToolName, string> = {
+  select: 'default',
+  pan: 'grab',
+  magnify: "url('cursors/magnify.png') 0 0, zoom-in",
+  measure: 'crosshair',
+};
+
+const TOOL_STATUS_TEXT: Partial<Record<ToolName, string>> = {
+  measure: 'Click to set first measure point',
+};
+
+export function setActiveTool(name: ToolName): void {
   state.creationMode = null;
-  state.tool = 'select';
+  state.tool = name;
+  if (name !== 'measure') {
+    state.measure = null;
+  }
   document.querySelectorAll('.toolbox-btn').forEach((b: Element) => b.classList.remove('creating'));
-  document.getElementById('tool-select')?.classList.add('active');
-  document.getElementById('tool-pan')?.classList.remove('active');
-  setCanvasCursor('default');
-  elements.statusBar!.textContent = 'Ready';
+  for (const [tool, id] of Object.entries(TOOL_BUTTON_IDS) as [ToolName, string][]) {
+    document.getElementById(id)?.classList.toggle('active', tool === name);
+  }
+  setCanvasCursor(TOOL_CURSORS[name]);
+  elements.statusBar!.textContent = TOOL_STATUS_TEXT[name] ?? 'Ready';
+  render();
+}
+
+export function exitCreationMode(): void {
+  setActiveTool('select');
 }
 
 export function enterCreationMode(type: string): void {
+  state.measure = null;
   state.creationMode = type;
   creationModeSetTime = Date.now();
   state.tool = 'select';
-  document.querySelectorAll('.toolbox-btn').forEach((b: Element) => b.classList.remove('creating'));
+  document.querySelectorAll('.toolbox-btn').forEach((b: Element) => b.classList.remove('creating', 'active'));
   const btn = document.querySelector(`.toolbox-btn[data-type="${type}"]`);
   if (btn) btn.classList.add('creating');
-  document.getElementById('tool-select')?.classList.remove('active');
-  document.getElementById('tool-pan')?.classList.remove('active');
   const cursorFile = elementCursors[type] || type.toLowerCase();
   setCanvasCursor(`url('cursors/${cursorFile}.png') 0 0, crosshair`);
   elements.statusBar!.textContent = `Click to place ${type}`;
@@ -199,24 +227,7 @@ export async function createObjectAtPosition(type: string, position: Point): Pro
 }
 
 export function setMagnifyMode(enabled: boolean): void {
-  const magnifyBtn = document.getElementById('tool-magnify');
-  const selectBtn = document.getElementById('tool-select');
-  const panBtn = document.getElementById('tool-pan');
-
-  if (enabled) {
-    exitCreationMode();
-    state.tool = 'magnify';
-    magnifyBtn?.classList.add('active');
-    selectBtn?.classList.remove('active');
-    panBtn?.classList.remove('active');
-    setCanvasCursor("url('cursors/magnify.png') 0 0, zoom-in");
-  } else {
-    state.tool = 'select';
-    magnifyBtn?.classList.remove('active');
-    selectBtn?.classList.add('active');
-    panBtn?.classList.remove('active');
-    setCanvasCursor('default');
-  }
+  setActiveTool(enabled ? 'magnify' : 'select');
 }
 
 export function initElementsToolbar(): void {
@@ -271,44 +282,22 @@ export function initElementsToolbar(): void {
 }
 
 export function initToolboxTools(): void {
-  const magnifyBtn = document.getElementById('tool-magnify');
-  const selectBtn = document.getElementById('tool-select');
-  const panBtn = document.getElementById('tool-pan');
-
-  if (magnifyBtn) {
-    magnifyBtn.addEventListener('click', (): void => {
+  const bind = (id: string, tool: ToolName, toggle: boolean): void => {
+    document.getElementById(id)?.addEventListener('click', (): void => {
       if (is3DMode()) return;
-      if (state.tool === 'magnify') {
-        setMagnifyMode(false);
-      } else {
-        setMagnifyMode(true);
-      }
+      const next = toggle && state.tool === tool ? 'select' : tool;
+      setActiveTool(next);
     });
-  }
+  };
 
-  if (selectBtn) {
-    selectBtn.addEventListener('click', (): void => {
-      if (is3DMode()) return;
-      exitCreationMode();
-      state.tool = 'select';
-      selectBtn.classList.add('active');
-      magnifyBtn?.classList.remove('active');
-      panBtn?.classList.remove('active');
-      setCanvasCursor('default');
-    });
-  }
+  bind('tool-select', 'select', false);
+  bind('tool-pan', 'pan', false);
+  bind('tool-magnify', 'magnify', true);
+  bind('tool-measure', 'measure', true);
+}
 
-  if (panBtn) {
-    panBtn.addEventListener('click', (): void => {
-      if (is3DMode()) return;
-      exitCreationMode();
-      state.tool = 'pan';
-      panBtn.classList.add('active');
-      magnifyBtn?.classList.remove('active');
-      selectBtn?.classList.remove('active');
-      setCanvasCursor('grab');
-    });
-  }
+export function setMeasureMode(enabled: boolean): void {
+  setActiveTool(enabled ? 'measure' : 'select');
 }
 
 export function initScriptButton(): void {

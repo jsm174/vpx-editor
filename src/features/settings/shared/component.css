@@ -231,6 +231,16 @@
   flex: 0 0 80px !important;
 }
 
+.settings-field-row .prop-unit {
+  margin-left: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.settings-field-row .prop-unit:empty {
+  display: none;
+}
+
 /* Modal wrapper for web */
 .settings-modal {
   position: fixed;

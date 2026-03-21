@@ -9,6 +9,18 @@ import {
 } from '../shared/constants.js';
 import { getItemCenter } from '../shared/position-utils.js';
 import { getDragPointCoords } from '../types/game-objects.js';
+import {
+  vpUnitsToInches as sharedVpUnitsToInches,
+  vpUnitsToMillimeters as sharedVpUnitsToMillimeters,
+  inchesToVpUnits as sharedInchesToVpUnits,
+  millimetersToVpUnits as sharedMillimetersToVpUnits,
+  vpUnitsToUnit,
+  unitToVpUnits,
+  getUnitLabelFor,
+  getUnitSuffixHtmlFor,
+  getUnitTextSuffixFor,
+  getUnitCompactSuffixFor,
+} from '../shared/unit-conversion.js';
 export { getItemCenter, getDragPointCoords };
 
 export interface Vertex {
@@ -578,70 +590,43 @@ export function toWorld(screenX: number, screenY: number): Vertex {
 }
 
 export function vpUnitsToInches(value: number): number {
-  return value * (1.0625 / 50);
+  return sharedVpUnitsToInches(value);
 }
 
 export function vpUnitsToMillimeters(value: number): number {
-  return value * ((25.4 * 1.0625) / 50);
+  return sharedVpUnitsToMillimeters(value);
 }
 
 export function inchesToVpUnits(value: number): number {
-  return value * (50 / 1.0625);
+  return sharedInchesToVpUnits(value);
 }
 
 export function millimetersToVpUnits(value: number): number {
-  return value * (50 / (25.4 * 1.0625));
+  return sharedMillimetersToVpUnits(value);
 }
 
 export function convertToUnit(value: number): number {
-  switch (state.unitConversion) {
-    case 'inches':
-      return vpUnitsToInches(value);
-    case 'mm':
-      return vpUnitsToMillimeters(value);
-    default:
-      return value;
-  }
+  return vpUnitsToUnit(value, state.unitConversion);
 }
 
 export function convertFromUnit(value: number): number {
-  switch (state.unitConversion) {
-    case 'inches':
-      return inchesToVpUnits(value);
-    case 'mm':
-      return millimetersToVpUnits(value);
-    default:
-      return value;
-  }
+  return unitToVpUnits(value, state.unitConversion);
 }
 
 export function getUnitSuffix(): string {
-  switch (state.unitConversion) {
-    case 'inches':
-      return ' (inch)';
-    case 'mm':
-      return ' (mm)';
-    default:
-      return '';
-  }
+  return getUnitTextSuffixFor(state.unitConversion);
 }
 
 export function getUnitLabel(): string {
-  switch (state.unitConversion) {
-    case 'inches':
-      return 'in';
-    case 'mm':
-      return 'mm';
-    default:
-      return 'vpu';
-  }
+  return getUnitLabelFor(state.unitConversion);
 }
 
 export function getUnitSuffixHtml(): string {
-  if (state.unitConversion === 'vpu') {
-    return '';
-  }
-  return `<span class="prop-unit">(${getUnitLabel()})</span>`;
+  return getUnitSuffixHtmlFor(state.unitConversion);
+}
+
+export function getUnitCompactSuffix(): string {
+  return getUnitCompactSuffixFor(state.unitConversion);
 }
 
 export function updateZoomDisplay(): void {

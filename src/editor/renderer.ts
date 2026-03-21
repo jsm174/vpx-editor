@@ -16,6 +16,7 @@ import {
   findNodeAtPoint,
   convertToUnit,
   getUnitSuffix,
+  getUnitCompactSuffix,
   getItemBounds,
 } from './utils.js';
 import { updateItemsList, selectItem, updateItemStatusInfo, updateSelectionStatus } from './items-panel.js';
@@ -90,6 +91,8 @@ import {
   enterCreationMode,
   createObjectAtPosition,
   setMagnifyMode,
+  setMeasureMode,
+  setActiveTool,
   initElementsToolbar,
   initToolboxTools,
   initScriptButton,
@@ -369,6 +372,24 @@ function zoomAtPoint(offsetX: number, offsetY: number, zoomFactor: number): void
 addLongPressContextMenu(elements.canvas!);
 
 elements.canvas!.addEventListener('pointerdown', e => {
+  if (state.tool === 'measure' && e.button === 0) {
+    const world = toWorld(e.offsetX, e.offsetY);
+    const m = state.measure;
+    if (!m || m.finalized) {
+      state.measure = { start: { x: world.x, y: world.y }, end: null, finalized: false };
+      elements.statusBar!.textContent = 'Click to set second measure point';
+    } else {
+      m.end = { x: world.x, y: world.y };
+      m.finalized = true;
+      const dx = m.end.x - m.start.x;
+      const dy = m.end.y - m.start.y;
+      const dist = convertToUnit(Math.sqrt(dx * dx + dy * dy));
+      elements.statusBar!.textContent = `Distance: ${dist.toFixed(2)}${getUnitCompactSuffix()}`;
+    }
+    render();
+    return;
+  }
+
   if (state.tool === 'magnify') {
     if (e.button === 0) {
       zoomAtPoint(e.offsetX, e.offsetY, 1.5);
@@ -525,7 +546,10 @@ elements.canvas!.addEventListener('pointermove', e => {
     }
   }
 
-  if (dragRect.active) {
+  if (state.tool === 'measure' && state.measure && !state.measure.finalized) {
+    state.measure.end = { x: world.x, y: world.y };
+    render();
+  } else if (dragRect.active) {
     dragRect.endX = world.x;
     dragRect.endY = world.y;
     render();
@@ -1144,7 +1168,9 @@ document.addEventListener('keydown', async e => {
 
   if (e.key === 'Escape') {
     hideContextMenu();
-    if (state.creationMode) {
+    if (state.tool === 'measure') {
+      setMeasureMode(false);
+    } else if (state.creationMode) {
       exitCreationMode();
     } else if (state.selectedNode) {
       state.selectedNode = null;
@@ -1172,26 +1198,12 @@ document.addEventListener('keydown', async e => {
   }
 
   if (e.key === 'v' || e.key === 'V') {
-    if (state.creationMode) {
-      exitCreationMode();
-    }
-    state.tool = 'select';
-    document.getElementById('tool-select')?.classList.add('active');
-    document.getElementById('tool-pan')?.classList.remove('active');
-    document.getElementById('tool-magnify')?.classList.remove('active');
-    setCanvasCursor('default');
+    setActiveTool('select');
     return;
   }
 
   if (e.key === 'h' || e.key === 'H') {
-    if (state.creationMode) {
-      exitCreationMode();
-    }
-    state.tool = 'pan';
-    document.getElementById('tool-pan')?.classList.add('active');
-    document.getElementById('tool-select')?.classList.remove('active');
-    document.getElementById('tool-magnify')?.classList.remove('active');
-    setCanvasCursor('grab');
+    setActiveTool('pan');
     return;
   }
 
@@ -1201,6 +1213,16 @@ document.addEventListener('keydown', async e => {
       setMagnifyMode(false);
     } else {
       setMagnifyMode(true);
+    }
+    return;
+  }
+
+  if (e.key === 'm' || e.key === 'M') {
+    if (state.viewMode === VIEW_MODE_3D) return;
+    if (state.tool === 'measure') {
+      setMeasureMode(false);
+    } else {
+      setMeasureMode(true);
     }
     return;
   }
@@ -1749,6 +1771,9 @@ window.vpxEditor.onEditorSettingsChanged?.(settings => {
   state.drawLightCenters = settings.drawLightCenters || false;
   if (settings.unitConversion !== undefined) {
     state.unitConversion = settings.unitConversion;
+  }
+  if (settings.gridSize !== undefined) {
+    state.gridSize = settings.gridSize;
   }
   updateStatusBarUnits();
   updatePropertiesPanel();

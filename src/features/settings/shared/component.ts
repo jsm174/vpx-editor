@@ -8,8 +8,36 @@ import {
   DEFAULT_GRID_SIZE,
   DEFAULT_TEXTURE_QUALITY,
   DEFAULT_UNIT_CONVERSION,
+  UNIT_CONVERSION_INCHES,
+  UNIT_CONVERSION_MM,
+  UNIT_CONVERSION_VPU,
 } from '../../../shared/constants.js';
+import { vpUnitsToUnit, unitToVpUnits, getUnitLabelFor } from '../../../shared/unit-conversion.js';
 import type { EditorSettings } from '../../../types/ipc.js';
+
+const GRID_SIZE_MIN_VPU = 5;
+const GRID_SIZE_MAX_VPU = 500;
+
+interface UnitDisplayConfig {
+  step: number;
+  decimals: number;
+}
+
+function getGridUnitDisplay(unit: string): UnitDisplayConfig {
+  switch (unit) {
+    case UNIT_CONVERSION_INCHES:
+      return { step: 0.1, decimals: 3 };
+    case UNIT_CONVERSION_MM:
+      return { step: 1, decimals: 2 };
+    default:
+      return { step: 1, decimals: 2 };
+  }
+}
+
+function formatGridValue(vpu: number, unit: string): string {
+  const { decimals } = getGridUnitDisplay(unit);
+  return vpUnitsToUnit(vpu, unit).toFixed(decimals);
+}
 
 export interface SettingsCallbacks {
   onSave: (settings: EditorSettings) => void;
@@ -96,7 +124,8 @@ export function createSettingsHTML(options: SettingsOptions = {}): string {
             </div>
             <div class="settings-field-row">
               <label>Grid size</label>
-              <input type="number" id="settings-grid-size" class="win-input settings-number-input" min="5" max="500" step="5">
+              <input type="number" id="settings-grid-size" class="win-input settings-number-input">
+              <span id="settings-grid-size-suffix" class="prop-unit"></span>
             </div>
             <div class="settings-field-row">
               <label>Convert VP units to</label>
@@ -152,6 +181,7 @@ export function initSettingsComponent(
   const colorFill = $<HTMLInputElement>('settings-color-fill');
   const colorBackground = $<HTMLInputElement>('settings-color-background');
   const gridSizeInput = $<HTMLInputElement>('settings-grid-size');
+  const gridSizeSuffix = $<HTMLElement>('settings-grid-size-suffix');
   const defaultColorsBtn = $<HTMLButtonElement>('settings-default-colors');
   const themeSelect = $<HTMLSelectElement>('settings-theme');
   const textureQualitySelect = $<HTMLSelectElement>('settings-texture-quality');
@@ -177,11 +207,26 @@ export function initSettingsComponent(
     colorSelectLocked.value = editorColors.elementSelectLocked || DEFAULT_ELEMENT_SELECT_LOCKED_COLOR;
   if (colorFill) colorFill.value = editorColors.elementFill || DEFAULT_ELEMENT_FILL_COLOR;
   if (colorBackground) colorBackground.value = editorColors.tableBackground || DEFAULT_TABLE_BACKGROUND_COLOR;
-  if (gridSizeInput) gridSizeInput.value = String(settings.gridSize || DEFAULT_GRID_SIZE);
   if (themeSelect) themeSelect.value = settings.theme || DEFAULT_THEME;
   if (textureQualitySelect) textureQualitySelect.value = String(settings.textureQuality || DEFAULT_TEXTURE_QUALITY);
   if (unitConversionSelect) unitConversionSelect.value = settings.unitConversion || DEFAULT_UNIT_CONVERSION;
   if (vpinballPathInput) vpinballPathInput.value = settings.vpinballPath || '';
+
+  let gridSizeVpu = settings.gridSize || DEFAULT_GRID_SIZE;
+
+  function applyGridUnit(unit: string): void {
+    if (!gridSizeInput) return;
+    const { step, decimals } = getGridUnitDisplay(unit);
+    gridSizeInput.step = String(step);
+    gridSizeInput.min = vpUnitsToUnit(GRID_SIZE_MIN_VPU, unit).toFixed(decimals);
+    gridSizeInput.max = vpUnitsToUnit(GRID_SIZE_MAX_VPU, unit).toFixed(decimals);
+    gridSizeInput.value = formatGridValue(gridSizeVpu, unit);
+    if (gridSizeSuffix) {
+      gridSizeSuffix.textContent = unit === UNIT_CONVERSION_VPU ? '' : `(${getUnitLabelFor(unit)})`;
+    }
+  }
+
+  applyGridUnit(unitConversionSelect?.value || DEFAULT_UNIT_CONVERSION);
 
   container.querySelectorAll('.settings-tab').forEach((tab: Element) => {
     tab.addEventListener('click', () => {
@@ -207,10 +252,19 @@ export function initSettingsComponent(
     return result.valid;
   }
 
-  function validateGridSize(): boolean {
+  function readGridSizeFromInput(): void {
+    if (!gridSizeInput) return;
+    const unit = unitConversionSelect?.value || DEFAULT_UNIT_CONVERSION;
+    const displayed = parseFloat(gridSizeInput.value);
+    if (!isNaN(displayed)) {
+      gridSizeVpu = unitToVpUnits(displayed, unit);
+    }
+  }
+
+  function validateGridSizeRange(): boolean {
     if (!gridSizeInput) return true;
-    const val = parseInt(gridSizeInput.value, 10);
-    const valid = !isNaN(val) && val >= 5 && val <= 500;
+    const displayed = parseFloat(gridSizeInput.value);
+    const valid = !isNaN(displayed) && gridSizeVpu >= GRID_SIZE_MIN_VPU && gridSizeVpu <= GRID_SIZE_MAX_VPU;
     gridSizeInput.classList.toggle('invalid', !valid);
     gridSizeValid = valid;
     return valid;
@@ -220,13 +274,20 @@ export function initSettingsComponent(
     if (options.showPathsTab !== false) {
       vpinballValid = await validatePath(vpinballPathInput);
     }
-    validateGridSize();
+    validateGridSizeRange();
     if (okBtn) okBtn.disabled = !vpinballValid || !gridSizeValid;
   }
 
   if (themeSelect) {
     themeSelect.onchange = () => {
       callbacks.onThemePreview?.(themeSelect.value);
+    };
+  }
+
+  if (unitConversionSelect) {
+    unitConversionSelect.onchange = () => {
+      applyGridUnit(unitConversionSelect.value);
+      validateGridSizeRange();
     };
   }
 
@@ -245,7 +306,12 @@ export function initSettingsComponent(
   }
 
   if (vpinballPathInput) vpinballPathInput.oninput = () => validateAll();
-  if (gridSizeInput) gridSizeInput.oninput = () => validateAll();
+  if (gridSizeInput) {
+    gridSizeInput.oninput = () => {
+      readGridSizeFromInput();
+      validateAll();
+    };
+  }
 
   if (btnBrowseVpinball && callbacks.onBrowseVpinball) {
     btnBrowseVpinball.onclick = async () => {
@@ -259,8 +325,9 @@ export function initSettingsComponent(
 
   if (okBtn) {
     okBtn.onclick = () => {
+      readGridSizeFromInput();
       const newSettings: EditorSettings = {
-        gridSize: gridSizeInput ? parseInt(gridSizeInput.value, 10) || DEFAULT_GRID_SIZE : DEFAULT_GRID_SIZE,
+        gridSize: gridSizeVpu,
         theme: themeSelect?.value || DEFAULT_THEME,
         alwaysDrawDragPoints: drawDragpoints?.checked || false,
         drawLightCenters: drawLightcenters?.checked || false,

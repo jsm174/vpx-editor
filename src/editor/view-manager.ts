@@ -160,12 +160,14 @@ export function switchViewMode(mode: ViewModeType): void {
   const magnifyBtn = document.getElementById('tool-magnify') as HTMLButtonElement | null;
   const selectBtn = document.getElementById('tool-select') as HTMLButtonElement | null;
   const panBtn = document.getElementById('tool-pan') as HTMLButtonElement | null;
+  const measureBtn = document.getElementById('tool-measure') as HTMLButtonElement | null;
 
   if (mode === VIEW_MODE_3D) {
     savedToolState = state.tool;
+    state.measure = null;
   }
 
-  [magnifyBtn, selectBtn, panBtn].forEach((btn: HTMLButtonElement | null) => {
+  [magnifyBtn, selectBtn, panBtn, measureBtn].forEach((btn: HTMLButtonElement | null) => {
     if (btn) {
       btn.disabled = mode === VIEW_MODE_3D;
       btn.style.opacity = mode === VIEW_MODE_3D ? '0.4' : '';
@@ -178,9 +180,17 @@ export function switchViewMode(mode: ViewModeType): void {
     updateElementToolbarForBackglassView();
     updateToolboxForTableLock();
     state.tool = savedToolState;
-    const btnMap: Record<string, HTMLButtonElement | null> = { select: selectBtn, pan: panBtn, magnify: magnifyBtn };
+    const btnMap: Record<string, HTMLButtonElement | null> = {
+      select: selectBtn,
+      pan: panBtn,
+      magnify: magnifyBtn,
+      measure: measureBtn,
+    };
     const savedBtn = btnMap[savedToolState];
     if (savedBtn) savedBtn.classList.add('active');
+    if (savedToolState === 'measure') {
+      elements.statusBar!.textContent = 'Click to set first measure point';
+    }
   }
 
   window.vpxEditor.notify3DModeChanged(mode === VIEW_MODE_3D);
@@ -260,6 +270,10 @@ export function setupBackglassToggle(selectItemCallback: (item: string | null, c
   document.getElementById('toggle-backglass')!.addEventListener('click', (): void => {
     if (state.viewMode === VIEW_MODE_3D) return;
     state.backglassView = !state.backglassView;
+    state.measure = null;
+    if (state.tool === 'measure') {
+      elements.statusBar!.textContent = 'Click to set first measure point';
+    }
     document.getElementById('toggle-backglass')!.classList.toggle('active', state.backglassView);
     const tool3dBtn = document.getElementById('tool-3d') as HTMLButtonElement;
     tool3dBtn.disabled = state.backglassView;
