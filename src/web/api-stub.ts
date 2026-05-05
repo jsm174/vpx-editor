@@ -132,7 +132,10 @@ export const vpxEditorAPI = {
   openTransform: (type: string, options: { centerX: number; centerY: number; mouseX?: number; mouseY?: number }) =>
     events.emit('show-transform', type, options),
 
-  importMesh: (primitiveFileName: string) => events.emit('show-mesh-import', primitiveFileName),
+  importMesh: (primitiveFileName: string): Promise<{ success: boolean; cancelled?: boolean }> =>
+    new Promise(resolve => {
+      events.emit('show-mesh-import', primitiveFileName, resolve);
+    }),
   exportMesh: (primitiveFileName: string, suggestedName?: string) =>
     events.emit('export-mesh', primitiveFileName, suggestedName),
 

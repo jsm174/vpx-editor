@@ -1,15 +1,19 @@
 export interface MeshImportOptions {
   convertCoords: boolean;
   centerMesh: boolean;
-  importAnimation: boolean;
   importMaterial: boolean;
-  noOptimize: boolean;
   absolutePosition: boolean;
 }
 
+export interface MeshImportBrowseResult {
+  path: string;
+  content: string;
+  extras?: Map<string, string>;
+}
+
 export interface MeshImportCallbacks {
-  onBrowse: () => Promise<{ path: string; content: string } | null>;
-  onImport: (filePath: string, content: string, options: MeshImportOptions) => void;
+  onBrowse: () => Promise<MeshImportBrowseResult | null>;
+  onImport: (filePath: string, content: string, options: MeshImportOptions, extras?: Map<string, string>) => void;
   onCancel: () => void;
 }
 
@@ -27,9 +31,7 @@ export function createMeshImportHTML(): string {
         <div class="mesh-import-grid">
           <label><input type="checkbox" id="mesh-import-convert-coords" checked> Convert coordinate system</label>
           <label><input type="checkbox" id="mesh-import-center-mesh"> Center mesh to it's midpoint</label>
-          <label><input type="checkbox" id="mesh-import-animation"> Import Animation Sequence</label>
           <label><input type="checkbox" id="mesh-import-material"> Import mesh's material</label>
-          <label><input type="checkbox" id="mesh-import-no-optimize"> Do not reorder/optimize data</label>
           <div></div>
           <label class="full-width"><input type="radio" name="mesh-position" id="mesh-import-rel-position" checked> Place at primitive's position</label>
           <label class="full-width"><input type="radio" name="mesh-position" id="mesh-import-abs-position"> Place at mesh's absolute position (use mesh's midpoint)</label>
@@ -55,19 +57,19 @@ export function initMeshImportComponent(
 
   const convertCoordsCheck = container.querySelector('#mesh-import-convert-coords') as HTMLInputElement;
   const centerMeshCheck = container.querySelector('#mesh-import-center-mesh') as HTMLInputElement;
-  const animationCheck = container.querySelector('#mesh-import-animation') as HTMLInputElement;
   const materialCheck = container.querySelector('#mesh-import-material') as HTMLInputElement;
-  const noOptimizeCheck = container.querySelector('#mesh-import-no-optimize') as HTMLInputElement;
   const absPositionRadio = container.querySelector('#mesh-import-abs-position') as HTMLInputElement;
 
   let selectedFilePath = '';
   let selectedFileContent = '';
+  let selectedExtras: Map<string, string> | undefined;
 
   const handleBrowse = async () => {
     const result = await callbacks.onBrowse();
     if (result) {
       selectedFilePath = result.path;
       selectedFileContent = result.content;
+      selectedExtras = result.extras;
       pathInput.value = result.path;
       okBtn.disabled = false;
     }
@@ -79,13 +81,11 @@ export function initMeshImportComponent(
     const options: MeshImportOptions = {
       convertCoords: convertCoordsCheck.checked,
       centerMesh: centerMeshCheck.checked,
-      importAnimation: animationCheck.checked,
       importMaterial: materialCheck.checked,
-      noOptimize: noOptimizeCheck.checked,
       absolutePosition: absPositionRadio.checked,
     };
 
-    callbacks.onImport(selectedFilePath, selectedFileContent, options);
+    callbacks.onImport(selectedFilePath, selectedFileContent, options, selectedExtras);
   };
 
   const handleCancel = () => {
@@ -105,11 +105,17 @@ export function initMeshImportComponent(
   };
 }
 
+interface FaceCorner {
+  v: number;
+  t: number;
+  n: number;
+}
+
 export interface ParsedMesh {
   vertices: { x: number; y: number; z: number }[];
   normals: { x: number; y: number; z: number }[];
   texCoords: { u: number; v: number }[];
-  faces: string[];
+  faces: FaceCorner[][];
   midPoint: { x: number; y: number; z: number };
 }
 
@@ -118,15 +124,18 @@ export function parseObjContent(content: string, convertCoords: boolean): Parsed
   const vertices: { x: number; y: number; z: number }[] = [];
   const normals: { x: number; y: number; z: number }[] = [];
   const texCoords: { u: number; v: number }[] = [];
-  const faces: string[] = [];
+  const faces: FaceCorner[][] = [];
 
   for (const line of lines) {
     const parts = line.trim().split(/\s+/);
+    // Z is pre-flipped only when convertCoords is off, to cancel vpin's reader-side z-negation
+    // (vpin/src/vpx/obj.rs unconditionally negates obj_z to vpx_z). When convertCoords is on,
+    // pass z through and let vpin's flip do the right-handed -> vpinball-runtime conversion.
     if (parts[0] === 'v' && parts.length >= 4) {
       let x = parseFloat(parts[1]) || 0;
       let y = parseFloat(parts[2]) || 0;
       let z = parseFloat(parts[3]) || 0;
-      if (convertCoords) {
+      if (!convertCoords) {
         z = -z;
       }
       vertices.push({ x, y, z });
@@ -134,16 +143,43 @@ export function parseObjContent(content: string, convertCoords: boolean): Parsed
       let nx = parseFloat(parts[1]) || 0;
       let ny = parseFloat(parts[2]) || 0;
       let nz = parseFloat(parts[3]) || 0;
-      if (convertCoords) {
+      if (!convertCoords) {
         nz = -nz;
       }
       normals.push({ x: nx, y: ny, z: nz });
     } else if (parts[0] === 'vt' && parts.length >= 3) {
       const u = parseFloat(parts[1]) || 0;
-      const v = parseFloat(parts[2]) || 0;
+      let v = parseFloat(parts[2]) || 0;
+      if (convertCoords) {
+        v = 1 - v;
+      }
       texCoords.push({ u, v });
     } else if (parts[0] === 'f') {
-      faces.push(line.trim());
+      if (vertices.length === 0) {
+        throw new Error('No vertices found in obj file, import is impossible!');
+      }
+      if (texCoords.length === 0) {
+        throw new Error('No texture coordinates (UVs) found in obj file, import is impossible!');
+      }
+      if (normals.length === 0) {
+        throw new Error('No normals found in obj file, import is impossible!');
+      }
+      const corners: FaceCorner[] = [];
+      for (const cornerStr of parts.slice(1)) {
+        const indices = cornerStr.split('/');
+        const vi = parseInt(indices[0], 10);
+        const ti = indices[1] ? parseInt(indices[1], 10) : NaN;
+        const ni = indices[2] ? parseInt(indices[2], 10) : NaN;
+        if (isNaN(vi) || isNaN(ti) || isNaN(ni)) {
+          throw new Error('Face information incorrect! Each face needs vertices, UVs and normals!');
+        }
+        corners.push({ v: vi, t: ti, n: ni });
+      }
+      if (corners.length < 3) {
+        throw new Error('Invalid face -- less than 3 vertices!');
+      }
+      if (convertCoords) corners.reverse();
+      faces.push(corners);
     }
   }
 
@@ -175,91 +211,125 @@ export function parseObjContent(content: string, convertCoords: boolean): Parsed
 
 export function generateProcessedObj(
   mesh: ParsedMesh,
-  options: { centerMesh: boolean; absolutePosition: boolean; convertCoords: boolean }
+  options: { centerMesh: boolean; absolutePosition: boolean }
 ): string {
-  const { vertices, normals, texCoords, faces } = mesh;
+  const { vertices, normals, texCoords, faces, midPoint } = mesh;
+  const shift = options.centerMesh || options.absolutePosition;
 
-  if (options.centerMesh || options.absolutePosition) {
-    for (const v of vertices) {
-      v.x -= mesh.midPoint.x;
-      v.y -= mesh.midPoint.y;
-      v.z -= mesh.midPoint.z;
+  interface CombinedSlot {
+    x: number;
+    y: number;
+    z: number;
+    u: number;
+    tv: number;
+    nx: number;
+    ny: number;
+    nz: number;
+  }
+  const slotMap = new Map<string, number>();
+  const slots: CombinedSlot[] = [];
+
+  const getSlot = (corner: FaceCorner): number => {
+    const v = vertices[corner.v - 1];
+    if (!v) {
+      throw new Error(`Face references vertex ${corner.v}, but only ${vertices.length} are defined`);
     }
-  }
-
-  const needsTexCoords = texCoords.length === 0 && vertices.length > 0;
-  if (needsTexCoords) {
-    for (let i = 0; i < vertices.length; i++) {
-      texCoords.push({ u: 0, v: 0 });
+    const t = texCoords[corner.t - 1];
+    if (!t) {
+      throw new Error(`Face references texture coordinate ${corner.t}, but only ${texCoords.length} are defined`);
     }
-  }
-
-  const outputLines: string[] = [];
-  outputLines.push('# Imported by VPX Editor');
-  outputLines.push('o mesh');
-
-  for (const v of vertices) {
-    outputLines.push(`v ${v.x} ${v.y} ${v.z}`);
-  }
-  for (const vt of texCoords) {
-    outputLines.push(`vt ${vt.u} ${vt.v}`);
-  }
-  for (const vn of normals) {
-    outputLines.push(`vn ${vn.x} ${vn.y} ${vn.z}`);
-  }
-
-  for (const f of faces) {
-    const parts = f.split(/\s+/);
-    if (parts[0] !== 'f' || parts.length < 4) {
-      outputLines.push(f);
-      continue;
+    const n = normals[corner.n - 1];
+    if (!n) {
+      throw new Error(`Face references normal ${corner.n}, but only ${normals.length} are defined`);
     }
+    const key = `${corner.v}/${corner.t}/${corner.n}`;
+    const existing = slotMap.get(key);
+    if (existing !== undefined) return existing;
 
-    const faceVerts = parts.slice(1).map(vert => {
-      const indices = vert.split('/');
-      const vi = indices[0];
-      let vti = indices[1] || '';
-      const vni = indices[2] !== undefined ? indices[2] : indices[1] || '';
-      if (needsTexCoords && vti === '') {
-        vti = vi;
-      }
-      return `${vi}/${vti}/${vni}`;
+    const slot = slots.length + 1;
+    slots.push({
+      x: shift ? v.x - midPoint.x : v.x,
+      y: shift ? v.y - midPoint.y : v.y,
+      z: shift ? v.z - midPoint.z : v.z,
+      u: t.u,
+      tv: t.v,
+      nx: n.x,
+      ny: n.y,
+      nz: n.z,
     });
+    slotMap.set(key, slot);
+    return slot;
+  };
 
-    if (options.convertCoords) {
-      faceVerts.reverse();
+  const triangles: [number, number, number][] = [];
+  for (const face of faces) {
+    const a = getSlot(face[0]);
+    for (let i = 1; i < face.length - 1; i++) {
+      const b = getSlot(face[i]);
+      const c = getSlot(face[i + 1]);
+      triangles.push([a, b, c]);
     }
-    outputLines.push(`f ${faceVerts.join(' ')}`);
   }
 
-  return outputLines.join('\n');
+  const out: string[] = [];
+  out.push('# Imported by VPX Editor');
+  out.push('o mesh');
+  for (const s of slots) out.push(`v ${s.x} ${s.y} ${s.z}`);
+  for (const s of slots) out.push(`vt ${s.u} ${s.tv}`);
+  for (const s of slots) out.push(`vn ${s.nx} ${s.ny} ${s.nz}`);
+  for (const [a, b, c] of triangles) {
+    out.push(`f ${a}/${a}/${a} ${b}/${b}/${b} ${c}/${c}/${c}`);
+  }
+  return out.join('\n');
 }
 
-export function parseMtlContent(content: string): {
+export interface ParsedMaterial {
   name: string;
+  type: string;
   base_color: string;
   glossy_color: string;
+  clearcoat_color: string;
+  wrap_lighting: number;
   roughness: number;
+  glossy_image_lerp: number;
+  thickness: number;
+  edge: number;
+  edge_alpha: number;
   opacity: number;
-} | null {
+  opacity_active: boolean;
+  refraction_tint: string;
+  elasticity: number;
+  elasticity_falloff: number;
+  friction: number;
+  scatter_angle: number;
+}
+
+export function parseMtlContent(content: string): ParsedMaterial | null {
   const lines = content.split('\n');
-  let material: {
-    name: string;
-    base_color: string;
-    glossy_color: string;
-    roughness: number;
-    opacity: number;
-  } | null = null;
+  let material: ParsedMaterial | null = null;
 
   for (const line of lines) {
     const parts = line.trim().split(/\s+/);
     if (parts[0] === 'newmtl' && parts[1]) {
       material = {
         name: parts[1],
+        type: 'Basic',
         base_color: '#808080',
         glossy_color: '#000000',
+        clearcoat_color: '#000000',
+        wrap_lighting: 0.5,
         roughness: 0.5,
+        glossy_image_lerp: 1.0,
+        thickness: 0.05,
+        edge: 1.0,
+        edge_alpha: 1.0,
         opacity: 1.0,
+        opacity_active: true,
+        refraction_tint: '#ffffff',
+        elasticity: 0.3,
+        elasticity_falloff: 0.0,
+        friction: 0.3,
+        scatter_angle: 0.0,
       };
     } else if (material) {
       if (parts[0] === 'Kd' && parts.length >= 4) {
@@ -282,4 +352,38 @@ export function parseMtlContent(content: string): {
   }
 
   return material;
+}
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const clean = hex.replace('#', '');
+  return {
+    r: parseInt(clean.substring(0, 2), 16) / 255,
+    g: parseInt(clean.substring(2, 4), 16) / 255,
+    b: parseInt(clean.substring(4, 6), 16) / 255,
+  };
+}
+
+export function generateMtlContent(
+  materialName: string,
+  material: {
+    base_color?: string;
+    glossy_color?: string;
+    opacity?: number;
+  }
+): string {
+  const cleanName = materialName.replace(/ /g, '');
+  const kd = hexToRgb(material.base_color || '#808080');
+  const ks = hexToRgb(material.glossy_color || '#000000');
+  const opacity = material.opacity ?? 1.0;
+  return [
+    `newmtl ${cleanName}`,
+    'Ns 7.843137',
+    'Ka 0.000000 0.000000 0.000000',
+    `Kd ${kd.r.toFixed(6)} ${kd.g.toFixed(6)} ${kd.b.toFixed(6)}`,
+    `Ks ${ks.r.toFixed(6)} ${ks.g.toFixed(6)} ${ks.b.toFixed(6)}`,
+    'Ni 1.500000',
+    `d ${opacity.toFixed(6)}`,
+    'illum 5',
+    '',
+  ].join('\n');
 }

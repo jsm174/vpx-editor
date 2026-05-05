@@ -19,6 +19,7 @@ import type {
 } from '../types/ipc.js';
 import type { GameData, TableInfo, Collection, ClipboardData, TableLoadedData } from '../types/data.js';
 import type { GameItemMeta } from '../types/state.js';
+import type { MeshImportOptions } from '../features/mesh-import/shared/component.js';
 
 const vpxEditorAPI: VpxEditorAPI = {
   onTableLoaded: (callback: (data: TableLoadedData) => void): void => {
@@ -267,9 +268,10 @@ const vpxEditorAPI: VpxEditorAPI = {
   exportImage: (srcPath: string, suggestedName: string) => ipcRenderer.invoke('export-image', srcPath, suggestedName),
   deleteFile: (filePath: string) => ipcRenderer.invoke('delete-file', filePath),
   renameFile: (oldPath: string, newPath: string) => ipcRenderer.invoke('rename-file', oldPath, newPath),
-  importMesh: (primitiveFileName: string): Promise<void> => ipcRenderer.invoke('import-mesh', primitiveFileName),
+  importMesh: (primitiveFileName: string): Promise<{ success: boolean; cancelled?: boolean }> =>
+    ipcRenderer.invoke('import-mesh', primitiveFileName),
   browseObjFile: (): Promise<string | null> => ipcRenderer.invoke('browse-obj-file'),
-  meshImportResult: (result: { meshData: string } | null): void => {
+  meshImportResult: (result: { meshData: string; options: MeshImportOptions } | null): void => {
     ipcRenderer.send('mesh-import-result', result);
   },
   onShowAbout: (callback: (data: AboutData) => void): void => {

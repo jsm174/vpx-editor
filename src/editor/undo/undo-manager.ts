@@ -1,5 +1,6 @@
 import { UndoRecord, ItemSnapshot, RenameEntry, DeletedImageInfo, DeletedSoundInfo } from './undo-record.js';
 import { state, elements, getItem, setItem, deleteItem, setPartGroup, deletePartGroup } from '../state.js';
+import { readMeshCompanions, deleteMeshCompanions } from '../mesh-files.js';
 
 interface EditorItem {
   _type: string;
@@ -94,19 +95,40 @@ class UndoManager {
     });
   }
 
+  async markMeshContentForUndo(itemName: string): Promise<void> {
+    if (!this.enabled || !this.currentRecord) return;
+
+    this.markForUndo(itemName);
+
+    const entry = this.currentRecord.snapshots.get(itemName);
+    if (!entry?.before) return;
+    if (entry.before.meshContent !== undefined) return;
+
+    const basePath = `${state.extractedDir}/${entry.before.fileName.replace(/\.json$/, '')}`;
+    const { meshContent, animationFrames } = await readMeshCompanions(basePath);
+    entry.before.meshContent = meshContent;
+    entry.before.animationFrames = animationFrames;
+  }
+
   markForCreate(itemName: string): void {
     if (!this.enabled || !this.currentRecord) return;
     this.currentRecord.createdItems.push(itemName);
     this._markGameitemsListForUndo();
   }
 
-  markForDelete(itemName: string): void {
+  async markForDelete(itemName: string): Promise<void> {
     if (!this.enabled || !this.currentRecord) return;
 
     const item = getItem(itemName) as EditorItem | undefined;
     if (!item) return;
 
-    this.currentRecord.deletedItems.set(itemName, this._createItemSnapshot(item, itemName));
+    const snapshot = this._createItemSnapshot(item, itemName);
+    const basePath = `${state.extractedDir}/${snapshot.fileName.replace(/\.json$/, '')}`;
+    const { meshContent, animationFrames } = await readMeshCompanions(basePath);
+    snapshot.meshContent = meshContent;
+    snapshot.animationFrames = animationFrames;
+
+    this.currentRecord.deletedItems.set(itemName, snapshot);
     this._markGameitemsListForUndo();
   }
 
@@ -256,7 +278,14 @@ class UndoManager {
       for (const [itemName, entry] of this.currentRecord.snapshots) {
         const item = getItem(itemName) as EditorItem | undefined;
         if (item) {
-          entry.after = this._createItemSnapshot(item, itemName);
+          const after = this._createItemSnapshot(item, itemName);
+          if (entry.before?.meshContent !== undefined) {
+            const basePath = `${state.extractedDir}/${after.fileName.replace(/\.json$/, '')}`;
+            const { meshContent, animationFrames } = await readMeshCompanions(basePath);
+            after.meshContent = meshContent;
+            after.animationFrames = animationFrames;
+          }
+          entry.after = after;
         }
       }
 
@@ -750,6 +779,27 @@ class UndoManager {
       gameitemEntry.is_locked = data.is_locked as boolean;
       await this._saveGameitemsList();
     }
+
+    if (snapshot.meshContent !== undefined) {
+      const objPath = `${state.extractedDir}/${snapshot.fileName.replace(/\.json$/, '.obj')}`;
+      if (snapshot.meshContent === null) {
+        await window.vpxEditor.deleteFile(objPath);
+      } else {
+        await window.vpxEditor.writeFile(objPath, snapshot.meshContent);
+      }
+    }
+    if (snapshot.animationFrames !== undefined) {
+      const basePath = `${state.extractedDir}/${snapshot.fileName.replace(/\.json$/, '')}`;
+      for (let i = 0; ; i++) {
+        const r = await window.vpxEditor.deleteFile(`${basePath}_anim_${i}.obj`);
+        if (!r.success) break;
+      }
+      if (snapshot.animationFrames !== null) {
+        for (let i = 0; i < snapshot.animationFrames.length; i++) {
+          await window.vpxEditor.writeFile(`${basePath}_anim_${i}.obj`, snapshot.animationFrames[i]);
+        }
+      }
+    }
   }
 
   async _removeItem(itemName: string): Promise<void> {
@@ -763,7 +813,12 @@ class UndoManager {
     deleteItem(itemName);
 
     const fileNameOnly = item._fileName?.replace('gameitems/', '');
-    if (!fileNameOnly) return;
+    if (!fileNameOnly || !item._fileName) return;
+
+    const filePath = `${state.extractedDir}/${item._fileName}`;
+    await window.vpxEditor.deleteFile(filePath);
+    await deleteMeshCompanions(filePath.replace(/\.json$/, ''));
+
     const index = (state.gameitems as GameitemEntry[]).findIndex(gi => gi.file_name === fileNameOnly);
     if (index >= 0) {
       (state.gameitems as GameitemEntry[]).splice(index, 1);
@@ -964,8 +1019,13 @@ class UndoManager {
   async _reloadMaterials(): Promise<void> {
     const result = await window.vpxEditor.readFile(`${state.extractedDir}/materials.json`);
     if (result.success && result.content) {
-      (state as { materials: Record<string, unknown> }).materials = JSON.parse(result.content);
-      (state as { materialNames: string[] }).materialNames = Object.keys(state.materials).sort((a, b) =>
+      const materialsArray = JSON.parse(result.content) as { name: string }[];
+      const materials: Record<string, unknown> = {};
+      for (const mat of materialsArray) {
+        if (mat.name) materials[mat.name] = mat;
+      }
+      (state as { materials: Record<string, unknown> }).materials = materials;
+      (state as { materialNames: string[] }).materialNames = Object.keys(materials).sort((a, b) =>
         a.toLowerCase().localeCompare(b.toLowerCase())
       );
     }
