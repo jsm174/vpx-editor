@@ -927,7 +927,33 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
     importBtn.addEventListener('click', async () => {
       const filename = importBtn.dataset.filename;
       if (!filename) return;
-      await window.vpxEditor.importMesh(filename);
+
+      const primName = state.primarySelectedItem;
+      if (primName) {
+        undoManager.beginUndo('Mesh imported');
+        undoManager.markForUndo(primName);
+        await undoManager.markMeshContentForUndo(primName);
+        undoManager.markMaterialsForUndo();
+      }
+
+      const result = await window.vpxEditor.importMesh(filename);
+
+      if (primName) {
+        if (result.success) {
+          const item = getItem(primName);
+          if (item && item._fileName && state.extractedDir) {
+            const fileResult = await window.vpxEditor.readFile(`${state.extractedDir}/${item._fileName}`);
+            if (fileResult.success && fileResult.content) {
+              const itemData = JSON.parse(fileResult.content);
+              const itemType = Object.keys(itemData)[0];
+              Object.assign(item, itemData[itemType]);
+            }
+          }
+          await undoManager.endUndo();
+        } else {
+          undoManager.cancelUndo();
+        }
+      }
     });
   }
 

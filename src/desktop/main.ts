@@ -40,6 +40,14 @@ import * as vpxOps from './vpx-operations.js';
 import { updateElectronApp } from 'update-electron-app';
 import { createElectronMenu } from '../shared/menu-renderer-electron.js';
 import { setupCollectionHandlers } from '../features/collection-manager/desktop/ipc-handlers.js';
+import {
+  parseObjContent,
+  generateProcessedObj,
+  generateMtlContent,
+  parseMtlContent,
+  type MeshImportOptions,
+  type ParsedMaterial,
+} from '../features/mesh-import/shared/component.js';
 
 updateElectronApp();
 
@@ -1766,10 +1774,10 @@ ipcMain.handle('import-mesh', async (event, primitiveFileName: string) => {
 
   const result = await windowFactory.openMeshImportWindow(ctx);
   if (!result) {
-    return { success: false, error: 'Cancelled' };
+    return { success: false, cancelled: true };
   }
 
-  return await performMeshImport(ctx, { filePath: result.meshData });
+  return await performMeshImport(ctx, { filePath: result.meshData, options: result.options });
 });
 
 ipcMain.handle('browse-obj-file', async event => {
@@ -1791,138 +1799,25 @@ ipcMain.handle('browse-obj-file', async event => {
   return result.filePaths[0];
 });
 
-async function performMeshImport(
-  ctx: WindowContext,
-  options: {
-    filePath: string;
-    convertCoords?: boolean;
-    centerMesh?: boolean;
-    absolutePosition?: boolean;
-    importMaterial?: boolean;
-  }
-) {
+async function performMeshImport(ctx: WindowContext, args: { filePath: string; options: MeshImportOptions }) {
   if (!ctx?.extractedDir || !ctx?.meshImportPrimitiveFileName) {
     return { success: false, error: 'No table or primitive selected' };
   }
 
+  const { filePath, options } = args;
   const destFileName = ctx.meshImportPrimitiveFileName.replace('.json', '.obj');
   const destPath = path.join(ctx.extractedDir, destFileName);
   const primitivePath = path.join(ctx.extractedDir, ctx.meshImportPrimitiveFileName);
 
   try {
-    const objContent = await fs.promises.readFile(options.filePath, 'utf-8');
-    const lines = objContent.split('\n');
+    const objContent = await fs.promises.readFile(filePath, 'utf-8');
+    const mesh = parseObjContent(objContent, options.convertCoords);
+    const processedObj = generateProcessedObj(mesh, {
+      centerMesh: options.centerMesh,
+      absolutePosition: options.absolutePosition,
+    });
 
-    const vertices = [];
-    const normals = [];
-    const texCoords = [];
-    const faces = [];
-    const otherLines = [];
-
-    for (const line of lines) {
-      const parts = line.trim().split(/\s+/);
-      if (parts[0] === 'v' && parts.length >= 4) {
-        let x = parseFloat(parts[1]) || 0;
-        let y = parseFloat(parts[2]) || 0;
-        let z = parseFloat(parts[3]) || 0;
-        if (options.convertCoords) {
-          z = -z;
-        }
-        vertices.push({ x, y, z });
-      } else if (parts[0] === 'vn' && parts.length >= 4) {
-        let nx = parseFloat(parts[1]) || 0;
-        let ny = parseFloat(parts[2]) || 0;
-        let nz = parseFloat(parts[3]) || 0;
-        if (options.convertCoords) {
-          nz = -nz;
-        }
-        normals.push({ x: nx, y: ny, z: nz });
-      } else if (parts[0] === 'vt' && parts.length >= 3) {
-        const u = parseFloat(parts[1]) || 0;
-        const v = parseFloat(parts[2]) || 0;
-        texCoords.push({ u, v });
-      } else if (parts[0] === 'f') {
-        faces.push(line.trim());
-      } else {
-        otherLines.push(line);
-      }
-    }
-
-    let midPoint = { x: 0, y: 0, z: 0 };
-    if (vertices.length > 0) {
-      let minX = Infinity,
-        minY = Infinity,
-        minZ = Infinity;
-      let maxX = -Infinity,
-        maxY = -Infinity,
-        maxZ = -Infinity;
-      for (const v of vertices) {
-        minX = Math.min(minX, v.x);
-        maxX = Math.max(maxX, v.x);
-        minY = Math.min(minY, v.y);
-        maxY = Math.max(maxY, v.y);
-        minZ = Math.min(minZ, v.z);
-        maxZ = Math.max(maxZ, v.z);
-      }
-      midPoint = {
-        x: (minX + maxX) / 2,
-        y: (minY + maxY) / 2,
-        z: (minZ + maxZ) / 2,
-      };
-    }
-
-    if (options.centerMesh || options.absolutePosition) {
-      for (const v of vertices) {
-        v.x -= midPoint.x;
-        v.y -= midPoint.y;
-        v.z -= midPoint.z;
-      }
-    }
-
-    const needsTexCoords = texCoords.length === 0 && vertices.length > 0;
-    if (needsTexCoords) {
-      for (let i = 0; i < vertices.length; i++) {
-        texCoords.push({ u: 0, v: 0 });
-      }
-    }
-
-    let outputLines = [];
-    outputLines.push('# Imported by VPX Editor');
-    outputLines.push('o mesh');
-    for (const v of vertices) {
-      outputLines.push(`v ${v.x} ${v.y} ${v.z}`);
-    }
-    for (const vt of texCoords) {
-      outputLines.push(`vt ${vt.u} ${vt.v}`);
-    }
-    for (const vn of normals) {
-      outputLines.push(`vn ${vn.x} ${vn.y} ${vn.z}`);
-    }
-    for (const f of faces) {
-      const parts = f.split(/\s+/);
-      if (parts[0] !== 'f' || parts.length < 4) {
-        outputLines.push(f);
-        continue;
-      }
-
-      const faceVerts = parts.slice(1).map(vert => {
-        const indices = vert.split('/');
-        const vi = indices[0];
-        let vti = indices[1] || '';
-        const vni = indices[2] !== undefined ? indices[2] : indices[1] || '';
-        if (needsTexCoords && vti === '') {
-          vti = vi;
-        }
-        return `${vi}/${vti}/${vni}`;
-      });
-
-      if (options.convertCoords) {
-        faceVerts.reverse();
-      }
-      outputLines.push(`f ${faceVerts.join(' ')}`);
-    }
-
-    await fs.promises.writeFile(destPath, outputLines.join('\n'));
+    await fs.promises.writeFile(destPath, processedObj);
 
     const primContent = await fs.promises.readFile(primitivePath, 'utf-8');
     const primData = JSON.parse(primContent);
@@ -1932,15 +1827,15 @@ async function performMeshImport(
     prim.use_3d_mesh = true;
 
     if (options.absolutePosition) {
-      prim.position = { x: midPoint.x, y: midPoint.y, z: midPoint.z };
+      prim.position = { x: mesh.midPoint.x, y: mesh.midPoint.y, z: mesh.midPoint.z };
       prim.size = { x: 1, y: 1, z: 1 };
     }
 
     if (options.importMaterial) {
-      const mtlPath = options.filePath.replace(/\.obj$/i, '.mtl');
+      const mtlPath = filePath.replace(/\.obj$/i, '.mtl');
       try {
         const mtlContent = await fs.promises.readFile(mtlPath, 'utf-8');
-        const material = parseMtlFile(mtlContent);
+        const material = parseMtlContent(mtlContent);
         if (material) {
           await addMaterialToTable(ctx.extractedDir, material);
           prim.material = material.name;
@@ -1963,56 +1858,6 @@ async function performMeshImport(
   }
 }
 
-function parseMtlFile(content: string) {
-  const lines = content.split('\n');
-  let material = null;
-
-  for (const line of lines) {
-    const parts = line.trim().split(/\s+/);
-    if (parts[0] === 'newmtl' && parts[1]) {
-      material = {
-        name: parts[1],
-        type: 'Basic',
-        base_color: '#808080',
-        glossy_color: '#000000',
-        clearcoat_color: '#000000',
-        wrap_lighting: 0.5,
-        roughness: 0.5,
-        glossy_image_lerp: 1.0,
-        thickness: 0.05,
-        edge: 1.0,
-        edge_alpha: 1.0,
-        opacity: 1.0,
-        opacity_active: true,
-        refraction_tint: '#ffffff',
-        elasticity: 0.3,
-        elasticity_falloff: 0.0,
-        friction: 0.3,
-        scatter_angle: 0.0,
-      };
-    } else if (material) {
-      if (parts[0] === 'Kd' && parts.length >= 4) {
-        const r = Math.round((parseFloat(parts[1]) || 0) * 255);
-        const g = Math.round((parseFloat(parts[2]) || 0) * 255);
-        const b = Math.round((parseFloat(parts[3]) || 0) * 255);
-        material.base_color = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-      } else if (parts[0] === 'Ks' && parts.length >= 4) {
-        const r = Math.round((parseFloat(parts[1]) || 0) * 255);
-        const g = Math.round((parseFloat(parts[2]) || 0) * 255);
-        const b = Math.round((parseFloat(parts[3]) || 0) * 255);
-        material.glossy_color = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-      } else if (parts[0] === 'Ns') {
-        const ns = parseFloat(parts[1]) || 0;
-        material.roughness = Math.max(0, Math.min(1, 0.5 + ns / 2000.0));
-      } else if (parts[0] === 'd') {
-        material.opacity = parseFloat(parts[1]) || 1.0;
-      }
-    }
-  }
-
-  return material;
-}
-
 async function addMaterialToTable(extractedDir: string, material: { name: string }) {
   const materialsPath = path.join(extractedDir, 'materials.json');
   try {
@@ -2030,50 +1875,10 @@ async function addMaterialToTable(extractedDir: string, material: { name: string
   }
 }
 
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const clean = hex.replace('#', '');
-  return {
-    r: parseInt(clean.substring(0, 2), 16) / 255,
-    g: parseInt(clean.substring(2, 4), 16) / 255,
-    b: parseInt(clean.substring(4, 6), 16) / 255,
-  };
-}
-
-function generateMtlContent(
-  materialName: string,
-  material: {
-    base_color?: string;
-    glossy_color?: string;
-    roughness?: number;
-    opacity?: number;
-    opacity_active?: boolean;
-  }
-): string {
-  const lines: string[] = [];
-  lines.push(`newmtl ${materialName}`);
-
-  const kd = hexToRgb(material.base_color || '#808080');
-  lines.push(`Kd ${kd.r.toFixed(6)} ${kd.g.toFixed(6)} ${kd.b.toFixed(6)}`);
-
-  const ks = hexToRgb(material.glossy_color || '#000000');
-  lines.push(`Ks ${ks.r.toFixed(6)} ${ks.g.toFixed(6)} ${ks.b.toFixed(6)}`);
-
-  const roughness = material.roughness ?? 0.5;
-  const ns = (roughness - 0.5) * 2000.0;
-  lines.push(`Ns ${Math.max(0, ns).toFixed(4)}`);
-
-  if (material.opacity_active && material.opacity !== undefined && material.opacity < 1.0) {
-    lines.push(`d ${material.opacity.toFixed(6)}`);
-  }
-
-  lines.push('illum 2');
-  return lines.join('\n') + '\n';
-}
-
 async function findPrimitiveMaterial(
   extractedDir: string,
   primitiveFileName: string
-): Promise<{ materialName: string; material: Record<string, unknown> } | null> {
+): Promise<{ materialName: string; material: ParsedMaterial } | null> {
   try {
     const jsonPath = path.join(extractedDir, primitiveFileName);
     const jsonContent = await fs.promises.readFile(jsonPath, 'utf-8');
@@ -2084,11 +1889,11 @@ async function findPrimitiveMaterial(
 
     const materialsPath = path.join(extractedDir, 'materials.json');
     const materialsContent = await fs.promises.readFile(materialsPath, 'utf-8');
-    const materials = JSON.parse(materialsContent) as { name: string }[];
+    const materials = JSON.parse(materialsContent) as ParsedMaterial[];
     const found = materials.find(m => m.name === matName);
     if (!found) return null;
 
-    return { materialName: matName, material: found as Record<string, unknown> };
+    return { materialName: matName, material: found };
   } catch {
     return null;
   }

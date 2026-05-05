@@ -1,5 +1,6 @@
 import type { GameData, TableInfo, TableLoadedData, Collection, ClipboardData } from './data.js';
 import type { GameItemMeta } from './state.js';
+import type { MeshImportOptions } from '../features/mesh-import/shared/component.js';
 
 export type IpcCallback<T = void> = (data: T) => void;
 
@@ -220,9 +221,9 @@ export interface VpxEditorAPI {
   exportImage: (srcPath: string, suggestedName: string) => Promise<string | null>;
   deleteFile: (filePath: string) => Promise<WriteResult>;
   renameFile: (oldPath: string, newPath: string) => Promise<RenameResult>;
-  importMesh: (primitiveFileName: string) => Promise<void>;
+  importMesh: (primitiveFileName: string) => Promise<{ success: boolean; cancelled?: boolean }>;
   browseObjFile: () => Promise<string | null>;
-  meshImportResult: (result: { meshData: string } | null) => void;
+  meshImportResult: (result: { meshData: string; options: MeshImportOptions } | null) => void;
   onShowAbout: (callback: IpcCallback<AboutData>) => void;
   onInitSettings: (callback: IpcCallback<EditorSettings>) => void;
   onThemeChanged: (callback: IpcCallback<string>) => void;

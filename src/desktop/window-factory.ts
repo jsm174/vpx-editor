@@ -7,6 +7,7 @@ import type { Settings, WindowBounds } from './settings-manager.js';
 import type { GameItemBase as GameItem } from '../types/game-objects.js';
 import type { GameData } from '../types/data.js';
 import { parseTableSizesCSV, type PredefinedTable } from '../features/dimensions-manager/shared/table-sizes.js';
+import type { MeshImportOptions } from '../features/mesh-import/shared/component.js';
 
 interface VersionInfo {
   sha: string;
@@ -112,6 +113,7 @@ interface DrawingOrderItem {
 
 interface MeshImportResult {
   meshData: string;
+  options: MeshImportOptions;
 }
 
 interface CollectionEditorInitData {

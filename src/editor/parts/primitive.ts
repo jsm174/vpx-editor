@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
-import { state, elements } from '../state.js';
+import { state, elements, getItemByFileName } from '../state.js';
 import { toScreen, getStrokeStyle, getLineWidth, convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { createMaterial, applyDisableLighting } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions, lightOptions, renderProbeOptions } from '../../shared/options-generators.js';
@@ -855,16 +855,19 @@ async function loadMeshForCache(item: PrimitiveItem): Promise<void> {
 
   try {
     const result = await window.vpxEditor.readFile(objPath);
-    if (!result.success) {
-      if (!item.use_3d_mesh) {
-        const sides = item.sides ?? PRIMITIVE_DEFAULTS.sides;
-        const builtin = generateBuiltinMesh(sides, !!item.draw_textures_inside);
-        meshCache.set(cacheKey, { ...builtin, normalIndices: builtin.indices.slice() });
-        invokeCallback('primitiveRenderCallback');
-        invokeCallback('primitiveStatusCallback', item);
-      } else {
-        meshCache.set(cacheKey, { error: true });
-      }
+
+    // Re-fetch the current item: rapid undo/redo can replace state.items[primName]
+    // while this async readFile is in flight. Using the current item ensures we
+    // cache a mesh that matches the state the user is now in, not a stale one.
+    const current = (getItemByFileName(cacheKey) as PrimitiveItem | undefined) ?? item;
+    const useM3D = current.use_3d_mesh;
+
+    if (!useM3D || !result.success) {
+      const sides = current.sides ?? PRIMITIVE_DEFAULTS.sides;
+      const builtin = generateBuiltinMesh(sides, !!current.draw_textures_inside);
+      meshCache.set(cacheKey, { ...builtin, normalIndices: builtin.indices.slice() });
+      invokeCallback('primitiveRenderCallback');
+      invokeCallback('primitiveStatusCallback', current);
       return;
     }
 
@@ -872,7 +875,7 @@ async function loadMeshForCache(item: PrimitiveItem): Promise<void> {
     meshCache.set(cacheKey, parsed);
 
     invokeCallback('primitiveRenderCallback');
-    invokeCallback('primitiveStatusCallback', item);
+    invokeCallback('primitiveStatusCallback', current);
   } catch {
     meshCache.set(cacheKey, { error: true });
   }

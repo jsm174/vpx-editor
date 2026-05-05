@@ -915,8 +915,10 @@ playModeSelect?.addEventListener('change', () => {
 
 const undoBtn = document.getElementById('undo-btn') as HTMLButtonElement | null;
 const redoBtn = document.getElementById('redo-btn') as HTMLButtonElement | null;
+let undoRedoBusy = false;
 
 function updateUndoRedoButtons(): void {
+  if (undoRedoBusy) return;
   const canUndo = undoManager.canUndo();
   const canRedo = undoManager.canRedo();
   if (undoBtn) {
@@ -932,49 +934,40 @@ function updateUndoRedoButtons(): void {
 
 undoManager.setOnChange(updateUndoRedoButtons);
 
-undoBtn?.addEventListener('click', async () => {
-  const result = await undoManager.undo();
-  if (result && result.success) {
-    if (result.selectItems !== undefined) {
-      if (result.selectItems.length > 0) {
-        setSelection(result.selectItems, result.selectItems[0]);
-      } else {
-        selectItem(null, true);
+async function runUndoRedo(direction: 'undo' | 'redo'): Promise<void> {
+  if (undoRedoBusy) return;
+  undoRedoBusy = true;
+  if (undoBtn) undoBtn.disabled = true;
+  if (redoBtn) redoBtn.disabled = true;
+  try {
+    const result = direction === 'undo' ? await undoManager.undo() : await undoManager.redo();
+    if (result && result.success) {
+      if (result.selectItems !== undefined) {
+        if (result.selectItems.length > 0) {
+          setSelection(result.selectItems, result.selectItems[0]);
+        } else {
+          selectItem(null, true);
+        }
       }
+      updatePropertiesPanel();
+      updateItemsList();
+      updateLayersList();
+      updateCollectionsList();
+      clearPrimitiveMeshCache();
+      invalidateAllItems();
+      renderCurrentView();
+      if (result.imagesChanged) window.vpxEditor.refreshImageManager();
+      if (result.materialsChanged) window.vpxEditor.refreshMaterialManager();
+      if (result.soundsChanged) window.vpxEditor.refreshSoundManager();
     }
-    updatePropertiesPanel();
-    updateItemsList();
-    updateLayersList();
-    updateCollectionsList();
-    invalidateAllItems();
-    renderCurrentView();
-    if (result.imagesChanged) window.vpxEditor.refreshImageManager();
-    if (result.materialsChanged) window.vpxEditor.refreshMaterialManager();
-    if (result.soundsChanged) window.vpxEditor.refreshSoundManager();
+  } finally {
+    undoRedoBusy = false;
+    updateUndoRedoButtons();
   }
-});
+}
 
-redoBtn?.addEventListener('click', async () => {
-  const result = await undoManager.redo();
-  if (result && result.success) {
-    if (result.selectItems !== undefined) {
-      if (result.selectItems.length > 0) {
-        setSelection(result.selectItems, result.selectItems[0]);
-      } else {
-        selectItem(null, true);
-      }
-    }
-    updatePropertiesPanel();
-    updateItemsList();
-    updateLayersList();
-    updateCollectionsList();
-    invalidateAllItems();
-    renderCurrentView();
-    if (result.imagesChanged) window.vpxEditor.refreshImageManager();
-    if (result.materialsChanged) window.vpxEditor.refreshMaterialManager();
-    if (result.soundsChanged) window.vpxEditor.refreshSoundManager();
-  }
-});
+undoBtn?.addEventListener('click', () => runUndoRedo('undo'));
+redoBtn?.addEventListener('click', () => runUndoRedo('redo'));
 
 document.addEventListener('keydown', async e => {
   const target = e.target as HTMLElement | null;
@@ -983,49 +976,13 @@ document.addEventListener('keydown', async e => {
 
   if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 'z') {
     e.preventDefault();
-    const result = await undoManager.undo();
-    if (result && result.success) {
-      if (result.selectItems !== undefined) {
-        if (result.selectItems.length > 0) {
-          setSelection(result.selectItems, result.selectItems[0]);
-        } else {
-          selectItem(null, true);
-        }
-      }
-      updatePropertiesPanel();
-      updateItemsList();
-      updateLayersList();
-      updateCollectionsList();
-      invalidateAllItems();
-      renderCurrentView();
-      if (result.imagesChanged) window.vpxEditor.refreshImageManager();
-      if (result.materialsChanged) window.vpxEditor.refreshMaterialManager();
-      if (result.soundsChanged) window.vpxEditor.refreshSoundManager();
-    }
+    await runUndoRedo('undo');
     return;
   }
 
   if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
     e.preventDefault();
-    const result = await undoManager.redo();
-    if (result && result.success) {
-      if (result.selectItems !== undefined) {
-        if (result.selectItems.length > 0) {
-          setSelection(result.selectItems, result.selectItems[0]);
-        } else {
-          selectItem(null, true);
-        }
-      }
-      updatePropertiesPanel();
-      updateItemsList();
-      updateLayersList();
-      updateCollectionsList();
-      invalidateAllItems();
-      renderCurrentView();
-      if (result.imagesChanged) window.vpxEditor.refreshImageManager();
-      if (result.materialsChanged) window.vpxEditor.refreshMaterialManager();
-      if (result.soundsChanged) window.vpxEditor.refreshSoundManager();
-    }
+    await runUndoRedo('redo');
     return;
   }
 
@@ -1426,43 +1383,8 @@ window.vpxEditor.onGameitemsChanged?.(gameitems => {
   renderCurrentView();
 });
 
-window.vpxEditor.onUndo?.(async () => {
-  const result = await undoManager.undo();
-  if (result && result.success) {
-    if (result.selectItems !== undefined) {
-      if (result.selectItems.length > 0) {
-        setSelection(result.selectItems, result.selectItems[0]);
-      } else {
-        selectItem(null, true);
-      }
-    }
-    updatePropertiesPanel();
-    updateItemsList();
-    updateLayersList();
-    updateCollectionsList();
-    invalidateAllItems();
-    renderCurrentView();
-  }
-});
-
-window.vpxEditor.onRedo?.(async () => {
-  const result = await undoManager.redo();
-  if (result && result.success) {
-    if (result.selectItems !== undefined) {
-      if (result.selectItems.length > 0) {
-        setSelection(result.selectItems, result.selectItems[0]);
-      } else {
-        selectItem(null, true);
-      }
-    }
-    updatePropertiesPanel();
-    updateItemsList();
-    updateLayersList();
-    updateCollectionsList();
-    invalidateAllItems();
-    renderCurrentView();
-  }
-});
+window.vpxEditor.onUndo?.(() => runUndoRedo('undo'));
+window.vpxEditor.onRedo?.(() => runUndoRedo('redo'));
 
 function isEditableElementFocused(): boolean {
   const el = document.activeElement as HTMLElement | null;
@@ -1804,6 +1726,7 @@ window.vpxEditor.onMeshImported?.(async data => {
         a.localeCompare(b, undefined, { sensitivity: 'base' })
       );
     }
+    window.vpxEditor.refreshMaterialManager?.();
   }
 
   if (state.primarySelectedItem && state.extractedDir) {

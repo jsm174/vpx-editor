@@ -1,4 +1,5 @@
 import { state, undoManager, getItem, setItem, deleteItem, hasItem } from './state.js';
+import { deleteMeshCompanions } from './mesh-files.js';
 import { GameItem, GameItemEntry, Point, DragPoint } from './state.js';
 import { objectTypes, getObjectDefaults, hasObjectDragPoints } from './object-types.js';
 import { generateUniqueFileName } from '../shared/gameitem-utils.js';
@@ -179,6 +180,7 @@ async function deleteObjectInternal(name: string): Promise<boolean> {
   const gameitemsPath = `${state.extractedDir}/gameitems.json`;
 
   await vpxEditor.deleteFile(filePath);
+  await deleteMeshCompanions(filePath.replace(/\.json$/, ''));
 
   const gameitemsResult = await vpxEditor.readFile(gameitemsPath);
 
@@ -210,12 +212,12 @@ export async function deleteObject(name: string, skipUndo: boolean = false): Pro
   if (!item) return false;
 
   if (skipUndo) {
-    undoManager.markForDelete(name);
+    await undoManager.markForDelete(name);
     return deleteObjectInternal(name);
   }
 
   undoManager.beginUndo(`${getItem(name)?._type || 'Item'} deleted`);
-  undoManager.markForDelete(name);
+  await undoManager.markForDelete(name);
   const success = await deleteObjectInternal(name);
   undoManager.endUndo();
   return success;

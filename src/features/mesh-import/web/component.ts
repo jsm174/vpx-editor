@@ -3,36 +3,14 @@ import {
   initMeshImportComponent,
   parseObjContent,
   generateProcessedObj,
+  generateMtlContent,
+  parseMtlContent,
   type MeshImportOptions,
 } from '../shared/component';
 import { builtinMeshToOBJ } from '../../../shared/builtin-primitive-mesh';
 import templateHtml from './template.html?raw';
 
 let templateInjected = false;
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const clean = hex.replace('#', '');
-  return {
-    r: parseInt(clean.substring(0, 2), 16) / 255,
-    g: parseInt(clean.substring(2, 4), 16) / 255,
-    b: parseInt(clean.substring(4, 6), 16) / 255,
-  };
-}
-
-function generateWebMtl(materialName: string, mat: Record<string, unknown>): string {
-  const lines: string[] = [`newmtl ${materialName}`];
-  const kd = hexToRgb((mat.base_color as string) || '#808080');
-  lines.push(`Kd ${kd.r.toFixed(6)} ${kd.g.toFixed(6)} ${kd.b.toFixed(6)}`);
-  const ks = hexToRgb((mat.glossy_color as string) || '#000000');
-  lines.push(`Ks ${ks.r.toFixed(6)} ${ks.g.toFixed(6)} ${ks.b.toFixed(6)}`);
-  const roughness = (mat.roughness as number) ?? 0.5;
-  lines.push(`Ns ${Math.max(0, (roughness - 0.5) * 2000.0).toFixed(4)}`);
-  if (mat.opacity_active && mat.opacity !== undefined && (mat.opacity as number) < 1.0) {
-    lines.push(`d ${(mat.opacity as number).toFixed(6)}`);
-  }
-  lines.push('illum 2');
-  return lines.join('\n') + '\n';
-}
 
 function downloadFile(content: string, filename: string): void {
   const blob = new Blob([content], { type: 'application/octet-stream' });
@@ -76,19 +54,35 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
 
   let componentInstance: { destroy: () => void } | null = null;
   let currentPrimitiveFileName = '';
+  let pendingResolve: ((result: { success: boolean; cancelled?: boolean }) => void) | null = null;
 
-  function closeModal(): void {
+  function resolvePending(result: { success: boolean; cancelled?: boolean }): void {
+    if (pendingResolve) {
+      pendingResolve(result);
+      pendingResolve = null;
+    }
+  }
+
+  function closeModal(cancelled: boolean): void {
     modal.classList.add('hidden');
     componentInstance?.destroy();
     componentInstance = null;
+    resolvePending(cancelled ? { success: false, cancelled: true } : { success: true });
   }
 
-  closeBtn.addEventListener('click', closeModal);
+  closeBtn.addEventListener('click', () => closeModal(true));
 
-  async function showMeshImport(primitiveFileName: string): Promise<void> {
+  async function showMeshImport(
+    primitiveFileName: string,
+    resolve?: (result: { success: boolean; cancelled?: boolean }) => void
+  ): Promise<void> {
     const EXTRACTED_DIR = deps.getExtractedDir();
-    if (!EXTRACTED_DIR) return;
+    if (!EXTRACTED_DIR) {
+      resolve?.({ success: false, cancelled: true });
+      return;
+    }
 
+    pendingResolve = resolve ?? null;
     currentPrimitiveFileName = primitiveFileName;
     body.innerHTML = createMeshImportHTML();
 
@@ -97,20 +91,28 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
         return new Promise(resolve => {
           const input = document.createElement('input');
           input.type = 'file';
-          input.accept = '.obj';
+          input.accept = '.obj,.mtl';
+          input.multiple = true;
           input.onchange = async () => {
-            const file = input.files?.[0];
-            if (!file) {
+            const files = input.files ? Array.from(input.files) : [];
+            const objFile = files.find(f => f.name.toLowerCase().endsWith('.obj'));
+            if (!objFile) {
+              deps.events.emit('status', 'Selection must include a .obj file');
               resolve(null);
               return;
             }
-            const content = await file.text();
-            resolve({ path: file.name, content });
+            const content = await objFile.text();
+            const extras = new Map<string, string>();
+            for (const file of files) {
+              if (file === objFile) continue;
+              extras.set(file.name, await file.text());
+            }
+            resolve({ path: objFile.name, content, extras });
           };
           input.click();
         });
       },
-      onImport: async (_filePath: string, content: string, options: MeshImportOptions) => {
+      onImport: async (filePath: string, content: string, options: MeshImportOptions, extras?: Map<string, string>) => {
         const extractedDir = deps.getExtractedDir();
         if (!extractedDir) return;
 
@@ -121,10 +123,35 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
           const processedObj = generateProcessedObj(mesh, {
             centerMesh: options.centerMesh,
             absolutePosition: options.absolutePosition,
-            convertCoords: options.convertCoords,
           });
 
           await deps.fileSystem.writeFile(`${extractedDir}/${destFileName}`, processedObj);
+
+          let importedMaterialName: string | null = null;
+          if (options.importMaterial && extras) {
+            const objBase = filePath.replace(/\.obj$/i, '');
+            const mtlContent =
+              extras.get(`${objBase}.mtl`) ||
+              extras.get(`${objBase}.MTL`) ||
+              [...extras.entries()].find(([name]) => name.toLowerCase().endsWith('.mtl'))?.[1];
+            if (mtlContent) {
+              const material = parseMtlContent(mtlContent);
+              if (material) {
+                const materialsResult = await deps.fileSystem.readFile(`${extractedDir}/materials.json`);
+                let materials: { name: string }[] = [];
+                if (materialsResult.success && materialsResult.content) {
+                  materials = JSON.parse(materialsResult.content);
+                }
+                if (!materials.find(m => m.name === material.name)) {
+                  materials.push(material);
+                  await deps.fileSystem.writeFile(`${extractedDir}/materials.json`, JSON.stringify(materials, null, 2));
+                }
+                importedMaterialName = material.name;
+              }
+            } else {
+              deps.events.emit('status', 'No .mtl file selected; material not imported');
+            }
+          }
 
           const primContent = await deps.fileSystem.readFile(`${extractedDir}/${currentPrimitiveFileName}`);
           if (primContent.success && primContent.content) {
@@ -139,6 +166,10 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
               prim.size = { x: 1, y: 1, z: 1 };
             }
 
+            if (importedMaterialName) {
+              prim.material = importedMaterialName;
+            }
+
             await deps.fileSystem.writeFile(
               `${extractedDir}/${currentPrimitiveFileName}`,
               JSON.stringify(primData, null, 2)
@@ -147,18 +178,24 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
 
           deps.events.emit('mesh-imported', { primitiveFileName: currentPrimitiveFileName, options });
 
-          closeModal();
+          closeModal(false);
         } catch (err) {
           console.error('Mesh import failed:', err);
+          deps.events.emit('status', `Mesh import failed: ${(err as Error).message}`);
+          closeModal(true);
         }
       },
-      onCancel: closeModal,
+      onCancel: () => closeModal(true),
     });
 
     modal.classList.remove('hidden');
   }
 
-  deps.events.on('show-mesh-import', (fileName: unknown) => showMeshImport(fileName as string));
+  deps.events.on('show-mesh-import', (...args: unknown[]) => {
+    const fileName = args[0] as string;
+    const resolve = args[1] as ((result: { success: boolean; cancelled?: boolean }) => void) | undefined;
+    showMeshImport(fileName, resolve);
+  });
 
   deps.events.on('export-mesh', async (...args: unknown[]) => {
     const primitiveFileName = args[0] as string;
@@ -208,7 +245,10 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
             const materials = JSON.parse(matResult.content) as { name: string }[];
             const mat = materials.find(m => m.name === materialName) as Record<string, unknown> | undefined;
             if (mat) {
-              mtlContent = generateWebMtl(materialName!, mat);
+              mtlContent = generateMtlContent(
+                materialName!,
+                mat as { base_color?: string; glossy_color?: string; opacity?: number }
+              );
             }
           }
         }

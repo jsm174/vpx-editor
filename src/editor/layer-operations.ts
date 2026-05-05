@@ -338,7 +338,7 @@ export async function deleteGroupAndMoveItems(groupName: string, targetGroup: st
     }
   }
 
-  undoManager.markForDelete(groupName);
+  await undoManager.markForDelete(groupName);
   const fileName = group._fileName;
   if (fileName) {
     await window.vpxEditor.deleteFile(`${state.extractedDir}/${fileName}`);

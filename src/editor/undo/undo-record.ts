@@ -4,6 +4,11 @@ export interface ItemSnapshot {
   type: string;
   layer: number;
   data: Record<string, unknown>;
+  // Tristate: undefined = not tracked (don't touch the file on restore);
+  // null = no file existed at snapshot time (delete on restore);
+  // string = file existed with this content (write on restore).
+  meshContent?: string | null;
+  animationFrames?: string[] | null;
 }
 
 export interface SnapshotEntry {
