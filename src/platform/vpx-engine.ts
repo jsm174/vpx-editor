@@ -1,4 +1,4 @@
-import type { VpxEngine, VpxFiles, ProgressCallback } from './types.js';
+import type { VpxEngine, VpxFiles, ProgressCallback, PrimitiveMeshData } from './types.js';
 
 let vpinModule: typeof import('@francisdb/vpin-wasm') | null = null;
 
@@ -30,6 +30,54 @@ export class VpinWasmEngine implements VpxEngine {
       throw new Error('VpxEngine not initialized');
     }
     return vpinModule.assemble(files, onProgress);
+  }
+
+  objToMesh(data: Uint8Array, convertToLeftHanded: boolean = true): PrimitiveMeshData {
+    if (!this.initialized || !vpinModule) {
+      throw new Error('VpxEngine not initialized');
+    }
+    const mesh = vpinModule.obj_to_mesh(data, convertToLeftHanded);
+    const result: PrimitiveMeshData = {
+      name: mesh.name,
+      positions: mesh.positions,
+      texCoords: mesh.texCoords,
+      normals: mesh.normals,
+      indices: mesh.indices,
+      midpoint: mesh.midpoint,
+    };
+    mesh.free();
+    return result;
+  }
+
+  meshToObj(
+    name: string,
+    positions: Float32Array,
+    texCoords: Float32Array,
+    normals: Float32Array,
+    indices: Uint32Array,
+    convertToLeftHanded: boolean = true
+  ): Uint8Array {
+    if (!this.initialized || !vpinModule) {
+      throw new Error('VpxEngine not initialized');
+    }
+    return vpinModule.mesh_to_obj(name, positions, texCoords, normals, indices, convertToLeftHanded);
+  }
+
+  generateBuiltinPrimitive(sides: number, drawTexturesInside: boolean): PrimitiveMeshData {
+    if (!this.initialized || !vpinModule) {
+      throw new Error('VpxEngine not initialized');
+    }
+    const mesh = vpinModule.generate_builtin_primitive(sides, drawTexturesInside);
+    const result: PrimitiveMeshData = {
+      name: mesh.name,
+      positions: mesh.positions,
+      texCoords: mesh.texCoords,
+      normals: mesh.normals,
+      indices: mesh.indices,
+      midpoint: mesh.midpoint,
+    };
+    mesh.free();
+    return result;
   }
 }
 

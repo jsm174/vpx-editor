@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { state, elements, getItemByFileName } from '../state.js';
 import { toScreen, getStrokeStyle, getLineWidth, convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { createMaterial, applyDisableLighting } from '../../shared/3d-material-helpers.js';
@@ -9,7 +8,6 @@ import { PRIMITIVE_DEFAULTS } from '../../shared/object-defaults.js';
 import { getWireframeMode } from '../canvas-renderer-3d.js';
 import { registerCallback, invokeCallback } from '../../shared/callbacks.js';
 import { RENDER_COLOR_BLACK, BLUEPRINT_SOLID_COLOR } from '../../shared/constants.js';
-import { generateBuiltinMesh } from '../../shared/builtin-primitive-mesh.js';
 import { registerEditable, IEditable, Point } from './registry.js';
 
 interface PrimitiveItem {
@@ -60,10 +58,9 @@ interface PrimitiveItem {
 interface MeshCacheEntry {
   loading?: boolean;
   error?: boolean;
-  vertices?: number[];
-  normals?: number[];
-  indices?: number[];
-  normalIndices?: number[];
+  vertices?: ArrayLike<number>;
+  normals?: ArrayLike<number>;
+  indices?: ArrayLike<number>;
 }
 
 interface TransformedMesh {
@@ -76,13 +73,10 @@ interface MeshInfo {
   numPolygons: number;
 }
 
-const objLoader = new OBJLoader();
 const meshCache = new Map<string, MeshCacheEntry>();
 
 registerCallback('primitiveRenderCallback');
 registerCallback('primitiveStatusCallback');
-
-export { builtinMeshToOBJ } from '../../shared/builtin-primitive-mesh.js';
 
 export function getPrimitiveMeshInfo(item: PrimitiveItem): MeshInfo | null {
   if (!item || !item._fileName) return null;
@@ -98,6 +92,10 @@ export function getPrimitiveMeshInfo(item: PrimitiveItem): MeshInfo | null {
 
 export function clearPrimitiveMeshCache(): void {
   meshCache.clear();
+}
+
+export function invalidatePrimitiveMeshCache(fileName: string): void {
+  meshCache.delete(fileName);
 }
 
 export function createPrimitive3DMesh(item: PrimitiveItem): THREE.Group {
@@ -211,23 +209,21 @@ function replacePlaceholder(meshContainer: THREE.Group, placeholder: THREE.Mesh,
   meshContainer.add(newObj);
 }
 
-function applyBuiltinMesh3D(meshContainer: THREE.Group, placeholder: THREE.Mesh, item: PrimitiveItem): void {
+async function applyBuiltinMesh3D(
+  meshContainer: THREE.Group,
+  placeholder: THREE.Mesh,
+  item: PrimitiveItem
+): Promise<void> {
   const sides = item.sides ?? PRIMITIVE_DEFAULTS.sides;
-  const builtin = generateBuiltinMesh(sides, !!item.draw_textures_inside);
-  const verts = builtin.vertices;
-  const norms = builtin.normals;
-  const idxs = builtin.indices;
+  const result = await window.vpxEditor.generateBuiltinPrimitive(sides, !!item.draw_textures_inside);
+  if (!result.success || !result.mesh) return;
 
+  const { positions, texCoords, normals, indices } = result.mesh;
   const geometry = new THREE.BufferGeometry();
-  const positions = new Float32Array(verts.length);
-  const normalArr = new Float32Array(norms.length);
-  for (let i = 0; i < verts.length; i++) {
-    positions[i] = verts[i];
-    normalArr[i] = norms[i];
-  }
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geometry.setAttribute('normal', new THREE.BufferAttribute(normalArr, 3));
-  geometry.setIndex(idxs);
+  geometry.setAttribute('uv', new THREE.BufferAttribute(texCoords, 2));
+  geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+  geometry.setIndex(new THREE.BufferAttribute(indices, 1));
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
 
@@ -245,41 +241,27 @@ async function loadPrimitiveOBJOrBuiltin(
   item: PrimitiveItem
 ): Promise<void> {
   try {
-    const result = await window.vpxEditor.readFile(objPath);
-    if (!result.success) {
+    const result = await window.vpxEditor.objToMesh(objPath);
+    if (!result.success || !result.mesh) {
       if (!item.use_3d_mesh) {
         applyBuiltinMesh3D(meshContainer, placeholder, item);
       }
       return;
     }
 
-    const obj = objLoader.parse(result.content!);
+    const { positions, texCoords, normals, indices } = result.mesh;
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('uv', new THREE.BufferAttribute(texCoords, 2));
+    geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+
     const material = createPrimitiveMaterial(item);
-
-    obj.traverse((child: THREE.Object3D) => {
-      if ((child as THREE.Mesh).isMesh) {
-        const mesh = child as THREE.Mesh;
-        const positions = mesh.geometry.attributes.position as THREE.BufferAttribute;
-        if (positions) {
-          for (let i = 0; i < positions.count; i++) {
-            positions.setZ(i, -positions.getZ(i));
-          }
-          positions.needsUpdate = true;
-        }
-
-        const normals = mesh.geometry.attributes.normal as THREE.BufferAttribute;
-        if (normals) {
-          for (let i = 0; i < normals.count; i++) {
-            normals.setZ(i, -normals.getZ(i));
-          }
-          normals.needsUpdate = true;
-        }
-
-        mesh.material = material;
-        mesh.geometry.computeBoundingBox();
-        mesh.geometry.computeBoundingSphere();
-      }
-    });
+    const mesh = new THREE.Mesh(geometry, material);
+    const obj = new THREE.Group();
+    obj.add(mesh);
 
     replacePlaceholder(meshContainer, placeholder, obj);
   } catch (e: unknown) {
@@ -312,7 +294,6 @@ export function uiRenderPass2(item: PrimitiveItem, isSelected: boolean): void {
     drawWireframe(
       transformed.vertices2D,
       cached.indices,
-      cached.normalIndices || [],
       transformed.normalsZ,
       edgeFactor,
       numVertices,
@@ -519,8 +500,8 @@ export function render(item: PrimitiveItem, isSelected: boolean): void {
 }
 
 function transformMeshVertices(
-  vertices: number[],
-  normals: number[],
+  vertices: ArrayLike<number>,
+  normals: ArrayLike<number>,
   pos: { x: number; y: number; z: number },
   size: { x: number; y: number; z: number },
   rotAndTra: number[]
@@ -659,8 +640,8 @@ function transformMeshVertices(
 }
 
 function transformMeshVerticesForBlueprint(
-  vertices: number[],
-  normals: number[],
+  vertices: ArrayLike<number>,
+  normals: ArrayLike<number>,
   pos: { x: number; y: number; z: number },
   size: { x: number; y: number; z: number },
   rotAndTra: number[],
@@ -777,8 +758,7 @@ function transformMeshVerticesForBlueprint(
 
 function drawWireframe(
   vertices2D: number[],
-  indices: number[],
-  normalIndices: number[],
+  indices: ArrayLike<number>,
   normalsZ: number[],
   edgeFactor: number,
   numVertices: number,
@@ -798,7 +778,7 @@ function drawWireframe(
   ctx.lineCap = 'butt';
   ctx.beginPath();
 
-  const hasNormals = normalsZ && normalsZ.length > 0 && normalIndices && normalIndices.length > 0;
+  const hasNormals = normalsZ && normalsZ.length > 0;
   const useEdgeFiltering = hasNormals && numVertices > 100 && edgeFactor > 0 && edgeFactor < 1;
 
   for (let i = 0; i < indices.length; i += 3) {
@@ -814,12 +794,9 @@ function drawWireframe(
     const cy = vertices2D[i2 * 2 + 1];
 
     if (useEdgeFiltering) {
-      const n0 = normalIndices[i];
-      const n1 = normalIndices[i + 1];
-      const n2 = normalIndices[i + 2];
-      const nA = normalsZ[n0] || 0;
-      const nB = normalsZ[n1] || 0;
-      const nC = normalsZ[n2] || 0;
+      const nA = normalsZ[i0] || 0;
+      const nB = normalsZ[i1] || 0;
+      const nC = normalsZ[i2] || 0;
 
       if (Math.abs(nA + nB) < edgeFactor) {
         ctx.moveTo(ax, ay);
@@ -854,68 +831,42 @@ async function loadMeshForCache(item: PrimitiveItem): Promise<void> {
   const objPath = `${state.extractedDir}/${item._fileName!.replace('.json', '.obj')}`;
 
   try {
-    const result = await window.vpxEditor.readFile(objPath);
+    const result = await window.vpxEditor.objToMesh(objPath);
 
     // Re-fetch the current item: rapid undo/redo can replace state.items[primName]
-    // while this async readFile is in flight. Using the current item ensures we
+    // while this async load is in flight. Using the current item ensures we
     // cache a mesh that matches the state the user is now in, not a stale one.
     const current = (getItemByFileName(cacheKey) as PrimitiveItem | undefined) ?? item;
     const useM3D = current.use_3d_mesh;
 
-    if (!useM3D || !result.success) {
+    if (!useM3D || !result.success || !result.mesh) {
       const sides = current.sides ?? PRIMITIVE_DEFAULTS.sides;
-      const builtin = generateBuiltinMesh(sides, !!current.draw_textures_inside);
-      meshCache.set(cacheKey, { ...builtin, normalIndices: builtin.indices.slice() });
+      const builtinResult = await window.vpxEditor.generateBuiltinPrimitive(sides, !!current.draw_textures_inside);
+      if (builtinResult.success && builtinResult.mesh) {
+        meshCache.set(cacheKey, {
+          vertices: builtinResult.mesh.positions,
+          normals: builtinResult.mesh.normals,
+          indices: builtinResult.mesh.indices,
+        });
+      } else {
+        meshCache.set(cacheKey, { error: true });
+      }
       invokeCallback('primitiveRenderCallback');
       invokeCallback('primitiveStatusCallback', current);
       return;
     }
 
-    const parsed = parseOBJSimple(result.content!);
-    meshCache.set(cacheKey, parsed);
+    meshCache.set(cacheKey, {
+      vertices: result.mesh.positions,
+      normals: result.mesh.normals,
+      indices: result.mesh.indices,
+    });
 
     invokeCallback('primitiveRenderCallback');
     invokeCallback('primitiveStatusCallback', current);
   } catch {
     meshCache.set(cacheKey, { error: true });
   }
-}
-
-function parseOBJSimple(objText: string): MeshCacheEntry {
-  const vertices: number[] = [];
-  const normals: number[] = [];
-  const indices: number[] = [];
-  const normalIndices: number[] = [];
-  const lines = objText.split('\n');
-
-  for (const line of lines) {
-    const parts = line.trim().split(/\s+/);
-    if (parts[0] === 'v') {
-      vertices.push(parseFloat(parts[1]) || 0);
-      vertices.push(parseFloat(parts[2]) || 0);
-      vertices.push(-(parseFloat(parts[3]) || 0));
-    } else if (parts[0] === 'vn') {
-      normals.push(parseFloat(parts[1]) || 0);
-      normals.push(parseFloat(parts[2]) || 0);
-      normals.push(-(parseFloat(parts[3]) || 0));
-    } else if (parts[0] === 'f') {
-      const faceVerts: number[] = [];
-      const faceNorms: number[] = [];
-      for (let i = 1; i < parts.length; i++) {
-        const components = parts[i].split('/');
-        const vIdx = parseInt(components[0], 10) - 1;
-        const nIdx = components[2] ? parseInt(components[2], 10) - 1 : vIdx;
-        faceVerts.push(vIdx);
-        faceNorms.push(nIdx);
-      }
-      for (let i = 1; i < faceVerts.length - 1; i++) {
-        indices.push(faceVerts[0], faceVerts[i], faceVerts[i + 1]);
-        normalIndices.push(faceNorms[0], faceNorms[i], faceNorms[i + 1]);
-      }
-    }
-  }
-
-  return { vertices, normals, indices, normalIndices };
 }
 
 export function primitiveProperties(item: PrimitiveItem): string {

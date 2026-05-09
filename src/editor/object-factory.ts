@@ -1,5 +1,6 @@
 import { state, undoManager, getItem, setItem, deleteItem, hasItem } from './state.js';
 import { deleteMeshCompanions } from './mesh-files.js';
+import { invalidatePrimitiveMeshCache } from './parts/primitive.js';
 import { GameItem, GameItemEntry, Point, DragPoint } from './state.js';
 import { objectTypes, getObjectDefaults, hasObjectDragPoints } from './object-types.js';
 import { generateUniqueFileName } from '../shared/gameitem-utils.js';
@@ -181,6 +182,9 @@ async function deleteObjectInternal(name: string): Promise<boolean> {
 
   await vpxEditor.deleteFile(filePath);
   await deleteMeshCompanions(filePath.replace(/\.json$/, ''));
+  if (item._type === 'Primitive') {
+    invalidatePrimitiveMeshCache(item._fileName);
+  }
 
   const gameitemsResult = await vpxEditor.readFile(gameitemsPath);
 

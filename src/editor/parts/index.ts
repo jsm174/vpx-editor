@@ -143,6 +143,7 @@ export {
   renderBlueprint as primitiveRenderBlueprint,
   primitiveProperties,
   clearPrimitiveMeshCache,
+  invalidatePrimitiveMeshCache,
 } from './primitive.js';
 export {
   render as renderReel,

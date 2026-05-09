@@ -17,10 +17,29 @@ export type ProgressCallback = (message: string) => void;
 
 export type VpxFiles = Record<string, Uint8Array>;
 
+export interface PrimitiveMeshData {
+  name: string;
+  positions: Float32Array;
+  texCoords: Float32Array;
+  normals: Float32Array;
+  indices: Uint32Array;
+  midpoint: Float32Array;
+}
+
 export interface VpxEngine {
   init(): Promise<void>;
   extract(vpxData: Uint8Array, onProgress?: ProgressCallback): Promise<VpxFiles>;
   assemble(files: VpxFiles, onProgress?: ProgressCallback): Uint8Array;
+  objToMesh(data: Uint8Array, convertToLeftHanded?: boolean): PrimitiveMeshData;
+  meshToObj(
+    name: string,
+    positions: Float32Array,
+    texCoords: Float32Array,
+    normals: Float32Array,
+    indices: Uint32Array,
+    convertToLeftHanded?: boolean
+  ): Uint8Array;
+  generateBuiltinPrimitive(sides: number, drawTexturesInside: boolean): PrimitiveMeshData;
   isInitialized(): boolean;
 }
 

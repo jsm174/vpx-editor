@@ -87,6 +87,21 @@ export interface FileResult {
   error?: string;
 }
 
+export interface MeshData {
+  name: string;
+  positions: Float32Array;
+  texCoords: Float32Array;
+  normals: Float32Array;
+  indices: Uint32Array;
+  midpoint: Float32Array;
+}
+
+export interface MeshLoadResult {
+  success: boolean;
+  mesh?: MeshData;
+  error?: string;
+}
+
 export interface WriteResult {
   success: boolean;
   error?: string;
@@ -214,6 +229,8 @@ export interface VpxEditorAPI {
   readBinaryFile: (
     filePath: string
   ) => Promise<{ success: boolean; data?: Buffer | Uint8Array | number[]; error?: string }>;
+  objToMesh: (filePath: string, convertToLeftHanded?: boolean) => Promise<MeshLoadResult>;
+  generateBuiltinPrimitive: (sides: number, drawTexturesInside: boolean) => Promise<MeshLoadResult>;
   writeFile: (filePath: string, content: string) => Promise<WriteResult>;
   listDir: (dirPath: string) => Promise<string[]>;
   getImageInfo: (imagePath: string) => Promise<{ width: number; height: number }>;

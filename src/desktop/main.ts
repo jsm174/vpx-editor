@@ -41,8 +41,6 @@ import { updateElectronApp } from 'update-electron-app';
 import { createElectronMenu } from '../shared/menu-renderer-electron.js';
 import { setupCollectionHandlers } from '../features/collection-manager/desktop/ipc-handlers.js';
 import {
-  parseObjContent,
-  generateProcessedObj,
   generateMtlContent,
   parseMtlContent,
   type MeshImportOptions,
@@ -495,6 +493,51 @@ ipcMain.handle('read-binary-file', async (_event, filePath: string) => {
   try {
     const buffer = await fs.promises.readFile(filePath);
     return { success: true, data: buffer };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message };
+  }
+});
+
+ipcMain.handle('obj-to-mesh', async (_event, filePath: string, convertToLeftHanded?: boolean) => {
+  try {
+    const buffer = await fs.promises.readFile(filePath);
+    const vpin = await vpxOps.initVpinModule();
+    const mesh = vpin.obj_to_mesh(new Uint8Array(buffer), convertToLeftHanded ?? true);
+    const result = {
+      success: true,
+      mesh: {
+        name: mesh.name,
+        positions: mesh.positions,
+        texCoords: mesh.texCoords,
+        normals: mesh.normals,
+        indices: mesh.indices,
+        midpoint: mesh.midpoint,
+      },
+    };
+    mesh.free();
+    return result;
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message };
+  }
+});
+
+ipcMain.handle('generate-builtin-primitive', async (_event, sides: number, drawTexturesInside: boolean) => {
+  try {
+    const vpin = await vpxOps.initVpinModule();
+    const mesh = vpin.generate_builtin_primitive(sides, drawTexturesInside);
+    const result = {
+      success: true,
+      mesh: {
+        name: mesh.name,
+        positions: mesh.positions,
+        texCoords: mesh.texCoords,
+        normals: mesh.normals,
+        indices: mesh.indices,
+        midpoint: mesh.midpoint,
+      },
+    };
+    mesh.free();
+    return result;
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message };
   }
@@ -1810,14 +1853,26 @@ async function performMeshImport(ctx: WindowContext, args: { filePath: string; o
   const primitivePath = path.join(ctx.extractedDir, ctx.meshImportPrimitiveFileName);
 
   try {
-    const objContent = await fs.promises.readFile(filePath, 'utf-8');
-    const mesh = parseObjContent(objContent, options.convertCoords);
-    const processedObj = generateProcessedObj(mesh, {
-      centerMesh: options.centerMesh,
-      absolutePosition: options.absolutePosition,
-    });
+    const buffer = await fs.promises.readFile(filePath);
+    const vpin = await vpxOps.initVpinModule();
+    const mesh = vpin.obj_to_mesh(new Uint8Array(buffer), options.convertCoords);
+    const midpoint = mesh.midpoint;
 
-    await fs.promises.writeFile(destPath, processedObj);
+    let positions = mesh.positions;
+    if (options.centerMesh || options.absolutePosition) {
+      const shifted = new Float32Array(positions.length);
+      for (let i = 0; i < positions.length; i += 3) {
+        shifted[i] = positions[i] - midpoint[0];
+        shifted[i + 1] = positions[i + 1] - midpoint[1];
+        shifted[i + 2] = positions[i + 2] - midpoint[2];
+      }
+      positions = shifted;
+    }
+
+    const processedBytes = vpin.mesh_to_obj('mesh', positions, mesh.texCoords, mesh.normals, mesh.indices, true);
+    mesh.free();
+
+    await fs.promises.writeFile(destPath, Buffer.from(processedBytes));
 
     const primContent = await fs.promises.readFile(primitivePath, 'utf-8');
     const primData = JSON.parse(primContent);
@@ -1827,7 +1882,7 @@ async function performMeshImport(ctx: WindowContext, args: { filePath: string; o
     prim.use_3d_mesh = true;
 
     if (options.absolutePosition) {
-      prim.position = { x: mesh.midPoint.x, y: mesh.midPoint.y, z: mesh.midPoint.z };
+      prim.position = { x: midpoint[0], y: midpoint[1], z: midpoint[2] };
       prim.size = { x: 1, y: 1, z: 1 };
     }
 
@@ -1901,7 +1956,7 @@ async function findPrimitiveMaterial(
 
 ipcMain.handle('export-mesh', async (event, primitiveFileName: string, suggestedName?: string) => {
   const ctx = windowRegistry.getContextFromEvent(event);
-  if (!ctx?.extractedDir) return { success: false, error: 'No table open' };
+  if (!ctx?.extractedDir) return null;
 
   const srcFileName = primitiveFileName.replace('.json', '.obj');
   const srcPath = path.join(ctx.extractedDir, srcFileName);
@@ -1922,14 +1977,24 @@ ipcMain.handle('export-mesh', async (event, primitiveFileName: string, suggested
       const itemData = JSON.parse(jsonContent);
       const prim = itemData.Primitive;
       if (prim && !prim.use_3d_mesh) {
-        const { builtinMeshToOBJ } = await import('../shared/builtin-primitive-mesh.js');
-        generatedOBJ = builtinMeshToOBJ(prim.name || 'primitive', prim.sides ?? 4, !!prim.draw_textures_inside);
+        const vpin = await vpxOps.initVpinModule();
+        const mesh = vpin.generate_builtin_primitive(prim.sides ?? 4, !!prim.draw_textures_inside);
+        const objBytes = vpin.mesh_to_obj(
+          prim.name || 'primitive',
+          mesh.positions,
+          mesh.texCoords,
+          mesh.normals,
+          mesh.indices,
+          true
+        );
+        mesh.free();
+        generatedOBJ = Buffer.from(objBytes).toString('utf-8');
       }
     } catch {
       // fall through
     }
     if (!generatedOBJ) {
-      return { success: false, error: 'No mesh file found for this primitive' };
+      return null;
     }
   }
 
@@ -1943,7 +2008,7 @@ ipcMain.handle('export-mesh', async (event, primitiveFileName: string, suggested
     ],
   });
 
-  if (result.canceled || !result.filePath) return { success: false };
+  if (result.canceled || !result.filePath) return null;
 
   setLastFolder('Obj', path.dirname(result.filePath));
   try {
@@ -1975,9 +2040,10 @@ ipcMain.handle('export-mesh', async (event, primitiveFileName: string, suggested
       await fs.promises.writeFile(mtlFilePath, mtlContent, 'utf-8');
     }
 
-    return { success: true, path: objFilePath };
+    return objFilePath;
   } catch (err: unknown) {
-    return { success: false, error: (err as Error).message };
+    console.error('Mesh export failed:', (err as Error).message);
+    return null;
   }
 });
 

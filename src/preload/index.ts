@@ -261,6 +261,10 @@ const vpxEditorAPI: VpxEditorAPI = {
   savePanelSettings: (settings: PanelSettings): Promise<void> => ipcRenderer.invoke('save-panel-settings', settings),
   readFile: (filePath: string) => ipcRenderer.invoke('read-file', filePath),
   readBinaryFile: (filePath: string) => ipcRenderer.invoke('read-binary-file', filePath),
+  objToMesh: (filePath: string, convertToLeftHanded?: boolean) =>
+    ipcRenderer.invoke('obj-to-mesh', filePath, convertToLeftHanded),
+  generateBuiltinPrimitive: (sides: number, drawTexturesInside: boolean) =>
+    ipcRenderer.invoke('generate-builtin-primitive', sides, drawTexturesInside),
   writeFile: (filePath: string, content: string) => ipcRenderer.invoke('write-file', filePath, content),
   listDir: (dirPath: string): Promise<string[]> => ipcRenderer.invoke('list-dir', dirPath),
   getImageInfo: (imagePath: string) => ipcRenderer.invoke('get-image-info', imagePath),

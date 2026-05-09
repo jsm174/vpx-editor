@@ -94,6 +94,25 @@ function enhanceApi(): void {
     }
   };
 
+  api.objToMesh = async (path: string, convertToLeftHanded?: boolean) => {
+    try {
+      const data = await state.platform!.fileSystem.readBinaryFile(path);
+      const mesh = state.platform!.vpxEngine.objToMesh(data, convertToLeftHanded);
+      return { success: true, mesh };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  };
+
+  api.generateBuiltinPrimitive = async (sides: number, drawTexturesInside: boolean) => {
+    try {
+      const mesh = state.platform!.vpxEngine.generateBuiltinPrimitive(sides, drawTexturesInside);
+      return { success: true, mesh };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  };
+
   api.writeFile = async (path: string, content: string) => {
     try {
       await state.platform!.fileSystem.writeFile(path, content);
@@ -1011,7 +1030,9 @@ async function init(): Promise<void> {
     fileSystem: {
       readFile: window.vpxEditor.readFile,
       writeFile: window.vpxEditor.writeFile,
+      writeBinaryFile: window.vpxEditor.writeBinaryFile,
     },
+    vpxEngine: state.platform!.vpxEngine,
     events,
     getExtractedDir: () => (state.tableLoaded ? EXTRACTED_DIR : null),
   });
