@@ -11,7 +11,7 @@ const SOURCE_VPX_FILENAME = '.source.vpx';
 
 let vpinModule: typeof import('@francisdb/vpin-wasm') | null = null;
 
-async function initVpinModule(): Promise<typeof import('@francisdb/vpin-wasm')> {
+export async function initVpinModule(): Promise<typeof import('@francisdb/vpin-wasm')> {
   if (!vpinModule) {
     vpinModule = await import('@francisdb/vpin-wasm');
     await vpinModule.default();

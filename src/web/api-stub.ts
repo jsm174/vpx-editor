@@ -70,6 +70,11 @@ export const vpxEditorAPI = {
 
   readFile: async (_path: string) => ({ success: false, error: 'Not initialized' }),
   readBinaryFile: async (_path: string) => ({ success: false, error: 'Not initialized' }),
+  objToMesh: async (_path: string, _convertToLeftHanded?: boolean) => ({ success: false, error: 'Not initialized' }),
+  generateBuiltinPrimitive: async (_sides: number, _drawTexturesInside: boolean) => ({
+    success: false,
+    error: 'Not initialized',
+  }),
   writeFile: async (_path: string, _content: string) => ({ success: false, error: 'Not initialized' }),
   writeBinaryFile: async (_path: string, _content: Uint8Array) => ({ success: false, error: 'Not initialized' }),
   listDir: async (_path: string) => ({ success: false, error: 'Not initialized', files: [] }),

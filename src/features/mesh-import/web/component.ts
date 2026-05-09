@@ -1,13 +1,11 @@
 import {
   createMeshImportHTML,
   initMeshImportComponent,
-  parseObjContent,
-  generateProcessedObj,
   generateMtlContent,
   parseMtlContent,
   type MeshImportOptions,
 } from '../shared/component';
-import { builtinMeshToOBJ } from '../../../shared/builtin-primitive-mesh';
+import type { VpxEngine } from '../../../platform/types';
 import templateHtml from './template.html?raw';
 
 let templateInjected = false;
@@ -38,7 +36,9 @@ export interface WebMeshImportDeps {
   fileSystem: {
     readFile: (path: string) => Promise<{ success: boolean; content?: string }>;
     writeFile: (path: string, content: string) => Promise<unknown>;
+    writeBinaryFile: (path: string, content: Uint8Array) => Promise<unknown>;
   };
+  vpxEngine: VpxEngine;
   events: {
     on: (event: string, callback: (...args: unknown[]) => void) => void;
     emit: (event: string, ...args: unknown[]) => void;
@@ -119,13 +119,31 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
         try {
           const destFileName = currentPrimitiveFileName.replace('.json', '.obj');
 
-          const mesh = parseObjContent(content, options.convertCoords);
-          const processedObj = generateProcessedObj(mesh, {
-            centerMesh: options.centerMesh,
-            absolutePosition: options.absolutePosition,
-          });
+          const bytes = new TextEncoder().encode(content);
+          const mesh = deps.vpxEngine.objToMesh(bytes, options.convertCoords);
+          const midpoint = mesh.midpoint;
 
-          await deps.fileSystem.writeFile(`${extractedDir}/${destFileName}`, processedObj);
+          let positions = mesh.positions;
+          if (options.centerMesh || options.absolutePosition) {
+            const shifted = new Float32Array(positions.length);
+            for (let i = 0; i < positions.length; i += 3) {
+              shifted[i] = positions[i] - midpoint[0];
+              shifted[i + 1] = positions[i + 1] - midpoint[1];
+              shifted[i + 2] = positions[i + 2] - midpoint[2];
+            }
+            positions = shifted;
+          }
+
+          const processedBytes = deps.vpxEngine.meshToObj(
+            'mesh',
+            positions,
+            mesh.texCoords,
+            mesh.normals,
+            mesh.indices,
+            true
+          );
+
+          await deps.fileSystem.writeBinaryFile(`${extractedDir}/${destFileName}`, processedBytes);
 
           let importedMaterialName: string | null = null;
           if (options.importMaterial && extras) {
@@ -162,7 +180,7 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
             prim.use_3d_mesh = true;
 
             if (options.absolutePosition) {
-              prim.position = { x: mesh.midPoint.x, y: mesh.midPoint.y, z: mesh.midPoint.z };
+              prim.position = { x: midpoint[0], y: midpoint[1], z: midpoint[2] };
               prim.size = { x: 1, y: 1, z: 1 };
             }
 
@@ -217,7 +235,16 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
             const itemData = JSON.parse(jsonResult.content);
             const prim = itemData.Primitive;
             if (prim && !prim.use_3d_mesh) {
-              objContent = builtinMeshToOBJ(prim.name || 'primitive', prim.sides ?? 4, !!prim.draw_textures_inside);
+              const mesh = deps.vpxEngine.generateBuiltinPrimitive(prim.sides ?? 4, !!prim.draw_textures_inside);
+              const objBytes = deps.vpxEngine.meshToObj(
+                prim.name || 'primitive',
+                mesh.positions,
+                mesh.texCoords,
+                mesh.normals,
+                mesh.indices,
+                true
+              );
+              objContent = new TextDecoder().decode(objBytes);
             }
           } catch {
             // fall through
