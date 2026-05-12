@@ -370,13 +370,13 @@ export async function extractVPX(vpxPath: string, options: ExtractOptions = {}, 
     });
 
     sendConsoleOutput(localCtx, 'info', `Work folder: ${workDir}`);
+    await upgradePlayfieldMeshVisibility(localCtx.extractedDir!, (type, text) =>
+      sendConsoleOutput(localCtx, type, text)
+    );
     const upgraded = await upgradeOldMaterialsFormat(localCtx.extractedDir!);
     if (upgraded) {
       sendConsoleOutput(localCtx, 'info', 'Upgraded old materials format to new format');
     }
-    await upgradePlayfieldMeshVisibility(localCtx.extractedDir!, (type, text) =>
-      sendConsoleOutput(localCtx, type, text)
-    );
     await upgradeLayersToPartGroups(localCtx.extractedDir!, (type, text) => sendConsoleOutput(localCtx, type, text));
     await upgradePartGroupIsLocked(localCtx.extractedDir!, (type, text) => sendConsoleOutput(localCtx, type, text));
     await upgradePartGroupOrdering(localCtx.extractedDir!, (type, text) => sendConsoleOutput(localCtx, type, text));
@@ -493,8 +493,8 @@ export async function createNewTable(templateName: string, displayName: string, 
     });
 
     sendConsoleOutput(localCtx, 'info', `Created temp work folder: ${workDir}`);
-    await upgradeOldMaterialsFormat(localCtx.extractedDir!);
     await upgradePlayfieldMeshVisibility(localCtx.extractedDir!);
+    await upgradeOldMaterialsFormat(localCtx.extractedDir!);
     await upgradeLayersToPartGroups(localCtx.extractedDir!);
     await upgradePartGroupIsLocked(localCtx.extractedDir!);
     await upgradePartGroupOrdering(localCtx.extractedDir!);

@@ -103,11 +103,26 @@ function convertOldToNewMaterials(oldMaterials: OldMaterial[], oldPhysics: OldPh
   });
 }
 
+async function readFileVersion(fs: FileSystemAdapter, dir: string): Promise<number> {
+  const versionPath = joinPath(dir, 'version.txt');
+  if (!(await fs.exists(versionPath))) return 1080;
+  const raw = (await fs.readFile(versionPath)).trim();
+  const parsed = parseInt(raw, 10);
+  return Number.isFinite(parsed) ? parsed : 1080;
+}
+
+async function writeFileVersion(fs: FileSystemAdapter, dir: string, version: number): Promise<void> {
+  await fs.writeFile(joinPath(dir, 'version.txt'), String(version));
+}
+
 export async function upgradePlayfieldMeshVisibility(
   fs: FileSystemAdapter,
   dir: string,
   sendConsoleOutput?: ConsoleOutputCallback
 ): Promise<void> {
+  const fileVersion = await readFileVersion(fs, dir);
+  if (fileVersion >= 1080) return;
+
   const playfieldPath = joinPath(dir, 'gameitems', 'Primitive.playfield_mesh.json');
 
   if (await fs.exists(playfieldPath)) {
@@ -158,19 +173,61 @@ function sanitizeLayerName(name: string): string {
 }
 
 function getInitialPartGroupName(itemInfo: GameItemInfo): string {
-  const layerIndex = itemInfo.editor_layer ?? 0;
   const layerName = itemInfo.editor_layer_name;
-
-  if (!layerName) {
-    return layerIndex < 9 ? `Layer_0${layerIndex + 1}` : `Layer_${layerIndex + 1}`;
+  if (layerName && layerName.length > 0) {
+    return sanitizeLayerName(layerName);
   }
-
-  const sanitized = sanitizeLayerName(layerName);
-  return `Layer_${sanitized}`;
+  const layerIndex = itemInfo.editor_layer ?? 0;
+  return layerIndex < 9 ? `Layer_0${layerIndex + 1}` : `Layer_${layerIndex + 1}`;
 }
 
 function isPurelyNumeric(str: string): boolean {
   return /^[0-9]+$/.test(str);
+}
+
+function hasNameConflict(
+  candidate: string,
+  itemNames: Set<string>,
+  collectionNames: Set<string>,
+  takenGroupNames: Set<string>
+): boolean {
+  const lower = candidate.toLowerCase();
+  return itemNames.has(lower) || collectionNames.has(lower) || takenGroupNames.has(lower);
+}
+
+function canStripLayerPrefix(
+  shortName: string,
+  itemNames: Set<string>,
+  collectionNames: Set<string>,
+  takenGroupNames: Set<string>,
+  script: string
+): boolean {
+  if (hasNameConflict(shortName, itemNames, collectionNames, takenGroupNames)) return false;
+  const lower = shortName.toLowerCase();
+  if (!isPurelyNumeric(shortName) && script.length > 0 && script.includes(lower)) return false;
+  return true;
+}
+
+function resolveGroupNameConflict(
+  initialName: string,
+  itemNames: Set<string>,
+  collectionNames: Set<string>,
+  takenGroupNames: Set<string>
+): string {
+  let layerName = initialName;
+  while (hasNameConflict(layerName, itemNames, collectionNames, takenGroupNames)) {
+    if (!layerName.endsWith('_Layer')) {
+      layerName = `${layerName}_Layer`;
+      continue;
+    }
+    const match = layerName.match(/^(.*?)(\d+)$/);
+    if (match) {
+      layerName = `${match[1]}${parseInt(match[2], 10) + 1}`;
+    } else {
+      layerName = `${layerName}_001`;
+    }
+  }
+  return layerName;
 }
 
 export async function upgradeLayersToPartGroups(
@@ -189,7 +246,7 @@ export async function upgradeLayersToPartGroups(
   if (hasPartGroups) return false;
 
   const layers = new Map<string, { items: GameItemInfo[] }>();
-  const allItemNames = new Set<string>();
+  const itemNames = new Set<string>();
 
   for (const itemInfo of gameitems) {
     const initialGroupName = getInitialPartGroupName(itemInfo);
@@ -200,7 +257,7 @@ export async function upgradeLayersToPartGroups(
     layers.get(initialGroupName)!.items.push(itemInfo);
 
     const itemBaseName = extractEncodedNameFromFileName(itemInfo.file_name);
-    allItemNames.add(itemBaseName.toLowerCase());
+    itemNames.add(itemBaseName.toLowerCase());
   }
 
   let script = '';
@@ -209,29 +266,35 @@ export async function upgradeLayersToPartGroups(
     script = (await fs.readFile(scriptPath)).toLowerCase();
   }
 
+  const collectionNames = new Set<string>();
+  const collectionsPath = joinPath(dir, 'collections.json');
+  if (await fs.exists(collectionsPath)) {
+    try {
+      const collections: Collection[] = JSON.parse(await fs.readFile(collectionsPath));
+      for (const c of collections) {
+        if (c.name) collectionNames.add(c.name.toLowerCase());
+      }
+    } catch {
+      /* ignore malformed collections */
+    }
+  }
+
   const groupNameRemap = new Map<string, string>();
-  const finalGroupNames = new Set<string>();
+  const takenGroupNames = new Set<string>();
 
   for (const groupName of layers.keys()) {
-    if (groupName.startsWith('Layer_')) {
-      const shortName = groupName.substring(6);
-      const shortNameLower = shortName.toLowerCase();
+    let finalName = groupName;
 
-      const conflictsWithItem = allItemNames.has(shortNameLower);
-      const conflictsWithGroup = finalGroupNames.has(shortNameLower);
-      const usedInScript = !isPurelyNumeric(shortName) && script.includes(shortNameLower);
-
-      if (!conflictsWithItem && !conflictsWithGroup && !usedInScript) {
-        groupNameRemap.set(groupName, shortName);
-        finalGroupNames.add(shortNameLower);
-      } else {
-        groupNameRemap.set(groupName, groupName);
-        finalGroupNames.add(groupName.toLowerCase());
+    if (finalName.startsWith('Layer_')) {
+      const shortName = finalName.substring(6);
+      if (canStripLayerPrefix(shortName, itemNames, collectionNames, takenGroupNames, script)) {
+        finalName = shortName;
       }
-    } else {
-      groupNameRemap.set(groupName, groupName);
-      finalGroupNames.add(groupName.toLowerCase());
     }
+
+    finalName = resolveGroupNameConflict(finalName, itemNames, collectionNames, takenGroupNames);
+    groupNameRemap.set(groupName, finalName);
+    takenGroupNames.add(finalName.toLowerCase());
   }
 
   const partGroupEntries: GameItemInfo[] = [];
@@ -282,6 +345,11 @@ export async function upgradeLayersToPartGroups(
 
   const newGameitems = [...partGroupEntries, ...gameitems];
   await fs.writeFile(gameitemsPath, JSON.stringify(newGameitems, null, 2));
+
+  const currentVersion = await readFileVersion(fs, dir);
+  if (currentVersion < 1081) {
+    await writeFileVersion(fs, dir, 1081);
+  }
 
   const groupNames = [...groupNameRemap.values()].join(', ');
   if (sendConsoleOutput) {
@@ -464,9 +532,9 @@ export async function runAllUpgrades(
   dir: string,
   sendConsoleOutput?: ConsoleOutputCallback
 ): Promise<void> {
+  await upgradePlayfieldMeshVisibility(fs, dir, sendConsoleOutput);
   await upgradeOldMaterialsFormat(fs, dir);
   await upgradeTypeFieldRename(fs, dir, sendConsoleOutput);
-  await upgradePlayfieldMeshVisibility(fs, dir, sendConsoleOutput);
   await upgradeLayersToPartGroups(fs, dir, sendConsoleOutput);
   await upgradePartGroupIsLocked(fs, dir, sendConsoleOutput);
   await upgradePartGroupOrdering(fs, dir, sendConsoleOutput);
