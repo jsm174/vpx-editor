@@ -265,18 +265,18 @@ jobs:
           BASE_URL: /${{ github.event.repository.name }}/
 
       - name: Setup Pages
-        if: github.ref_name == 'master'
+        if: github.ref_name == 'master' && !github.event.repository.fork
         uses: actions/configure-pages@v6
 
       - name: Upload artifact
-        if: github.ref_name == 'master'
+        if: github.ref_name == 'master' && !github.event.repository.fork
         uses: actions/upload-pages-artifact@v5
         with:
           path: dist-web
 
   deploy-web:
     runs-on: ubuntu-latest
-    if: github.ref_name == 'master'
+    if: github.ref_name == 'master' && !github.event.repository.fork
     needs: [build-web]
     permissions:
       pages: write
