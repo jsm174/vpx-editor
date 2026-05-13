@@ -2370,8 +2370,6 @@ ipcMain.handle(
       textureQuality?: number;
       unitConversion?: string;
       vpinballPath?: string;
-      useEmbeddedVpxtool?: boolean;
-      vpxtoolPath?: string;
       alwaysDrawDragPoints?: boolean;
       drawLightCenters?: boolean;
       editorColors?: Record<string, string>;
