@@ -92,7 +92,18 @@ typings/
 out/
 
 # Downloaded vpxtool binary
-resources/vpxtool/
+# Third-party scripts/docs fetched by scripts/fetch-vendor.mjs (pinned in resources/vendor.json)
+resources/glf/vpx-glf.vbs
+resources/glf/docs/
+resources/vpinball-scripts/*.vbs
+public/templates/blankTable.vpx
+public/templates/exampleTable.vpx
+public/templates/lightSeqTable.vpx
+public/templates/strippedTable.vpx
+public/templates/glfTutorialPlunger.vpx
+public/templates/glfExampleTable.vpx
+public/templates/glfExampleTable.vpx.commit
 
 # Web build output
+dist/
 dist-web/

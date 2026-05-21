@@ -1,0 +1,15 @@
+VPX table templates (blankTable, exampleTable, lightSeqTable, strippedTable)
+Source: https://github.com/vpinball/vpinball/tree/master/src/assets
+Not kept in this repository: scripts/fetch-vendor.mjs downloads them at the commit pinned in
+resources/vendor.json (sha256 per file) on npm install. Unmodified copies.
+License: GPL (see the vpinball repository). Bundled with this GPL-3.0-or-later app.
+
+glfTutorialPlunger.vpx is fetched from the GLF repository - see glfTutorialPlunger.SOURCE.txt.
+vpwExampleTable.vpx has no canonical upstream download and remains committed here.
+
+glfExampleTable.vpx ("GLF Example Table" by apophis, flux; MIT) is not downloaded as a
+binary: it is ASSEMBLED at install time by scripts/fetch-vendor.mjs from the expanded
+table tree in https://github.com/mpcarr/vpx-example-glf (VPXExampleGLF/) at the commit
+pinned in resources/vendor.json, using @francisdb/vpin-wasm. The expanded
+table tree is assembled without legacy format migrations. A .commit stamp next to the file
+records the source commit; the table is rebuilt only when the pin changes.

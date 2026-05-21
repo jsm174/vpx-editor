@@ -25,7 +25,10 @@ export function createMenuActionHandler(context: MenuActionContext) {
           const templateMap: Record<string, string> = {
             'blankTable.vpx': 'new-table',
             'strippedTable.vpx': 'new-blank',
+            'glfTutorialPlunger.vpx': 'new-glf-starter',
             'exampleTable.vpx': 'new-example',
+            'glfExampleTable.vpx': 'new-glf-example',
+            'vpwExampleTable.vpx': 'new-vpw-example',
             'lightSeqTable.vpx': 'new-lightseq',
           };
           loadTemplate(templateMap[arg] || 'new-table');

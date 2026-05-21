@@ -138,6 +138,7 @@ interface WindowStates {
   collectionEditorWindow: BrowserWindow | null;
   collectionPromptWindow: BrowserWindow | null;
   renamePromptWindow: BrowserWindow | null;
+  mcpSettingsWindow: BrowserWindow | null;
 }
 
 export interface WindowFactory {
@@ -152,6 +153,7 @@ export interface WindowFactory {
   openRenderProbeManagerWindow(): void;
   openScriptEditorWindow(ctx?: WindowContext | null): void;
   openSettingsWindow(): void;
+  openMcpSettingsWindow(getMcpSettingsData: () => Promise<unknown>): void;
   openTransformWindow(type: string, data: TransformData, ctx: WindowContext): void;
   openMeshImportWindow(ctx: WindowContext, initial: ObjExchangeOptions): Promise<MeshImportResult | null>;
   openMeshExportWindow(ctx: WindowContext, initial: ObjExchangeOptions): Promise<ObjExchangeOptions | null>;
@@ -201,6 +203,7 @@ export interface WindowFactory {
 }
 
 let settingsWindow: BrowserWindow | null = null;
+let mcpSettingsWindow: BrowserWindow | null = null;
 let transformWindow: BrowserWindow | null = null;
 let transformWindowContext: WindowContext | null = null;
 let aboutWindow: BrowserWindow | null = null;
@@ -1206,6 +1209,59 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     });
   }
 
+  function openMcpSettingsWindow(getMcpSettingsData: () => Promise<unknown>): void {
+    if (mcpSettingsWindow) {
+      mcpSettingsWindow.focus();
+      return;
+    }
+    const preloadPath = app.isPackaged
+      ? path.join(__dirname, 'index.js')
+      : path.join(process.cwd(), '.vite/build/index.js');
+    mcpSettingsWindow = new BrowserWindow({
+      width: 580,
+      height: 660,
+      title: 'MCP Server Settings',
+      show: false,
+      resizable: false,
+      minimizable: false,
+      alwaysOnTop: true,
+      webPreferences: {
+        preload: preloadPath,
+        contextIsolation: true,
+        nodeIntegration: false,
+      },
+    });
+    windowRegistry.forEach(ctx => {
+      ctx.window.webContents.send('set-input-disabled', true);
+    });
+    createMenu();
+    setupDialogEditMenu(mcpSettingsWindow);
+    const themeQuery = { theme: getActualTheme(settings.theme) };
+    if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+      const u = new URL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+      u.pathname = '/src/features/mcp-settings/desktop/window.html';
+      u.searchParams.set('theme', themeQuery.theme);
+      mcpSettingsWindow.loadURL(u.toString());
+    } else {
+      mcpSettingsWindow.loadFile(
+        path.join(__dirname, '../renderer/main_window/src/features/mcp-settings/desktop/window.html'),
+        { query: themeQuery }
+      );
+    }
+    mcpSettingsWindow.on('closed', () => {
+      windowRegistry.forEach(ctx => {
+        ctx.window.webContents.send('set-input-disabled', false);
+      });
+      mcpSettingsWindow = null;
+      createMenu();
+    });
+    mcpSettingsWindow.webContents.on('did-finish-load', async () => {
+      const data = await getMcpSettingsData();
+      mcpSettingsWindow?.webContents.send('init-mcp-settings', data);
+      mcpSettingsWindow?.show();
+    });
+  }
+
   function openSettingsWindow(): void {
     if (settingsWindow) {
       settingsWindow.focus();
@@ -2043,6 +2099,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     openRenderProbeManagerWindow,
     openScriptEditorWindow,
     openSettingsWindow,
+    openMcpSettingsWindow,
     openTransformWindow,
     openMeshImportWindow,
     openMeshExportWindow,
@@ -2060,6 +2117,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
       collectionEditorWindow,
       collectionPromptWindow,
       renamePromptWindow,
+      mcpSettingsWindow,
     }),
     getTransformWindowContext: (): WindowContext | null => transformWindowContext,
     getTableInfoWindowContext: (): WindowContext | null => tableInfoWindowContext,

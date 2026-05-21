@@ -77,10 +77,28 @@ export const menuSchema: MenuItemSchema[] = [
             actionArg: 'strippedTable.vpx',
           },
           {
+            id: 'new-glf-starter',
+            label: 'GLF Tutorial Plunger (Homebrew)',
+            action: 'new-table',
+            actionArg: 'glfTutorialPlunger.vpx',
+          },
+          {
             id: 'new-example',
             label: 'Full Example Table',
             action: 'new-table',
             actionArg: 'exampleTable.vpx',
+          },
+          {
+            id: 'new-glf-example',
+            label: 'GLF Example Table',
+            action: 'new-table',
+            actionArg: 'glfExampleTable.vpx',
+          },
+          {
+            id: 'new-vpw-example',
+            label: 'VPW Basic Example Table',
+            action: 'new-table',
+            actionArg: 'vpwExampleTable.vpx',
           },
           {
             id: 'new-lightseq',
@@ -613,6 +631,20 @@ export const menuSchema: MenuItemSchema[] = [
         label: 'Editor / UI Options...',
         action: 'open-settings',
         disabledWhen: ['dialogOpen'],
+      },
+    ],
+  },
+  {
+    id: 'tools-menu',
+    label: 'Tools',
+    type: 'submenu',
+    electronOnly: true,
+    submenu: [
+      {
+        id: 'mcp-submenu',
+        label: 'MCP Server',
+        type: 'submenu',
+        submenu: [{ id: 'mcp-open-settings', label: 'Settings…', action: 'mcp-open-settings' }],
       },
     ],
   },

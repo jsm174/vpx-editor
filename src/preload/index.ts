@@ -74,6 +74,30 @@ const vpxEditorAPI: VpxEditorAPI = {
   onMaterialsChanged: (callback: () => void): void => {
     ipcRenderer.on('materials-changed', () => callback());
   },
+  onMcpReloadRequested: (callback: (data: { reason?: string; undo?: Record<string, unknown> }) => void): void => {
+    ipcRenderer.on('mcp-reload-requested', (_event: IpcRendererEvent, data: { reason?: string }) => callback(data));
+  },
+  onMcpRequest: (callback: (data: unknown) => void): void => {
+    ipcRenderer.on('mcp-request', (_event: IpcRendererEvent, data: unknown) => callback(data));
+  },
+  replyMcpRequest: (result: { requestId: string; [key: string]: unknown }): void => {
+    ipcRenderer.send('mcp-request-result', result);
+  },
+  onInitMcpSettings: (callback: (data: unknown) => void): void => {
+    ipcRenderer.on('init-mcp-settings', (_event: IpcRendererEvent, data: unknown) => callback(data));
+  },
+  saveMcpSettings: (data: { enabled: boolean; port: number }): Promise<unknown> => {
+    return ipcRenderer.invoke('mcp-save-settings', data);
+  },
+  regenerateMcpToken: (): Promise<unknown> => {
+    return ipcRenderer.invoke('mcp-regenerate-token');
+  },
+  notifyConsoleReady: (): void => {
+    ipcRenderer.send('renderer-console-ready');
+  },
+  notifyTableReady: (extractedDir: string): void => {
+    ipcRenderer.send('renderer-table-ready', extractedDir);
+  },
   refreshImageManager: (): void => {
     ipcRenderer.send('refresh-image-manager');
   },

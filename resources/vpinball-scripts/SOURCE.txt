@@ -1,0 +1,5 @@
+vpinball VBS scripts (core.vbs, controller.vbs, manufacturer controllers, …)
+Source: https://github.com/vpinball/vpinball/tree/master/scripts
+Not kept in this repository: scripts/fetch-vendor.mjs downloads them at the commit pinned in
+resources/vendor.json (sha256 per file) on npm install.
+License: GPL (see the vpinball repository). Bundled with this GPL-3.0-or-later app for offline reference.

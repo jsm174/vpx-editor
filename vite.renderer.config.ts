@@ -28,6 +28,7 @@ export default defineConfig({
         'mesh-export-window': resolve(__dirname, 'src/features/mesh-export/desktop/window.html'),
 
         'settings-window': resolve(__dirname, 'src/features/settings/desktop/window.html'),
+        'mcp-settings-window': resolve(__dirname, 'src/features/mcp-settings/desktop/window.html'),
         'transform-window': resolve(__dirname, 'src/features/transform/desktop/window.html'),
         'table-info-window': resolve(__dirname, 'src/features/table-info/desktop/window.html'),
         'drawing-order-window': resolve(__dirname, 'src/features/drawing-order/desktop/window.html'),

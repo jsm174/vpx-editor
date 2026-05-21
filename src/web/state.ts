@@ -42,7 +42,10 @@ export const EXTRACTED_DIR = '/vpx-work';
 export const TEMPLATES: Record<string, { file: string; name: string }> = {
   'new-table': { file: 'blankTable.vpx', name: 'New Table' },
   'new-blank': { file: 'strippedTable.vpx', name: 'Blank Table' },
+  'new-glf-starter': { file: 'glfTutorialPlunger.vpx', name: 'GLF Tutorial Plunger' },
   'new-example': { file: 'exampleTable.vpx', name: 'Example Table' },
+  'new-glf-example': { file: 'glfExampleTable.vpx', name: 'GLF Example Table' },
+  'new-vpw-example': { file: 'vpwExampleTable.vpx', name: 'VPW Basic Example Table' },
   'new-lightseq': { file: 'lightSeqTable.vpx', name: 'Light Sequence Demo' },
 };
 

@@ -1,0 +1,40 @@
+.mcp-info-row {
+  margin: 4px 0 8px 0;
+  padding-left: 4px;
+}
+
+.mcp-info-text {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.mcp-status-row {
+  margin-top: 4px;
+}
+
+.mcp-status-label {
+  font-weight: 500;
+  margin-right: 6px;
+}
+
+.mcp-status-text {
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.mcp-status-ok {
+  color: #2a9b3a;
+}
+
+.mcp-status-warn {
+  color: #b07a00;
+}
+
+.mcp-status-err {
+  color: #b32626;
+}
+
+#mcp-claude-cmd {
+  font-family: monospace;
+  font-size: 11px;
+}

@@ -1,6 +1,7 @@
 import { app, screen, BrowserWindow } from 'electron';
 import fs from 'fs-extra';
 import path from 'node:path';
+import { randomBytes } from 'node:crypto';
 import {
   DEFAULT_THEME,
   DEFAULT_GRID_SIZE,
@@ -39,6 +40,18 @@ export interface WindowBounds {
   height: number;
 }
 
+export interface McpSettings {
+  enabled: boolean;
+  port: number;
+  token: string;
+}
+
+export const DEFAULT_MCP_SETTINGS: Readonly<McpSettings> = {
+  enabled: true,
+  port: 51234,
+  token: '',
+} as const;
+
 export interface Settings {
   theme: string;
   recentFiles: string[];
@@ -63,6 +76,7 @@ export interface Settings {
   objExportOrientation?: string;
   objImportUnit?: string;
   objImportOrientation?: string;
+  mcp: McpSettings;
   [key: `last${string}Folder`]: string | null;
 }
 
@@ -103,6 +117,7 @@ let settings: Settings = {
   objExportOrientation: DEFAULT_OBJ_ORIENTATION,
   objImportUnit: DEFAULT_OBJ_UNIT,
   objImportOrientation: DEFAULT_OBJ_ORIENTATION,
+  mcp: { ...DEFAULT_MCP_SETTINGS },
 };
 
 function getSettingsPath(): string {
@@ -120,12 +135,21 @@ function loadSettings(): void {
     } else {
       settings.editorColors = { ...DEFAULT_EDITOR_COLORS, ...settings.editorColors };
     }
+    if (!settings.mcp) {
+      settings.mcp = { ...DEFAULT_MCP_SETTINGS };
+    } else {
+      settings.mcp = { ...DEFAULT_MCP_SETTINGS, ...settings.mcp };
+    }
   } catch {}
+  if (!settings.mcp.token) {
+    settings.mcp.token = randomBytes(24).toString('hex');
+    saveSettings();
+  }
 }
 
 function saveSettings(): void {
   try {
-    fs.writeFileSync(getSettingsPath(), JSON.stringify(settings, null, 2));
+    fs.writeFileSync(getSettingsPath(), JSON.stringify(settings, null, 2), { mode: 0o600 });
   } catch (e: unknown) {
     console.error('Failed to save settings:', e);
   }

@@ -167,6 +167,14 @@ export interface VpxEditorAPI {
   onCollectionCreateFromSelectionRequest: (callback: IpcCallback) => void;
   onImagesChanged: (callback: IpcCallback) => void;
   onMaterialsChanged: (callback: IpcCallback) => void;
+  onMcpReloadRequested: (callback: IpcCallback<{ reason?: string; undo?: Record<string, unknown> }>) => void;
+  onMcpRequest?: (callback: IpcCallback<unknown>) => void;
+  replyMcpRequest?: (result: { requestId: string; [key: string]: unknown }) => void;
+  onInitMcpSettings?: (callback: IpcCallback<unknown>) => void;
+  saveMcpSettings?: (data: { enabled: boolean; port: number }) => Promise<unknown>;
+  regenerateMcpToken?: () => Promise<unknown>;
+  notifyConsoleReady?: () => void;
+  notifyTableReady?: (extractedDir: string) => void;
   refreshImageManager: () => void;
   openImageManager: (imageName?: string) => void;
   refreshMaterialManager: () => void;
