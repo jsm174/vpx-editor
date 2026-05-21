@@ -154,6 +154,8 @@ window.vpxEditor.onConsoleOutput((data: ConsoleOutputData) => {
   appendConsoleLine(data.text, data.type as ConsoleLineType);
 });
 
+window.vpxEditor.notifyConsoleReady?.();
+
 window.vpxEditor.onToggleConsole(() => {
   if (consolePanel?.classList.contains('hidden')) {
     showConsole();

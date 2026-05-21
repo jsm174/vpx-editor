@@ -1073,6 +1073,15 @@ export function getPreviewMode(): PreviewMode {
   return previewMode;
 }
 
+export function render3DFrameNow(): void {
+  if (!isInitialized) return;
+  composer.render();
+}
+
+export function get3DCanvas(): HTMLCanvasElement | null {
+  return isInitialized ? renderer.domElement : null;
+}
+
 export function getWireframeMode(): boolean {
   return wireframeMode;
 }

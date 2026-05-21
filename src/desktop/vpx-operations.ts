@@ -6,6 +6,8 @@ import os from 'node:os';
 import { getLastFolder, setLastFolder, Settings } from './settings-manager.js';
 import type { ObjExportOptions } from '@francisdb/vpin-wasm';
 import type { WindowContext, WindowRegistry } from './window-context.js';
+import { bundledGlfDir } from './bundled-resources.js';
+import { prepareGlfStarterWorkDir } from './mcp/library/glf/starter.js';
 
 const MAX_RECENT_FILES = 10;
 const SOURCE_VPX_FILENAME = '.source.vpx';
@@ -61,7 +63,7 @@ interface PlayDeps {
   settings: Settings;
 }
 
-function isRunningInFlatpak(): boolean {
+export function isRunningInFlatpak(): boolean {
   return !!process.env.FLATPAK_ID;
 }
 
@@ -221,11 +223,17 @@ async function runVpinAssemble(
   await fs.promises.writeFile(sourceVpxPath, outputData);
 }
 
-function getTemplatePath(templateName: string): string {
+const GLF_STARTER_TEMPLATE = 'glfTutorialPlunger.vpx';
+
+export function getTemplatesDir(): string {
   if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'templates', templateName);
+    return path.join(process.resourcesPath, 'templates');
   }
-  return path.join(process.cwd(), 'public', 'templates', templateName);
+  return path.join(process.cwd(), 'public', 'templates');
+}
+
+function getTemplatePath(templateName: string): string {
+  return path.join(getTemplatesDir(), templateName);
 }
 
 async function fileExists(filePath: string): Promise<boolean> {
@@ -349,6 +357,7 @@ export async function extractVPX(vpxPath: string, options: ExtractOptions = {}, 
       }
 
       if (response === 'resume') {
+        ctx!.tableGeneration++;
         ctx!.extractedDir = workDir;
         ctx!.backglassViewEnabled = false;
         ctx!.is3DMode = false;
@@ -381,6 +390,7 @@ export async function extractVPX(vpxPath: string, options: ExtractOptions = {}, 
       }
 
       if (response === 'resume') {
+        ctx!.tableGeneration++;
         ctx!.extractedDir = workDir;
         ctx!.backglassViewEnabled = false;
         ctx!.is3DMode = false;
@@ -406,6 +416,8 @@ export async function extractVPX(vpxPath: string, options: ExtractOptions = {}, 
   }
 
   ctx!.window.webContents.send('loading', { show: true });
+
+  ctx!.tableGeneration++;
 
   ctx!.extractedDir = workDir;
   ctx!.backglassViewEnabled = false;
@@ -495,7 +507,12 @@ export async function openVPX(deps: OpenDeps & ExtractDeps): Promise<void> {
   await extractVPX(vpxPath, {}, deps);
 }
 
-export async function createNewTable(templateName: string, displayName: string, deps: ExtractDeps): Promise<void> {
+export async function createNewTable(
+  templateName: string,
+  displayName: string,
+  deps: ExtractDeps,
+  silent = false
+): Promise<WindowContext | null> {
   const {
     windowRegistry,
     createEditorWindow,
@@ -517,8 +534,9 @@ export async function createNewTable(templateName: string, displayName: string, 
   const templatePath = getTemplatePath(templateName);
 
   if (!fs.existsSync(templatePath)) {
+    if (silent) throw new Error(`Could not find template: ${templateName}`);
     dialog.showErrorBox('Template Not Found', `Could not find template: ${templateName}`);
-    return;
+    return null;
   }
 
   const tableName = displayName.replace(/\s+/g, '');
@@ -535,6 +553,7 @@ export async function createNewTable(templateName: string, displayName: string, 
 
   const tempDir = path.join(os.tmpdir(), `vpx-editor-${Date.now()}`);
   const workDir = path.join(tempDir, tableName);
+  ctx!.tableGeneration++;
   ctx!.extractedDir = workDir;
 
   const localCtx = ctx!;
@@ -550,6 +569,13 @@ export async function createNewTable(templateName: string, displayName: string, 
     await upgradePartGroupIsLocked(localCtx.extractedDir!);
     await upgradePartGroupOrdering(localCtx.extractedDir!);
     await cleanupCollectionItems(localCtx.extractedDir!);
+    if (templateName === GLF_STARTER_TEMPLATE) {
+      await prepareGlfStarterWorkDir(workDir, {
+        frameworkFile: path.join(bundledGlfDir(), 'vpx-glf.vbs'),
+        gameName: displayName,
+      });
+      sendConsoleOutput(localCtx, 'info', 'Generated GLF starter script and collections');
+    }
     localCtx.isTableLocked = false;
     localCtx.updateWindowTitle();
     localCtx.window.webContents.send('table-loaded', {
@@ -561,34 +587,39 @@ export async function createNewTable(templateName: string, displayName: string, 
     localCtx.window.webContents.send('status', 'Ready');
     localCtx.window.webContents.send('loading', { show: false });
     createMenu();
+    return localCtx;
   } catch (err) {
     localCtx.window.webContents.send('loading', { show: false });
     localCtx.window.webContents.send('status', 'Extraction failed');
     sendConsoleOutput(localCtx, 'error', `Extraction failed: ${(err as Error).message}`);
+    if (silent) throw err;
     dialog.showErrorBox('Extraction Failed', (err as Error).message);
+    return null;
   }
 }
 
-export async function saveVPX(deps: SaveDeps & AssembleDeps): Promise<boolean> {
+export async function saveVPX(deps: SaveDeps & AssembleDeps, targetCtx?: WindowContext): Promise<boolean> {
   const { windowRegistry } = deps;
-  const ctx = windowRegistry.getFocused();
+  const ctx = targetCtx ?? windowRegistry.getFocused();
+  if (ctx?.mcpEditBusy) return false;
   if (!ctx || !ctx.extractedDir) {
-    dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
+    if (!targetCtx) dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
     return false;
   }
 
   if (!ctx.currentTablePath) {
-    return saveVPXAs(deps);
+    return saveVPXAs(deps, ctx);
   }
 
-  return assembleVPX(ctx.currentTablePath, deps);
+  return assembleVPX(ctx.currentTablePath, deps, ctx);
 }
 
-export async function saveVPXAs(deps: SaveDeps & AssembleDeps): Promise<boolean> {
-  const { windowRegistry, createMenu, settings, saveSettings } = deps;
-  const ctx = windowRegistry.getFocused();
+export async function saveVPXAs(deps: SaveDeps & AssembleDeps, targetCtx?: WindowContext): Promise<boolean> {
+  const { windowRegistry, createMenu } = deps;
+  const ctx = targetCtx ?? windowRegistry.getFocused();
+  if (ctx?.mcpEditBusy) return false;
   if (!ctx || !ctx.extractedDir) {
-    dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
+    if (!targetCtx) dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
     return false;
   }
 
@@ -612,7 +643,28 @@ export async function saveVPXAs(deps: SaveDeps & AssembleDeps): Promise<boolean>
 
   if (result.canceled) return false;
 
-  const newVpxPath = result.filePath!;
+  return saveVPXToPath(result.filePath!, deps, ctx, async workDir => {
+    const overwriteResult = await dialog.showMessageBox(ctx.window, {
+      type: 'warning',
+      buttons: ['Replace', 'Cancel'],
+      defaultId: 1,
+      title: 'Work Folder Exists',
+      message: `A work folder "${path.basename(workDir)}" already exists.`,
+      detail: 'Replacing it will delete any unsaved changes in that folder. Continue?',
+    });
+    return overwriteResult.response === 0;
+  });
+}
+
+export async function saveVPXToPath(
+  newVpxPath: string,
+  deps: SaveDeps & AssembleDeps,
+  ctx: WindowContext,
+  confirmReplaceWorkDir: (workDir: string) => Promise<boolean>
+): Promise<boolean> {
+  const { createMenu, settings, saveSettings } = deps;
+  if (!ctx.extractedDir) return false;
+
   setLastFolder('Table', path.dirname(newVpxPath));
   const newTableName = path.basename(newVpxPath, '.vpx');
   const newVpxDir = path.dirname(newVpxPath);
@@ -623,19 +675,7 @@ export async function saveVPXAs(deps: SaveDeps & AssembleDeps): Promise<boolean>
 
   if (needsMove) {
     if (await fileExists(newWorkDir)) {
-      const overwriteResult = await dialog.showMessageBox(ctx.window, {
-        type: 'warning',
-        buttons: ['Replace', 'Cancel'],
-        defaultId: 1,
-        title: 'Work Folder Exists',
-        message: `A work folder "${newTableName}_work" already exists.`,
-        detail: 'Replacing it will delete any unsaved changes in that folder. Continue?',
-      });
-
-      if (overwriteResult.response !== 0) {
-        return false;
-      }
-
+      if (!(await confirmReplaceWorkDir(newWorkDir))) return false;
       await fs.promises.rm(newWorkDir, { recursive: true, force: true });
     }
 
@@ -643,6 +683,7 @@ export async function saveVPXAs(deps: SaveDeps & AssembleDeps): Promise<boolean>
     ctx.window.webContents.send('status', 'Copying work folder...');
 
     try {
+      await fs.promises.mkdir(newVpxDir, { recursive: true });
       await fs.promises.cp(ctx.extractedDir, newWorkDir, { recursive: true });
       const oldExtractedDir = ctx.extractedDir;
       ctx.extractedDir = newWorkDir;
@@ -664,16 +705,16 @@ export async function saveVPXAs(deps: SaveDeps & AssembleDeps): Promise<boolean>
   ctx.tableName = newTableName;
   ctx.updateWindowTitle();
 
-  const saved = await assembleVPX(newVpxPath, deps);
+  const saved = await assembleVPX(newVpxPath, deps, ctx);
   if (saved) {
     addToRecentFiles(newVpxPath, { settings, saveSettings, createMenu });
   }
   return saved;
 }
 
-export async function assembleVPX(outputPath: string, deps: AssembleDeps): Promise<boolean> {
+export async function assembleVPX(outputPath: string, deps: AssembleDeps, targetCtx?: WindowContext): Promise<boolean> {
   const { windowRegistry } = deps;
-  const ctx = windowRegistry.getFocused();
+  const ctx = targetCtx ?? windowRegistry.getFocused();
   if (!ctx) return false;
 
   ctx.window.webContents.send('loading', { show: true });
@@ -702,10 +743,14 @@ export async function assembleVPX(outputPath: string, deps: AssembleDeps): Promi
     ctx.window.webContents.send('status', `Saved to ${path.basename(outputPath)}`);
     return true;
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[save] Assembly failed:', err);
     ctx.window.webContents.send('loading', { show: false });
-    ctx.window.webContents.send('status', 'Save failed');
-    sendConsoleOutput(ctx, 'error', `Save failed: ${(err as Error).message}`);
-    dialog.showErrorBox('Save Failed', (err as Error).message);
+    ctx.window.webContents.send('console-open');
+    sendConsoleOutput(ctx, 'error', `Save failed: ${message}`);
+    ctx.window.webContents.send('status', `Save failed: ${message}`);
+    if (targetCtx) throw err;
+    dialog.showErrorBox('Save Failed', message);
     return false;
   }
 }
@@ -788,9 +833,12 @@ async function runAssembleThenPlay(ctx: WindowContext, vpxPath: string, settings
     sendConsoleOutput(ctx, 'success', 'Assembly complete.');
     launchVPinball(ctx, vpxPath, settings);
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[play] Assembly failed:', err);
+    ctx.window.webContents.send('console-open');
+    sendConsoleOutput(ctx, 'error', `Assembly failed: ${message}`);
     ctx.window.webContents.send('play-stopped');
-    ctx.window.webContents.send('status', 'Play failed');
-    sendConsoleOutput(ctx, 'error', `Assembly failed: ${(err as Error).message}`);
+    ctx.window.webContents.send('status', `Play failed: ${message}`);
     playingContext = null;
   }
 }
