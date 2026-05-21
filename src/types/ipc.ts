@@ -1,3 +1,4 @@
+import type { FileChange } from '../shared/file-changes.js';
 import type { ObjExchangeOptions } from '../shared/obj-transform.js';
 import type { GameData, TableInfo, TableLoadedData, Collection, ClipboardData } from './data.js';
 import type { GameItemMeta } from './state.js';
@@ -167,6 +168,14 @@ export interface VpxEditorAPI {
   onCollectionCreateFromSelectionRequest: (callback: IpcCallback) => void;
   onImagesChanged: (callback: IpcCallback) => void;
   onMaterialsChanged: (callback: IpcCallback) => void;
+  onMcpReloadRequested: (callback: IpcCallback<{ reason?: string; undo?: Record<string, unknown> }>) => void;
+  onMcpRequest?: (callback: IpcCallback<unknown>) => void;
+  replyMcpRequest?: (result: { requestId: string; [key: string]: unknown }) => void;
+  onInitMcpSettings?: (callback: IpcCallback<unknown>) => void;
+  saveMcpSettings?: (data: { enabled: boolean; port: number }) => Promise<unknown>;
+  regenerateMcpToken?: () => Promise<unknown>;
+  notifyConsoleReady?: () => void;
+  notifyTableReady?: (extractedDir: string) => void;
   refreshImageManager: () => void;
   openImageManager: (imageName?: string) => void;
   refreshMaterialManager: () => void;
@@ -226,6 +235,7 @@ export interface VpxEditorAPI {
   saveViewSettings: (settings: Partial<ViewSettings>) => Promise<void>;
   getPanelSettings: () => Promise<PanelSettings>;
   savePanelSettings: (settings: PanelSettings) => Promise<void>;
+  restoreMcpFiles: (workDir: string, changes: FileChange[], direction: 'before' | 'after') => Promise<WriteResult>;
   readFile: (filePath: string) => Promise<FileResult>;
   readBinaryFile: (
     filePath: string

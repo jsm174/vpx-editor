@@ -44,6 +44,11 @@ export const TEMPLATES: Record<string, { file: string; name: string }> = {
   'new-blank': { file: 'strippedTable.vpx', name: 'Blank Table' },
   'new-example': { file: 'exampleTable.vpx', name: 'Example Table' },
   'new-lightseq': { file: 'lightSeqTable.vpx', name: 'Light Sequence Demo' },
+  'new-vpw-basic-example': { file: 'vpwBasicExampleTable.vpx', name: 'VPW Basic Example Table' },
+  'new-vpw-example': { file: 'vpwExampleTable.vpx', name: 'VPW Example Table' },
+  'new-vpw-rom-example': { file: 'vpwRomExampleTable.vpx', name: 'VPW ROM Example Table' },
+  'new-glf-starter': { file: 'glfTutorialPlunger.vpx', name: 'GLF Tutorial Plunger' },
+  'new-glf-example': { file: 'glfExampleTable.vpx', name: 'GLF Example Table' },
 };
 
 export function getEvents() {

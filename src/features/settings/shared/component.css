@@ -140,6 +140,13 @@
   min-height: 36px;
 }
 
+.settings-container .win-select {
+  background-image: var(--select-arrow);
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
 .settings-container .win-input:focus,
 .settings-container .win-select:focus {
   outline: none;

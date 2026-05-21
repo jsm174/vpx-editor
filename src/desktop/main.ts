@@ -1,3 +1,5 @@
+import { restoreFileChanges } from './mcp/file-transaction.js';
+import type { FileChange } from '../shared/file-changes.js';
 import { app, BrowserWindow, Menu, dialog, ipcMain, shell, nativeTheme } from 'electron';
 import path from 'node:path';
 import fs from 'fs-extra';
@@ -24,16 +26,8 @@ import {
   DEFAULT_UNIT_CONVERSION,
   DEFAULT_OBJ_UNIT,
   DEFAULT_OBJ_ORIENTATION,
-  UNIT_CONVERSION_VPU,
 } from '../shared/constants.js';
-import {
-  defaultExchange,
-  exportMeshIoOptions,
-  importMeshIoOptions,
-  insertObjHeaderComment,
-  isIdentityExchange,
-  type ObjExchangeOptions,
-} from '../shared/obj-transform.js';
+import { defaultExchange, type ObjExchangeOptions } from '../shared/obj-transform.js';
 import { reorderGameitems } from '../features/drawing-order/shared/component.js';
 import {
   settings,
@@ -46,17 +40,18 @@ import {
   trackWindowBounds,
   resetWindowBounds,
 } from './settings-manager.js';
+import { bundledVpinballScriptsDir, bundledGlfDir } from './bundled-resources.js';
 import { createWindowFactory } from './window-factory.js';
 import * as vpxOps from './vpx-operations.js';
 import { updateElectronApp } from 'update-electron-app';
 import { createElectronMenu } from '../shared/menu-renderer-electron.js';
+import { startMcpServer, type McpServerHandle } from './mcp/server.js';
+import { createToolContext } from './mcp/context.js';
+import { createRendererBridge } from './mcp/renderer-bridge.js';
+import { randomBytes } from 'node:crypto';
 import { setupCollectionHandlers } from '../features/collection-manager/desktop/ipc-handlers.js';
-import {
-  generateMtlContent,
-  parseMtlContent,
-  type MeshImportOptions,
-  type ParsedMaterial,
-} from '../features/mesh-import/shared/component.js';
+import type { MeshImportOptions } from '../features/mesh-import/shared/component.js';
+import { buildPrimitiveObjExport, importPrimitiveMesh } from './mesh-exchange.js';
 
 updateElectronApp();
 
@@ -269,6 +264,7 @@ ipcMain.on('preview-theme', (_event, themeSetting) => {
     if (winCtx.dimensionsManagerWindow) winCtx.dimensionsManagerWindow.webContents.send('theme-changed', actualTheme);
   });
   windowFactory?.getWindowStates().settingsWindow?.webContents.send('theme-changed', actualTheme);
+  windowFactory?.getWindowStates().mcpSettingsWindow?.webContents.send('theme-changed', actualTheme);
   windowFactory?.getWindowStates().transformWindow?.webContents.send('theme-changed', actualTheme);
   windowFactory?.getWindowStates().aboutWindow?.webContents.send('theme-changed', actualTheme);
   windowFactory?.getWindowStates().tableInfoWindow?.webContents.send('theme-changed', actualTheme);
@@ -347,6 +343,7 @@ function createMenu() {
       toggleTableLock,
       openSettingsWindow: () => windowFactory.openSettingsWindow(),
       showAboutDialog: () => windowFactory.showAboutDialog(),
+      mcpOpenSettings: () => openMcpSettings(),
     },
   });
 }
@@ -436,6 +433,7 @@ async function toggleTableLock(passedCtx?: WindowContext) {
   const ctx = passedCtx || windowRegistry.getFocused();
   if (!ctx || !ctx.extractedDir) return;
 
+  if (ctx.mcpEditBusy) return;
   const action = ctx.isTableLocked ? 'Unlock' : 'Lock';
   const message = ctx.isTableLocked ? 'This table is locked to avoid modification.' : 'Lock this table?';
   const detail = ctx.isTableLocked
@@ -500,6 +498,30 @@ ipcMain.handle('read-file', async (_event, filePath: string) => {
   }
 });
 
+ipcMain.handle(
+  'mcp-restore-files',
+  async (event, workDir: string, changes: FileChange[], direction: 'before' | 'after') => {
+    const ctx = windowRegistry.getContextFromEvent(event);
+    if (
+      !ctx ||
+      ctx.extractedDir !== workDir ||
+      ctx.mcpEditBusy ||
+      ctx.isTableLocked ||
+      (direction !== 'before' && direction !== 'after')
+    )
+      return { success: false, error: 'Table changed, busy, or locked' };
+    ctx.mcpEditBusy = true;
+    try {
+      await restoreFileChanges(workDir, changes, direction);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: String(err) };
+    } finally {
+      ctx.mcpEditBusy = false;
+    }
+  }
+);
+
 ipcMain.handle('read-binary-file', async (_event, filePath: string) => {
   try {
     const buffer = await fs.promises.readFile(filePath);
@@ -555,6 +577,7 @@ ipcMain.handle('generate-builtin-primitive', async (_event, sides: number, drawT
 });
 
 ipcMain.handle('write-file', async (event, filePath: string, content: string) => {
+  if (windowRegistry.getContextFromEvent(event)?.mcpEditBusy) return { success: false, error: 'MCP edit in progress' };
   try {
     await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
     await fs.promises.writeFile(filePath, content, 'utf-8');
@@ -820,6 +843,7 @@ ipcMain.handle('save-blueprint-direct', async (_event, data: ArrayBuffer, filePa
 });
 
 ipcMain.handle('delete-file', async (event, filePath: string) => {
+  if (windowRegistry.getContextFromEvent(event)?.mcpEditBusy) return { success: false, error: 'MCP edit in progress' };
   try {
     await fs.promises.unlink(filePath);
     const ctx = getContextForManagerEvent(event);
@@ -1930,113 +1954,22 @@ async function performMeshImport(ctx: WindowContext, args: { filePath: string; o
   if (!ctx?.extractedDir || !ctx?.meshImportPrimitiveFileName) {
     return { success: false, error: 'No table or primitive selected' };
   }
-
-  const { filePath, options } = args;
-  const destFileName = ctx.meshImportPrimitiveFileName.replace('.json', '.obj');
-  const destPath = path.join(ctx.extractedDir, destFileName);
-  const primitivePath = path.join(ctx.extractedDir, ctx.meshImportPrimitiveFileName);
-
-  try {
-    const buffer = await fs.promises.readFile(filePath);
-    const vpin = await vpxOps.initVpinModule();
-    const exchange = defaultExchange(options.unit ?? UNIT_CONVERSION_VPU, options.orientation);
-    const mesh = vpin.obj_to_mesh(new Uint8Array(buffer), importMeshIoOptions(exchange));
-    const midpoint = mesh.midpoint;
-
-    let positions = mesh.positions;
-    if (options.centerMesh || options.absolutePosition) {
-      const shifted = new Float32Array(positions.length);
-      for (let i = 0; i < positions.length; i += 3) {
-        shifted[i] = positions[i] - midpoint[0];
-        shifted[i + 1] = positions[i + 1] - midpoint[1];
-        shifted[i + 2] = positions[i + 2] - midpoint[2];
-      }
-      positions = shifted;
-    }
-
-    const processedBytes = vpin.mesh_to_obj('mesh', positions, mesh.texCoords, mesh.normals, mesh.indices, null);
-    mesh.free();
-
-    await fs.promises.writeFile(destPath, Buffer.from(processedBytes));
-
-    const primContent = await fs.promises.readFile(primitivePath, 'utf-8');
-    const primData = JSON.parse(primContent);
-    const primType = Object.keys(primData)[0];
-    const prim = primData[primType];
-
-    prim.use_3d_mesh = true;
-
-    if (options.absolutePosition) {
-      prim.position = { x: midpoint[0], y: midpoint[1], z: midpoint[2] };
-      prim.size = { x: 1, y: 1, z: 1 };
-    }
-
-    if (options.importMaterial) {
-      const mtlPath = filePath.replace(/\.obj$/i, '.mtl');
-      try {
-        const mtlContent = await fs.promises.readFile(mtlPath, 'utf-8');
-        const material = parseMtlContent(mtlContent);
-        if (material) {
-          await addMaterialToTable(ctx.extractedDir, material);
-          prim.material = material.name;
-        }
-      } catch (mtlErr: unknown) {
-        console.warn('Could not load material file:', (mtlErr as Error).message);
-      }
-    }
-
-    await fs.promises.writeFile(primitivePath, JSON.stringify(primData, null, 2));
-
+  const vpin = await vpxOps.initVpinModule();
+  const result = await importPrimitiveMesh(
+    vpin,
+    ctx.extractedDir,
+    ctx.meshImportPrimitiveFileName,
+    args.filePath,
+    args.options
+  );
+  if (result.success) {
     ctx.window.webContents.send('mesh-imported', {
       primitiveFileName: ctx.meshImportPrimitiveFileName,
-      options,
+      options: args.options,
     });
-
-    return { success: true, path: destPath };
-  } catch (err: unknown) {
-    return { success: false, error: (err as Error).message };
+    return { success: true, path: result.path };
   }
-}
-
-async function addMaterialToTable(extractedDir: string, material: { name: string }) {
-  const materialsPath = path.join(extractedDir, 'materials.json');
-  try {
-    const content = await fs.promises.readFile(materialsPath, 'utf-8');
-    const materials = JSON.parse(content);
-
-    const existing = materials.find((m: { name: string }) => m.name === material.name);
-    if (!existing) {
-      materials.push(material);
-      await fs.promises.writeFile(materialsPath, JSON.stringify(materials, null, 2));
-    }
-  } catch {
-    const materials = [material];
-    await fs.promises.writeFile(materialsPath, JSON.stringify(materials, null, 2));
-  }
-}
-
-async function findPrimitiveMaterial(
-  extractedDir: string,
-  primitiveFileName: string
-): Promise<{ materialName: string; material: ParsedMaterial } | null> {
-  try {
-    const jsonPath = path.join(extractedDir, primitiveFileName);
-    const jsonContent = await fs.promises.readFile(jsonPath, 'utf-8');
-    const itemData = JSON.parse(jsonContent);
-    const prim = itemData.Primitive;
-    const matName = prim?.material;
-    if (!matName) return null;
-
-    const materialsPath = path.join(extractedDir, 'materials.json');
-    const materialsContent = await fs.promises.readFile(materialsPath, 'utf-8');
-    const materials = JSON.parse(materialsContent) as ParsedMaterial[];
-    const found = materials.find(m => m.name === matName);
-    if (!found) return null;
-
-    return { materialName: matName, material: found };
-  } catch {
-    return null;
-  }
+  return result;
 }
 
 ipcMain.handle(
@@ -2045,68 +1978,7 @@ ipcMain.handle(
     const ctx = windowRegistry.getContextFromEvent(event);
     if (!ctx?.extractedDir) return null;
 
-    const options = defaultExchange(exchange?.unit ?? UNIT_CONVERSION_VPU, exchange?.orientation);
-    const rewrite = !isIdentityExchange(options);
-
     const srcFileName = primitiveFileName.replace('.json', '.obj');
-    const srcPath = path.join(ctx.extractedDir, srcFileName);
-
-    let hasObjFile = false;
-    try {
-      await fs.promises.access(srcPath);
-      hasObjFile = true;
-    } catch {
-      // no obj file
-    }
-
-    let generatedOBJ: string | null = null;
-    if (!hasObjFile) {
-      try {
-        const jsonPath = path.join(ctx.extractedDir, primitiveFileName);
-        const jsonContent = await fs.promises.readFile(jsonPath, 'utf-8');
-        const itemData = JSON.parse(jsonContent);
-        const prim = itemData.Primitive;
-        if (prim && !prim.use_3d_mesh) {
-          const vpin = await vpxOps.initVpinModule();
-          const mesh = vpin.generate_builtin_primitive(prim.sides ?? 4, !!prim.draw_textures_inside);
-          const objBytes = vpin.mesh_to_obj(
-            prim.name || 'primitive',
-            mesh.positions,
-            mesh.texCoords,
-            mesh.normals,
-            mesh.indices,
-            exportMeshIoOptions(options)
-          );
-          mesh.free();
-          generatedOBJ = Buffer.from(objBytes).toString('utf-8');
-        }
-      } catch {
-        // fall through
-      }
-      if (!generatedOBJ) {
-        return null;
-      }
-    } else if (rewrite) {
-      try {
-        const vpin = await vpxOps.initVpinModule();
-        const srcBytes = await fs.promises.readFile(srcPath);
-        const mesh = vpin.obj_to_mesh(new Uint8Array(srcBytes), null);
-        const objBytes = vpin.mesh_to_obj(
-          mesh.name || 'mesh',
-          mesh.positions,
-          mesh.texCoords,
-          mesh.normals,
-          mesh.indices,
-          exportMeshIoOptions(options)
-        );
-        mesh.free();
-        generatedOBJ = Buffer.from(objBytes).toString('utf-8');
-      } catch (err: unknown) {
-        console.error('Mesh export transform failed:', (err as Error).message);
-        return null;
-      }
-    }
-
     const defaultPath = path.join(getLastFolder('Obj'), suggestedName || srcFileName);
     const result = await dialog.showSaveDialog(ctx.window, {
       title: 'Export Mesh',
@@ -2123,25 +1995,13 @@ ipcMain.handle(
     try {
       const objFilePath = result.filePath;
       const mtlFileName = path.basename(objFilePath, '.obj') + '.mtl';
-      const mtlFilePath = path.join(path.dirname(objFilePath), mtlFileName);
-
-      const matInfo = await findPrimitiveMaterial(ctx.extractedDir, primitiveFileName);
-
-      let objContent = generatedOBJ ?? (await fs.promises.readFile(srcPath, 'utf-8'));
-      if (matInfo) {
-        const mtlRef = `mtllib ${mtlFileName}\nusemtl ${matInfo.materialName}\n`;
-        const firstNewline = objContent.indexOf('\n');
-        if (firstNewline >= 0) {
-          objContent = objContent.slice(0, firstNewline + 1) + mtlRef + objContent.slice(firstNewline + 1);
-        }
+      const vpin = await vpxOps.initVpinModule();
+      const exported = await buildPrimitiveObjExport(vpin, ctx.extractedDir, primitiveFileName, exchange, mtlFileName);
+      if (!exported) return null;
+      await fs.promises.writeFile(objFilePath, exported.obj, 'utf-8');
+      if (exported.mtl) {
+        await fs.promises.writeFile(path.join(path.dirname(objFilePath), mtlFileName), exported.mtl, 'utf-8');
       }
-      await fs.promises.writeFile(objFilePath, insertObjHeaderComment(objContent, options), 'utf-8');
-
-      if (matInfo) {
-        const mtlContent = generateMtlContent(matInfo.materialName, matInfo.material);
-        await fs.promises.writeFile(mtlFilePath, mtlContent, 'utf-8');
-      }
-
       return objFilePath;
     } catch (err: unknown) {
       console.error('Mesh export failed:', (err as Error).message);
@@ -2326,6 +2186,7 @@ function showDrawingOrder(mode: string) {
 
 ipcMain.handle('save-script', async (event, content: string) => {
   const ctx = windowRegistry.getContextFromEvent(event);
+  if (ctx?.mcpEditWriting) return { success: false, error: 'MCP edit in progress' };
   if (!ctx?.extractedDir) return { success: false, error: 'No table open' };
   try {
     const scriptPath = `${ctx.extractedDir}${path.sep}script.vbs`;
@@ -2513,6 +2374,7 @@ ipcMain.handle(
           winCtx.dimensionsManagerWindow.webContents.send('theme-changed', actualTheme);
       });
       windowFactory?.getWindowStates().settingsWindow?.webContents.send('theme-changed', actualTheme);
+      windowFactory?.getWindowStates().mcpSettingsWindow?.webContents.send('theme-changed', actualTheme);
       windowFactory?.getWindowStates().transformWindow?.webContents.send('theme-changed', actualTheme);
       windowFactory?.getWindowStates().aboutWindow?.webContents.send('theme-changed', actualTheme);
       windowFactory?.getWindowStates().tableInfoWindow?.webContents.send('theme-changed', actualTheme);
@@ -2573,9 +2435,167 @@ ipcMain.handle('get-editor-settings', () => {
   };
 });
 
+let mcpHandle: McpServerHandle | null = null;
+const mcpRendererBridge = createRendererBridge();
+let mcpConsoleReady = false;
+const mcpLogBacklog: { type: 'info' | 'success' | 'error' | 'warn'; text: string }[] = [];
+
+function sendMcpConsole(
+  winCtx: WindowContext,
+  entry: { type: 'info' | 'success' | 'error' | 'warn'; text: string }
+): void {
+  if (!winCtx.window || winCtx.window.isDestroyed()) return;
+  winCtx.window.webContents.send('console-output', entry);
+}
+
+function mcpLog(type: 'info' | 'success' | 'error' | 'warn', msg: string, windowId?: string | null): void {
+  const entry = { type, text: `[mcp] ${msg}` };
+  if (!mcpConsoleReady) {
+    mcpLogBacklog.push(entry);
+    return;
+  }
+  const target = windowId ? windowRegistry.get(windowId) : null;
+  if (target) {
+    sendMcpConsole(target, entry);
+    return;
+  }
+  windowRegistry.forEach(winCtx => sendMcpConsole(winCtx, entry));
+}
+
+async function startMcpIfEnabled(): Promise<void> {
+  if (!settings.mcp.enabled) {
+    mcpLog('warn', 'MCP server disabled in settings — Tools → MCP Server → Settings… to enable.');
+    return;
+  }
+  if (mcpHandle?.isRunning()) return;
+  try {
+    const createCtx = (): ReturnType<typeof createToolContext> =>
+      createToolContext({
+        windowRegistry,
+        getSystemScriptsPath: () => bundledVpinballScriptsDir(),
+        getGlfPath: () => bundledGlfDir(),
+        getTemplatesPath: () => vpxOps.getTemplatesDir(),
+        getMcpPort: () => mcpActivePort(),
+        getVpinballPath: () => settings.vpinballPath || null,
+        initVpinModule: () => vpxOps.initVpinModule(),
+        createTable: async (templateName, displayName) => {
+          const winCtx = await vpxOps.createNewTable(templateName, displayName, getVpxOpsDeps(), true);
+          return winCtx?.id ?? null;
+        },
+        saveTable: async (windowId, targetPath) => {
+          const winCtx = windowRegistry.get(windowId);
+          if (!winCtx) return { saved: false, error: 'Editor window is gone' };
+          try {
+            if (!targetPath) return { saved: await vpxOps.saveVPX(getVpxOpsDeps(), winCtx) };
+            let error: string | undefined;
+            const saved = await vpxOps.saveVPXToPath(targetPath, getVpxOpsDeps(), winCtx, async workDir => {
+              error = `A work folder already exists at ${workDir}. Pick a different table name or folder, or remove it first.`;
+              return false;
+            });
+            return error ? { saved, error } : { saved };
+          } catch (err) {
+            return { saved: false, error: err instanceof Error ? err.message : String(err) };
+          }
+        },
+        renderer: mcpRendererBridge,
+        log: (msg, windowId) => mcpLog('info', msg, windowId),
+      });
+    let lastError: unknown = null;
+    for (let port = settings.mcp.port; port < settings.mcp.port + 10 && !mcpHandle; port++) {
+      try {
+        mcpHandle = await startMcpServer({
+          port,
+          token: settings.mcp.token,
+          createCtx,
+          onLog: msg => mcpLog('info', msg),
+        });
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === 'EADDRINUSE') {
+          lastError = err;
+          mcpLog('warn', `Port ${port} is in use, trying ${port + 1}...`);
+        } else {
+          throw err;
+        }
+      }
+    }
+    if (!mcpHandle) {
+      throw lastError instanceof Error ? lastError : new Error('No free port found');
+    }
+    mcpLog('success', `Server ready: http://127.0.0.1:${mcpHandle.port}/mcp`);
+    mcpLog('info', 'Client setup instructions and access token: Tools → MCP Server → Settings…');
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    mcpLog('error', `Failed to start: ${message}`);
+    mcpHandle = null;
+  }
+}
+
+async function stopMcpServer(): Promise<void> {
+  if (mcpHandle) {
+    await mcpHandle.stop();
+    mcpHandle = null;
+    mcpLog('warn', 'Server stopped');
+  }
+}
+
+function mcpActivePort(): number {
+  return mcpHandle?.isRunning() ? mcpHandle.port : settings.mcp.port;
+}
+
+async function gatherMcpSettingsData(): Promise<Record<string, unknown>> {
+  return {
+    enabled: settings.mcp.enabled,
+    port: settings.mcp.port,
+    activePort: mcpActivePort(),
+    running: mcpHandle?.isRunning() ?? false,
+    token: settings.mcp.token,
+    lastAuthFailure: mcpHandle?.lastAuthFailure() ?? null,
+  };
+}
+
+function openMcpSettings(): void {
+  windowFactory.openMcpSettingsWindow(() => gatherMcpSettingsData());
+}
+
+ipcMain.handle('mcp-save-settings', async (_event, data: { enabled: boolean; port: number }) => {
+  const portChanged = settings.mcp.port !== data.port;
+  const wasEnabled = settings.mcp.enabled;
+  settings.mcp.enabled = data.enabled;
+  settings.mcp.port = data.port;
+  saveSettings();
+  if (wasEnabled !== data.enabled || (data.enabled && portChanged)) {
+    await stopMcpServer();
+  }
+  if (data.enabled && !mcpHandle?.isRunning()) await startMcpIfEnabled();
+  createMenu();
+  return gatherMcpSettingsData();
+});
+
+ipcMain.handle('mcp-regenerate-token', async () => {
+  settings.mcp.token = randomBytes(24).toString('hex');
+  saveSettings();
+  await stopMcpServer();
+  await startMcpIfEnabled();
+  return gatherMcpSettingsData();
+});
+
+ipcMain.on('renderer-console-ready', () => {
+  if (mcpConsoleReady) return;
+  mcpConsoleReady = true;
+  const backlog = mcpLogBacklog.splice(0);
+  for (const entry of backlog) windowRegistry.forEach(winCtx => sendMcpConsole(winCtx, entry));
+});
+
+ipcMain.handle('mcp-get-status', () => ({
+  enabled: settings.mcp.enabled,
+  running: mcpHandle?.isRunning() ?? false,
+  port: mcpActivePort(),
+}));
+
 app.whenReady().then(() => {
   loadSettings();
   nativeTheme.themeSource = settings.theme as 'system' | 'light' | 'dark';
+  startMcpIfEnabled().catch(err => console.error('MCP startup failed:', err));
 
   nativeTheme.on('updated', () => {
     const currentThemeSetting = activeThemeSetting || settings.theme;
@@ -2596,6 +2616,7 @@ app.whenReady().then(() => {
           winCtx.dimensionsManagerWindow.webContents.send('theme-changed', actualTheme);
       });
       windowFactory?.getWindowStates().settingsWindow?.webContents.send('theme-changed', actualTheme);
+      windowFactory?.getWindowStates().mcpSettingsWindow?.webContents.send('theme-changed', actualTheme);
       windowFactory?.getWindowStates().transformWindow?.webContents.send('theme-changed', actualTheme);
       windowFactory?.getWindowStates().aboutWindow?.webContents.send('theme-changed', actualTheme);
       windowFactory?.getWindowStates().tableInfoWindow?.webContents.send('theme-changed', actualTheme);
@@ -2629,5 +2650,11 @@ ipcMain.on('mesh-import-result', (_event, result: unknown) => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
+  }
+});
+
+app.on('before-quit', () => {
+  if (mcpHandle) {
+    void mcpHandle.stop().catch(err => console.error('MCP shutdown error:', err));
   }
 });

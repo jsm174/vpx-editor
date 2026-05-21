@@ -5,6 +5,7 @@ import type { ScriptGameItem } from '../shared/core';
 declare global {
   interface Window {
     scriptEditor: {
+      onMcpFlush: (callback: () => Promise<void>) => void;
       onInit: (callback: (data: InitData) => void) => void;
       onThemeChanged: (callback: (theme: string) => void) => void;
       onTableLockChanged: (callback: (isLocked: boolean) => void) => void;
@@ -102,3 +103,5 @@ window.scriptEditor.onCheckCanClose(async () => {
   }
   window.scriptEditor.respondCanClose(true);
 });
+
+window.scriptEditor.onMcpFlush(() => controller.flushForExternalEdit());

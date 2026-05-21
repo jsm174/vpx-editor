@@ -71,6 +71,10 @@ Port of the Windows VPX 2D editor:
 - Light and dark mode
 - System theme detection
 
+### AI Assistants (MCP)
+- Desktop editor runs a local [MCP](https://modelcontextprotocol.io) server so Claude Code and Codex CLI can build and edit tables
+- Setup steps for each client are shown in **Tools → MCP Server → Settings…**, see [docs/mcp/getting-started.md](docs/mcp/getting-started.md)
+
 ## 3D Controls
 
 Blender-style navigation:
@@ -195,6 +199,17 @@ src/
 - [vpin-wasm](https://github.com/francisdb/vpin)
 - [Three.js](https://threejs.org/)
 - [Monaco Editor](https://microsoft.github.io/monaco-editor/)
+
+### Bundled Example Tables
+
+The tables under File > New are downloaded or assembled at install time from their upstream repositories and are the work of their original authors:
+
+- **VPW Example Tables** (Basic, Example, and ROM Example, v1.7.x) by the [VPin Workshop (VPW)](https://vpuniverse.com/files/file/7787-vpin-workshop-example-resource-table/) team. Extracted copies are hosted at [jsm174/vpw-example-tables](https://github.com/jsm174/vpw-example-tables); the tables remain the property of their authors, see the download page for terms.
+- **GLF Tutorial Plunger** from the [VPX Game Logic Framework (GLF)](https://github.com/mpcarr/vpx-glf) by mpcarr (MIT), built on a community base table by fuzzel, jimmyfingers, jpsalas, toxie, and unclewilly with contributions from zany, ninuzzu, rothbauerw, and arngrim.
+- **GLF Example Table** by apophis and flux from [mpcarr/vpx-example-glf](https://github.com/mpcarr/vpx-example-glf) (MIT).
+- **Blank, Example, and Light Sequence tables** from [Visual Pinball](https://github.com/vpinball/vpinball) (GPL).
+
+The bundled GLF framework script (`vpx-glf.vbs`) is also from [mpcarr/vpx-glf](https://github.com/mpcarr/vpx-glf) (MIT). Exact pinned commits and checksums are in `resources/vendor.json`.
 
 ## License
 

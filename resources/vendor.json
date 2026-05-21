@@ -1,0 +1,676 @@
+{
+  "sources": [
+    {
+      "name": "vpx-glf",
+      "repo": "mpcarr/vpx-glf",
+      "commit": "b1d83ce284a8f099f63855c0705a4bb20f2173de",
+      "dest": "resources/glf",
+      "files": [
+        {
+          "path": "vpx-glf.vbs",
+          "from": "scripts/vpx-glf.vbs",
+          "sha256": "036ca9243e4481b26c0d56602bad70150b3ca85241fe9497244b8f3ffe4e002d"
+        },
+        {
+          "path": "docs/about.md",
+          "from": "docs/about.md",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "docs/autofire.md",
+          "from": "docs/autofire.md",
+          "sha256": "c87c498289b1d8035d714c031c5ccaebca21de2255eddab876a44f2ad564bc9e"
+        },
+        {
+          "path": "docs/ball-device.md",
+          "from": "docs/ball-device.md",
+          "sha256": "94cf85f0b8b87048b2f230ea7a7f70da90c9dab489e00b7e101f2abc652341ee"
+        },
+        {
+          "path": "docs/ball-save.md",
+          "from": "docs/ball-save.md",
+          "sha256": "d0204ca34fa4cdef35ff09f3a68efdae16d926e7fb6810ccd7599a5fb1f415ec"
+        },
+        {
+          "path": "docs/combo-switches.md",
+          "from": "docs/combo-switches.md",
+          "sha256": "a619019bd96b06bd2428db28b06247d3b05507de61faa18b4778afe99389e3db"
+        },
+        {
+          "path": "docs/commands.md",
+          "from": "docs/commands.md",
+          "sha256": "80721867188bb69aaf8cd7d6298d14da0b3f4f2c4c72ed3d351c0f88131958ad"
+        },
+        {
+          "path": "docs/counter.md",
+          "from": "docs/counter.md",
+          "sha256": "196ee240a11f0cf1909cf4963a9636ee003372ebf92c80d28973aec2417e6b88"
+        },
+        {
+          "path": "docs/diverter.md",
+          "from": "docs/diverter.md",
+          "sha256": "0a55b73fdaaaddfc6968331982f9b69b285509d830aea22bcc17cd11021b57a0"
+        },
+        {
+          "path": "docs/dof-player.md",
+          "from": "docs/dof-player.md",
+          "sha256": "6a7a18ed1bf042274e639eba0aae9cc25077b03ebc055c3a85dc08da3a2cbaab"
+        },
+        {
+          "path": "docs/drop-target.md",
+          "from": "docs/drop-target.md",
+          "sha256": "df422f8e7e647aa4076310ce6e75d8f69bba1193b9f9611d6a3fa3e3e1dd1b02"
+        },
+        {
+          "path": "docs/dynamic_values.md",
+          "from": "docs/dynamic_values.md",
+          "sha256": "de94861b75c0a583ba1f2361cdbdc27323b408c47c1bd9a51b0b3113fef5b209"
+        },
+        {
+          "path": "docs/environment-setup.md",
+          "from": "docs/environment-setup.md",
+          "sha256": "25672837a971e4ab201ebb8a509b415c86250017b82fc036f9ec3bf48ae66469"
+        },
+        {
+          "path": "docs/event-player.md",
+          "from": "docs/event-player.md",
+          "sha256": "c7bfe64850b95abd1df4df62e3f9b810ad947d0bb60678ffc18eea9b79b85cbe"
+        },
+        {
+          "path": "docs/events.md",
+          "from": "docs/events.md",
+          "sha256": "0f34fb49781eb24b9a8508c132e09c38ffb5b603a63b46d743ecd3a080670a7a"
+        },
+        {
+          "path": "docs/extra-ball.md",
+          "from": "docs/extra-ball.md",
+          "sha256": "75115421cd0b8b5e11f3aa18ca93c669ccbb9654521e838bffffea3217f035c8"
+        },
+        {
+          "path": "docs/features.md",
+          "from": "docs/features.md",
+          "sha256": "f8bcb4e9140d08a9b935c54215dcd5f5aca181bdaa0fbdfb713fa5c9cedd36fb"
+        },
+        {
+          "path": "docs/flipper.md",
+          "from": "docs/flipper.md",
+          "sha256": "f19d87e5879fa45c08d02210753f4ebe5b101abcfc0f57d5535fe584602019d7"
+        },
+        {
+          "path": "docs/getting-started.md",
+          "from": "docs/getting-started.md",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "docs/high-score.md",
+          "from": "docs/high-score.md",
+          "sha256": "e6b77b7610df71a609ba94da3643c5d943801016768530593bb740854748b1fe"
+        },
+        {
+          "path": "docs/index.md",
+          "from": "docs/index.md",
+          "sha256": "e77cdcd87eeddd04f3573dd81454c5ec1e5e7f27080a94c5f67972c7decdef79"
+        },
+        {
+          "path": "docs/installing.md",
+          "from": "docs/installing.md",
+          "sha256": "b85006448e49eebcaa5dcf2ee1550e94bcdf171bf9fca3e74d05b003c3fe4e8d"
+        },
+        {
+          "path": "docs/light-controller.md",
+          "from": "docs/light-controller.md",
+          "sha256": "0138f0d2de2e393dd1d1fce560257fa2a0698d3dbaae38709aa31bd406f9e3d2"
+        },
+        {
+          "path": "docs/light-player.md",
+          "from": "docs/light-player.md",
+          "sha256": "b7123d6977ade950770280513d6499425a2cabf71c38ad1823885549083de55a"
+        },
+        {
+          "path": "docs/light-shows.md",
+          "from": "docs/light-shows.md",
+          "sha256": "0cf547282cb6086a03569139df728873a2bb8c201c943e9618294ce309e55ee3"
+        },
+        {
+          "path": "docs/magnet.md",
+          "from": "docs/magnet.md",
+          "sha256": "8be70fb8629d979805e9df8d44bb49fa8d024576c92cc5c7bbc35db98cb6abaa"
+        },
+        {
+          "path": "docs/mode.md",
+          "from": "docs/mode.md",
+          "sha256": "fc13b53ce87d29ee0e3fa8e099885b519e9b772c260ee943b338f6ae0943f88d"
+        },
+        {
+          "path": "docs/multiball-locks.md",
+          "from": "docs/multiball-locks.md",
+          "sha256": "265114e3fc7e5ecffdfc5f472691c89f7617cfe8e401848b81cfdda046a04609"
+        },
+        {
+          "path": "docs/multiball.md",
+          "from": "docs/multiball.md",
+          "sha256": "f045e111d1b3a48d14b9cf85679e3e6e72c92f35e10eb1cff4456fdcce827e1f"
+        },
+        {
+          "path": "docs/player-state.md",
+          "from": "docs/player-state.md",
+          "sha256": "4a756eda6b17e600b6f3941d8bfe704b871b7dc6c9f2831433f113d8d9d6d477"
+        },
+        {
+          "path": "docs/queue-event-player.md",
+          "from": "docs/queue-event-player.md",
+          "sha256": "0c716409eabaac50ab617e308cdbf8508832fec2f3f9cac60c806791b03e2299"
+        },
+        {
+          "path": "docs/random-event-player.md",
+          "from": "docs/random-event-player.md",
+          "sha256": "160cdac8298a46f574cca2528d51c73ede50e4618ad51531496270ba09736515"
+        },
+        {
+          "path": "docs/sequence-shot.md",
+          "from": "docs/sequence-shot.md",
+          "sha256": "1a96cb7b362cb6e7f2a425c84b8ce2e347e3b756eb07d8cc381dbbd28bcf0c52"
+        },
+        {
+          "path": "docs/shot-group.md",
+          "from": "docs/shot-group.md",
+          "sha256": "9ef65e04f5259b606aae76507890df23d3ee431c1cf199acd4d93243ae0ee8af"
+        },
+        {
+          "path": "docs/shot-profile.md",
+          "from": "docs/shot-profile.md",
+          "sha256": "d39ac3003fe6b8b02830aa0664098fa4d22509bd5106e248a26c8c3beea680ee"
+        },
+        {
+          "path": "docs/shot.md",
+          "from": "docs/shot.md",
+          "sha256": "3180e5f936be3313d7bbee4d84db9ecb05a230da1bf66afd5071fb636c7d0d09"
+        },
+        {
+          "path": "docs/show-player.md",
+          "from": "docs/show-player.md",
+          "sha256": "c3babad2b3c56a58d763c331791e19443e7061afcfd55bdcfa2215484ee4732d"
+        },
+        {
+          "path": "docs/slide-player.md",
+          "from": "docs/slide-player.md",
+          "sha256": "5b54313e2880e8bb8657d3e5450716dc1c3c36014259efa1b0ed1af1e22bcb2c"
+        },
+        {
+          "path": "docs/sound-player.md",
+          "from": "docs/sound-player.md",
+          "sha256": "86d469a578c4c0afe8d35e99117bc1b8e96150a853ecdd7236f2e3ca5bf3c773"
+        },
+        {
+          "path": "docs/state-machine.md",
+          "from": "docs/state-machine.md",
+          "sha256": "d41b187745716b1068e139987e8b5c5ece683c0388c96a535dd644352b5b8d9e"
+        },
+        {
+          "path": "docs/tilt.md",
+          "from": "docs/tilt.md",
+          "sha256": "1d2d43020769ffa8dcfc9cd7607c66cedc5fa67fdf00ff0cbbf7d762a341365e"
+        },
+        {
+          "path": "docs/timed-switches.md",
+          "from": "docs/timed-switches.md",
+          "sha256": "26dcbbce62cc3649481c21e624e961fb4b53da5ebc4a1e5e85128d2f9780954e"
+        },
+        {
+          "path": "docs/timer.md",
+          "from": "docs/timer.md",
+          "sha256": "dc03f5e1567745970d26c6bc708206cc602291e0dc1000ada58c3ac22bfd4475"
+        },
+        {
+          "path": "docs/variable-player.md",
+          "from": "docs/variable-player.md",
+          "sha256": "971ca9897a27503fd6b7c1d5b7249443e9eb175f0abed45abcd9fb9f0a208597"
+        }
+      ]
+    },
+    {
+      "name": "vpinball-scripts",
+      "repo": "vpinball/vpinball",
+      "commit": "595d1fd5e3b886645d6e5c8e0a1624dc9733b516",
+      "dest": "resources/vpinball-scripts",
+      "files": [
+        {
+          "path": "6803.vbs",
+          "from": "scripts/6803.vbs",
+          "sha256": "472b75fd486282a9533bd5c999d965544cb0803655ecc0f996de01d8a79a38e6"
+        },
+        {
+          "path": "ALI.vbs",
+          "from": "scripts/ALI.vbs",
+          "sha256": "0fbfe3997903a7b42bfa9629056028b99656c88b0ef24e730bc97b4d36ebc1ba"
+        },
+        {
+          "path": "alving.vbs",
+          "from": "scripts/alving.vbs",
+          "sha256": "63a758ecb79e879924831f2140476a31531c5c9f90b116253356b2e856ba143d"
+        },
+        {
+          "path": "antar.vbs",
+          "from": "scripts/antar.vbs",
+          "sha256": "ad333c05213d1ce96613952e8a369f33d43958b109d74f3b02128d8a10579632"
+        },
+        {
+          "path": "Atari.vbs",
+          "from": "scripts/Atari.vbs",
+          "sha256": "d036d1a60471ca174fa531c94f4d6d8520fae4a5db793926df8b9cd01973c399"
+        },
+        {
+          "path": "Atari1.vbs",
+          "from": "scripts/Atari1.vbs",
+          "sha256": "be99196ec3986b9c8d3bcbef25e6b3dca0b36ddd5a418b0eb8a8a64a8e8780ee"
+        },
+        {
+          "path": "Atari1b.vbs",
+          "from": "scripts/Atari1b.vbs",
+          "sha256": "0086cce9254b6aee33fcec223eb434e4497a6ab004bd2c8220b7a10460aaeca5"
+        },
+        {
+          "path": "Atari2.vbs",
+          "from": "scripts/Atari2.vbs",
+          "sha256": "347ed07ea0955ac53f784dca360183127392cafcb10e08fdccc0e1ad75bf1c43"
+        },
+        {
+          "path": "B2B.vbs",
+          "from": "scripts/B2B.vbs",
+          "sha256": "6cd041e4ce124be00386f26a5bbb2b8b71f0d08b3c0714cbf4d2944bd6c0ef2c"
+        },
+        {
+          "path": "B2Bcollision.vbs",
+          "from": "scripts/B2Bcollision.vbs",
+          "sha256": "bbe6914bdbd6d128f337af59530d7c3736987c9ce0a32f300df2c4ac10ff6130"
+        },
+        {
+          "path": "b2s.vbs",
+          "from": "scripts/b2s.vbs",
+          "sha256": "6ea91071a2f18f80690934cc3b9d9bd2479df67983e42d78a0b5c6a02f9f1d3b"
+        },
+        {
+          "path": "Bally.vbs",
+          "from": "scripts/Bally.vbs",
+          "sha256": "d3ff448412b07a97722f7c34ad36e4364955d09595c381133eb24eabfaf7c18c"
+        },
+        {
+          "path": "BallyG.vbs",
+          "from": "scripts/BallyG.vbs",
+          "sha256": "4249cb4dc6d86d52932cae66e74728bfa47e0a224f2bea6a832f6d52424f0e05"
+        },
+        {
+          "path": "capcom.vbs",
+          "from": "scripts/capcom.vbs",
+          "sha256": "03323ded224c5e67b0f7703978529889339e1fd7f73ebdd15002a4a6b794a95e"
+        },
+        {
+          "path": "Class1812.vbs",
+          "from": "scripts/Class1812.vbs",
+          "sha256": "0ca30cc1decb50ce6d326e4069f6a90f0af92cdc890bfe565b27a89a2d18c675"
+        },
+        {
+          "path": "controller.vbs",
+          "from": "scripts/controller.vbs",
+          "sha256": "dec28da5ad68c669ca6baad1af7764a1ff4dbca09ab797b12142cce8112c5af1"
+        },
+        {
+          "path": "core.vbs",
+          "from": "scripts/core.vbs",
+          "sha256": "a57b6e9eab4ed39d60123a152f8bb252e8a6b646cea6e9060f52b440ae51ba96"
+        },
+        {
+          "path": "de.vbs",
+          "from": "scripts/de.vbs",
+          "sha256": "8858b4509a600f77a8a5844f138ed1c71f19b023550660efd62e308588e84d04"
+        },
+        {
+          "path": "de2.vbs",
+          "from": "scripts/de2.vbs",
+          "sha256": "96fc634c7d6529a0566c753e296b287a1402636b38aa9bef63afebbf49f20b04"
+        },
+        {
+          "path": "FPVPX.vbs",
+          "from": "scripts/FPVPX.vbs",
+          "sha256": "7e676ffba60bdac5c7deb8320b4b9b039616a12a6f1b4bfe0777366b70a9023d"
+        },
+        {
+          "path": "GamePlan.vbs",
+          "from": "scripts/GamePlan.vbs",
+          "sha256": "3be90fc221aaacbf0eed59e41982dcc4097dd05412983ccd1b4e47f0774c0cd9"
+        },
+        {
+          "path": "gts1.vbs",
+          "from": "scripts/gts1.vbs",
+          "sha256": "554da222cdff8080854c9bf59ad891fd8f44f2a3013deba4f6f0d62058ca3d78"
+        },
+        {
+          "path": "gts3.vbs",
+          "from": "scripts/gts3.vbs",
+          "sha256": "66c329fa86e97d2f10a8036a9a6527be6a67ce59bb3591962aa1c8a9da101314"
+        },
+        {
+          "path": "Hankin.vbs",
+          "from": "scripts/Hankin.vbs",
+          "sha256": "5b8efc194795a0998c1d9691c161ef67c52287c16e68b187f43182b138775e7e"
+        },
+        {
+          "path": "idsa.vbs",
+          "from": "scripts/idsa.vbs",
+          "sha256": "865271b92c3810eb0ffe7543709cb1ba5d6b83ac886699b8f7d956adc6816c78"
+        },
+        {
+          "path": "inder_atleta.vbs",
+          "from": "scripts/inder_atleta.vbs",
+          "sha256": "6d90d621b88648d02d5c2e559d310999111ecdf915bf289f277729ea303d6962"
+        },
+        {
+          "path": "inder_centaur.vbs",
+          "from": "scripts/inder_centaur.vbs",
+          "sha256": "f5f2bb6b61a6a5d1b3f4277c6a261d6403e110cb592f8022547d1076c13c117a"
+        },
+        {
+          "path": "inder_skateboard.vbs",
+          "from": "scripts/inder_skateboard.vbs",
+          "sha256": "89298a26e03cde3c9ad0acc18d7d0340a49e585555f5d1df0579343b10410f2a"
+        },
+        {
+          "path": "inder.vbs",
+          "from": "scripts/inder.vbs",
+          "sha256": "3ed3317e548b3d3b5fce73a24ec3f5e4c5ad1edcb68752962e816ffe423c20b4"
+        },
+        {
+          "path": "ironballs.vbs",
+          "from": "scripts/ironballs.vbs",
+          "sha256": "d1f857ddef585437d5297bfa572f533985d8f91929ac6aabeab607350f36af5b"
+        },
+        {
+          "path": "joctronic.vbs",
+          "from": "scripts/joctronic.vbs",
+          "sha256": "c7ead63ac1116853d8dcb3b02cb6d7f8758446661d012149159496cc3cc7ebe7"
+        },
+        {
+          "path": "juegos.vbs",
+          "from": "scripts/juegos.vbs",
+          "sha256": "cc36ad028242bcd9ba51eb600a111252b51a27d7bb685eb2939666ddcd6ddd21"
+        },
+        {
+          "path": "juegos2.vbs",
+          "from": "scripts/juegos2.vbs",
+          "sha256": "4695109f8fafa894144217eeffcbef2d54a5fdccdb670f0cfa164ed40a5ae135"
+        },
+        {
+          "path": "jvh.vbs",
+          "from": "scripts/jvh.vbs",
+          "sha256": "398381ac20b948c82005159ba0d0fc32c523077efa37f8fb845254a5721fc8ed"
+        },
+        {
+          "path": "lancelot.vbs",
+          "from": "scripts/lancelot.vbs",
+          "sha256": "7261ae01a5176a6df272b93d8cf967cdd36cc20ec4a3c356598de7b1001e35ba"
+        },
+        {
+          "path": "LTD.vbs",
+          "from": "scripts/LTD.vbs",
+          "sha256": "e3167a17b6984aedba1add32705afb48784200aa450ae3cc948ec7b448e3532c"
+        },
+        {
+          "path": "LTD3.vbs",
+          "from": "scripts/LTD3.vbs",
+          "sha256": "67a2253c2d0fad30f3fb377bbfd8cd2084e95e6f25969b32da201931e883699b"
+        },
+        {
+          "path": "LTD4a.vbs",
+          "from": "scripts/LTD4a.vbs",
+          "sha256": "156d9280b673e1b6af6fb1d416123466c5722b032f546d602697bac5f5bdab2e"
+        },
+        {
+          "path": "LTDPecmen.vbs",
+          "from": "scripts/LTDPecmen.vbs",
+          "sha256": "f9a71edaa9ef51bd73ef9d8b353ebba7e169d944b9b1a92ecb993bb2f9b5e361"
+        },
+        {
+          "path": "mac.vbs",
+          "from": "scripts/mac.vbs",
+          "sha256": "0982321df6e77f43e46e4cec37c05f1a2dea40bd5bfe340091a72d487af4bcc4"
+        },
+        {
+          "path": "mrgame.vbs",
+          "from": "scripts/mrgame.vbs",
+          "sha256": "4f087a6dc810f8558a5ce1f510d017e699a224ad945d42a28930d59cb19385ea"
+        },
+        {
+          "path": "nuova.vbs",
+          "from": "scripts/nuova.vbs",
+          "sha256": "2152b6228c0508c6d0a611105a9d1076dc5365f23ae7865b7254cf2ace274e94"
+        },
+        {
+          "path": "p2k.vbs",
+          "from": "scripts/p2k.vbs",
+          "sha256": "151abb4efa01dfaa5fdd3508a3007fbeb5c76b4e2d2966f7c1081c2d395efab1"
+        },
+        {
+          "path": "PDB.vbs",
+          "from": "scripts/PDB.vbs",
+          "sha256": "6cc7c266f9e3a3b36511a9be705477ca1efcc7f5d34e850194949848232a0609"
+        },
+        {
+          "path": "peyper.vbs",
+          "from": "scripts/peyper.vbs",
+          "sha256": "4d7c58b0a4ff4b5ddd9cb27d725a2d4279de110462971439a90ed1e04e9694c1"
+        },
+        {
+          "path": "Play1.vbs",
+          "from": "scripts/Play1.vbs",
+          "sha256": "6044ae8ef137b8e002906322e10f92c2e5a310be41114ca2107aeb5ad53bd4d8"
+        },
+        {
+          "path": "Play2.vbs",
+          "from": "scripts/Play2.vbs",
+          "sha256": "5511e8309b384f987f58d5338524b04f9247e22eb682f43168a4418265c68cc6"
+        },
+        {
+          "path": "Play4.vbs",
+          "from": "scripts/Play4.vbs",
+          "sha256": "51e65801f1760348c6ce8ad3bc80663a747b4e333c2cf4db4533199e657e41bf"
+        },
+        {
+          "path": "playbar.vbs",
+          "from": "scripts/playbar.vbs",
+          "sha256": "4609e2cce2c45b4ef4eba3a6d51c12fb517d6cbca86f754e50e94c5817c518a9"
+        },
+        {
+          "path": "s11.vbs",
+          "from": "scripts/s11.vbs",
+          "sha256": "5582155ffbdaeeeb3d86fcb54d7738d9ea5f9c24951b607e30a316f88dfd5f91"
+        },
+        {
+          "path": "s4.vbs",
+          "from": "scripts/s4.vbs",
+          "sha256": "2cd807cf63bb492cc076ea4f77a745966e1697097d25f0bc63bbc88165eeb626"
+        },
+        {
+          "path": "s6.vbs",
+          "from": "scripts/s6.vbs",
+          "sha256": "51540940fc31d7afccbee636815c40369fa852b86116339c641073845a6ad24a"
+        },
+        {
+          "path": "s7.vbs",
+          "from": "scripts/s7.vbs",
+          "sha256": "88e6f2500f75315b9f5ad01581d9f24a926ad12af43730af01d8bfab8e5cfe03"
+        },
+        {
+          "path": "s8_StillCrazy.vbs",
+          "from": "scripts/s8_StillCrazy.vbs",
+          "sha256": "e741985844a368d6ea4e4ae959c1de6c9249e35ecb3fd384e98f6014cf25b7ab"
+        },
+        {
+          "path": "sam.vbs",
+          "from": "scripts/sam.vbs",
+          "sha256": "79b5fa7e0747864c58b59f7ee872416147e77a529d9375fa552dc3f63a82726c"
+        },
+        {
+          "path": "sega.vbs",
+          "from": "scripts/sega.vbs",
+          "sha256": "d6e508aac5163fc6d93155e630a1ef5e9c57c3ef3416ada8930dca046daf4924"
+        },
+        {
+          "path": "sega2.vbs",
+          "from": "scripts/sega2.vbs",
+          "sha256": "e38b3cabdbdf56e0069c3ee1075bb92fb99280f7d1f594ffb49820319de68f20"
+        },
+        {
+          "path": "sleic.vbs",
+          "from": "scripts/sleic.vbs",
+          "sha256": "8bdba7def154ce875a0173596f053224aeb65c8c0f107b2d14981436dd334cc2"
+        },
+        {
+          "path": "solarwars.vbs",
+          "from": "scripts/solarwars.vbs",
+          "sha256": "8c5979d412a7a14c4c4409d2bbdb058711622ba6cdc36d52bf033dd693ccb7d6"
+        },
+        {
+          "path": "spinball.vbs",
+          "from": "scripts/spinball.vbs",
+          "sha256": "4c216a4fd0cb2af0987f5afef2d4cc8d8dc15af65c477b032093b04b53561fe7"
+        },
+        {
+          "path": "stern.vbs",
+          "from": "scripts/stern.vbs",
+          "sha256": "b835ce5b0c11c6d268f58c92e534c1677e64cb47e103b33179b82c6c337be0e5"
+        },
+        {
+          "path": "sys80.vbs",
+          "from": "scripts/sys80.vbs",
+          "sha256": "5e14a206222039389c220aac40bf410e35fd7c730786bb6686d1b8ab6494de8c"
+        },
+        {
+          "path": "taito.vbs",
+          "from": "scripts/taito.vbs",
+          "sha256": "fa8236f417d4b8c60c92beccb6e4f49e64cb0cd179d88fb3a7b7cc62a888177b"
+        },
+        {
+          "path": "UltraDMD_Options.vbs",
+          "from": "scripts/UltraDMD_Options.vbs",
+          "sha256": "005ddc9aabaf0393a1dce4e5b64cdf142af7f2908adeb160b0c1acd68308a330"
+        },
+        {
+          "path": "VPMKeys.vbs",
+          "from": "scripts/VPMKeys.vbs",
+          "sha256": "b7767eb9a5c4a09490ac20432e926b45f1639b33f03663a7b023cdb134777f18"
+        },
+        {
+          "path": "wpc_ph.vbs",
+          "from": "scripts/wpc_ph.vbs",
+          "sha256": "79ace168c1fffc7967b7c473dcc7ef42dff40e380236604b6060a0315ce5409d"
+        },
+        {
+          "path": "WPC.vbs",
+          "from": "scripts/WPC.vbs",
+          "sha256": "e37d744ecdc4586798de4b4b9803722dec678e88e03ca32746485e294d87535c"
+        },
+        {
+          "path": "zac.vbs",
+          "from": "scripts/zac.vbs",
+          "sha256": "4631fb0f1a99feafcb3073036bb2101bf383cdedf5d079cad05220d742587ee1"
+        },
+        {
+          "path": "zac1.vbs",
+          "from": "scripts/zac1.vbs",
+          "sha256": "b7922dbab32adf707d9aa4f12c5d11ec470ac9e07ff0399d2f17a9ab0aceb53c"
+        },
+        {
+          "path": "zac2.vbs",
+          "from": "scripts/zac2.vbs",
+          "sha256": "934284ced2628b7e97b0b6e69f8bb7d8b76c51b306973f3bdb318553faf05b81"
+        },
+        {
+          "path": "zacproto.vbs",
+          "from": "scripts/zacproto.vbs",
+          "sha256": "fc9c59faa7a8f48d7390cf23b13231fcf179ecda06b0cc5798c0b74036fd9861"
+        }
+      ]
+    },
+    {
+      "name": "vpx-templates",
+      "repo": "vpinball/vpinball",
+      "commit": "595d1fd5e3b886645d6e5c8e0a1624dc9733b516",
+      "dest": "public/templates",
+      "files": [
+        {
+          "path": "blankTable.vpx",
+          "from": "src/assets/blankTable.vpx",
+          "sha256": "934aed884ac4105e57a9651db3aa6c734edb87bce703bd5c0c76574059358ea3"
+        },
+        {
+          "path": "exampleTable.vpx",
+          "from": "src/assets/exampleTable.vpx",
+          "sha256": "b8b3f441d0c9b6503357d157c852d78591bf125d06df0237560c4dfce86debb6"
+        },
+        {
+          "path": "lightSeqTable.vpx",
+          "from": "src/assets/lightSeqTable.vpx",
+          "sha256": "29d4f00480e0dda8f18269401ae4be95a4b0a75f99da2c7be2709d3b5da08c77"
+        },
+        {
+          "path": "strippedTable.vpx",
+          "from": "src/assets/strippedTable.vpx",
+          "sha256": "9f6c38d8d19ccd2c8f85de38faf62a7c7d1976c8899dfc5b36668bae32e05dbb"
+        }
+      ]
+    },
+    {
+      "name": "glf-tutorial-plunger",
+      "repo": "mpcarr/vpx-glf",
+      "commit": "b1d83ce284a8f099f63855c0705a4bb20f2173de",
+      "dest": "public/templates",
+      "files": [
+        {
+          "path": "glfTutorialPlunger.vpx",
+          "from": "tutorial/glf_tutorial_plunger.vpx",
+          "sha256": "3aa91d9d0da5c84bfb1418cd577a13062b43d838082a5a89a0b25f629ae6c0d3"
+        }
+      ]
+    },
+    {
+      "name": "glf-example",
+      "repo": "mpcarr/vpx-example-glf",
+      "commit": "052e37a920a5364e90d1ebd6421240c93e04ad9d",
+      "dest": "public/templates",
+      "assembleVpx": {
+        "subdir": "VPXExampleGLF",
+        "output": "glfExampleTable.vpx"
+      }
+    },
+    {
+      "name": "vpw-basic-example",
+      "repo": "jsm174/vpw-example-tables",
+      "commit": "cec26087229e6d39008cf3e768490d1e82283473",
+      "dest": "public/templates",
+      "assembleVpx": {
+        "subdir": "Basic Example Table VPW 1.7.1",
+        "output": "vpwBasicExampleTable.vpx"
+      }
+    },
+    {
+      "name": "vpw-example",
+      "repo": "jsm174/vpw-example-tables",
+      "commit": "cec26087229e6d39008cf3e768490d1e82283473",
+      "dest": "public/templates",
+      "assembleVpx": {
+        "subdir": "Example Table VPW 1.7",
+        "output": "vpwExampleTable.vpx"
+      }
+    },
+    {
+      "name": "vpw-rom-example",
+      "repo": "jsm174/vpw-example-tables",
+      "commit": "cec26087229e6d39008cf3e768490d1e82283473",
+      "dest": "public/templates",
+      "assembleVpx": {
+        "subdir": "ROM Example Table VPW 1.7",
+        "output": "vpwRomExampleTable.vpx"
+      }
+    }
+  ]
+}

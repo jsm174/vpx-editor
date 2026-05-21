@@ -299,6 +299,32 @@ async function loadPrimitiveOBJOrBuiltin(
   }
 }
 
+export async function buildPrimitiveExportGeometry(item: PrimitiveItem): Promise<THREE.BufferGeometry | null> {
+  let mesh: { positions: Float32Array; texCoords: Float32Array; normals: Float32Array; indices: Uint32Array } | null =
+    null;
+
+  if (item._fileName && state.extractedDir) {
+    const objPath = `${state.extractedDir}/${item._fileName.replace('.json', '.obj')}`;
+    const result = await window.vpxEditor.objToMesh(objPath);
+    if (result.success && result.mesh) mesh = result.mesh;
+  }
+
+  if (!mesh && !item.use_3d_mesh) {
+    const sides = item.sides ?? PRIMITIVE_DEFAULTS.sides;
+    const result = await window.vpxEditor.generateBuiltinPrimitive(sides, !!item.draw_textures_inside);
+    if (result.success && result.mesh) mesh = result.mesh;
+  }
+
+  if (!mesh) return null;
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(mesh.positions, 3));
+  geometry.setAttribute('uv', new THREE.BufferAttribute(mesh.texCoords, 2));
+  geometry.setAttribute('normal', new THREE.BufferAttribute(mesh.normals, 3));
+  geometry.setIndex(new THREE.BufferAttribute(mesh.indices, 1));
+  return geometry;
+}
+
 export function uiRenderPass1(_item: PrimitiveItem, _isSelected: boolean): void {}
 
 export function uiRenderPass2(item: PrimitiveItem, isSelected: boolean): void {

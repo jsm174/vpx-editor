@@ -111,6 +111,7 @@ import {
   applyTheme,
 } from './view-manager.js';
 import { initConsole, consoleOutput } from './console-panel.js';
+import { initMcpBridge, runExclusive } from './mcp-bridge.js';
 
 function updateStatusBarUnits(): void {
   if (elements.statusBlank && state.gamedata && state.lastMousePosition) {
@@ -236,18 +237,23 @@ if (elements.container) {
   resizeObserver.observe(elements.container);
 }
 
-window.vpxEditor.onTableLoaded(async data => {
-  state.extractedDir = data.extractedDir;
-  state.tableName = data.tableName || null;
-  state.isTableLocked = data.isTableLocked || false;
-  undoManager.clear();
-  await loadTable();
-  setUIEnabled(true);
-  updateElementToolbarForBackglassView();
-  updateToolboxForTableLock();
-  updateUndoRedoButtons();
-  updateClipboardMenuState();
+window.vpxEditor.onTableLoaded(data => {
+  void runExclusive(async () => {
+    state.extractedDir = data.extractedDir;
+    state.tableName = data.tableName || null;
+    state.isTableLocked = data.isTableLocked || false;
+    undoManager.clear();
+    await loadTable();
+    setUIEnabled(true);
+    updateElementToolbarForBackglassView();
+    updateToolboxForTableLock();
+    updateUndoRedoButtons();
+    updateClipboardMenuState();
+    window.vpxEditor.notifyTableReady?.(data.extractedDir);
+  });
 });
+
+initMcpBridge({ runUndoRedo, updateUndoRedoButtons });
 
 window.vpxEditor.onTableClosed?.(() => {
   state.extractedDir = null;
@@ -962,14 +968,16 @@ function updateUndoRedoButtons(): void {
 
 undoManager.setOnChange(updateUndoRedoButtons);
 
-async function runUndoRedo(direction: 'undo' | 'redo'): Promise<void> {
-  if (undoRedoBusy) return;
+async function runUndoRedo(direction: 'undo' | 'redo'): Promise<boolean> {
+  if (undoRedoBusy) return false;
   undoRedoBusy = true;
   if (undoBtn) undoBtn.disabled = true;
   if (redoBtn) redoBtn.disabled = true;
+  let succeeded = false;
   try {
     const result = direction === 'undo' ? await undoManager.undo() : await undoManager.redo();
     if (result && result.success) {
+      succeeded = true;
       if (result.selectItems !== undefined) {
         if (result.selectItems.length > 0) {
           setSelection(result.selectItems, result.selectItems[0]);
@@ -992,6 +1000,7 @@ async function runUndoRedo(direction: 'undo' | 'redo'): Promise<void> {
     undoRedoBusy = false;
     updateUndoRedoButtons();
   }
+  return succeeded;
 }
 
 undoBtn?.addEventListener('click', () => runUndoRedo('undo'));

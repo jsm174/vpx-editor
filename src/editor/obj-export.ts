@@ -13,12 +13,8 @@ const DEFAULT_EXCHANGE: ObjExchangeOptions = {
   orientation: DEFAULT_OBJ_ORIENTATION,
 };
 
-function downloadFile(content: string | Uint8Array, fileName: string): void {
-  const blob =
-    typeof content === 'string'
-      ? new Blob([content], { type: 'text/plain' })
-      : new Blob([new Uint8Array(content).buffer], { type: 'application/octet-stream' });
-  const url = URL.createObjectURL(blob);
+function downloadFile(content: string, fileName: string): void {
+  const url = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
   const a = document.createElement('a');
   a.href = url;
   a.download = fileName;
@@ -32,48 +28,57 @@ function finishObjText(objBytes: Uint8Array, mtlFileName: string, options: ObjEx
   return insertObjHeaderComment(renameObjMtlReference(new TextDecoder().decode(objBytes), mtlFileName), options);
 }
 
-export async function exportTableMeshAndSave(options: ObjExchangeOptions = DEFAULT_EXCHANGE): Promise<string | null> {
-  const tableName = state.tableName || 'table';
-  const isDesktop = !!(window.vpxEditor?.exportObjMeshGetPath && window.vpxEditor?.exportObjTable);
-
-  let objPath: string | null = null;
-  if (isDesktop) {
-    objPath = await window.vpxEditor.exportObjMeshGetPath!(`${tableName}.obj`);
-    if (!objPath) return null;
-  }
-
-  let files: Record<string, Uint8Array> | null;
-  if (isDesktop) {
-    const result = await window.vpxEditor.exportObjTable!(exportTableObjOptions(options));
+async function exportTableMeshFiles(options: ObjExchangeOptions): Promise<Record<string, Uint8Array> | null> {
+  if (window.vpxEditor?.exportObjTable) {
+    const result = await window.vpxEditor.exportObjTable(exportTableObjOptions(options));
     if (!result?.success || !result.files) {
       console.warn('OBJ export failed:', result?.error);
       return null;
     }
-    files = result.files;
-  } else {
-    const { exportObjTableFiles } = await import('../web/vpx-file-operations.js');
-    files = await exportObjTableFiles(exportTableObjOptions(options));
+    return result.files;
   }
+  const { exportObjTableFiles } = await import('../web/vpx-file-operations.js');
+  return exportObjTableFiles(exportTableObjOptions(options));
+}
 
+export async function exportTableMesh(
+  mtlFileName: string,
+  options: ObjExchangeOptions = DEFAULT_EXCHANGE
+): Promise<{ obj: string; mtl: string } | null> {
+  const files = await exportTableMeshFiles(options);
   const objBytes = files?.['table.obj'];
   const mtlBytes = files?.['table.mtl'];
   if (!objBytes || !mtlBytes) return null;
+  return { obj: finishObjText(objBytes, mtlFileName, options), mtl: new TextDecoder().decode(mtlBytes) };
+}
 
-  if (isDesktop && objPath) {
+export async function exportTableMeshAndSave(options: ObjExchangeOptions = DEFAULT_EXCHANGE): Promise<string | null> {
+  const tableName = state.tableName || 'table';
+  const isDesktop = !!(window.vpxEditor?.exportObjMeshGetPath && window.vpxEditor?.exportObjTable);
+
+  if (isDesktop) {
+    const objPath = await window.vpxEditor.exportObjMeshGetPath!(`${tableName}.obj`);
+    if (!objPath) return null;
+
     const separator = objPath.includes('\\') ? '\\' : '/';
     const objFileName = objPath.split(separator).pop()!;
     const mtlFileName = objFileName.replace(/\.obj$/i, '') + '.mtl';
     const mtlPath = objPath.slice(0, objPath.length - objFileName.length) + mtlFileName;
-    await window.vpxEditor.writeFile(objPath, finishObjText(objBytes, mtlFileName, options));
-    await window.vpxEditor.writeFile(mtlPath, new TextDecoder().decode(mtlBytes));
+
+    const result = await exportTableMesh(mtlFileName, options);
+    if (!result) return null;
+    await window.vpxEditor.writeFile(objPath, result.obj);
+    await window.vpxEditor.writeFile(mtlPath, result.mtl);
     appendConsoleLine(`Exported ${objPath}`, 'success');
     return objPath;
   }
 
   const objFileName = `${tableName}.obj`;
   const mtlFileName = `${tableName}.mtl`;
-  downloadFile(finishObjText(objBytes, mtlFileName, options), objFileName);
-  downloadFile(mtlBytes, mtlFileName);
+  const result = await exportTableMesh(mtlFileName, options);
+  if (!result) return null;
+  downloadFile(result.obj, objFileName);
+  downloadFile(result.mtl, mtlFileName);
   appendConsoleLine(`Exported ${objFileName} and ${mtlFileName}`, 'success');
   return objFileName;
 }

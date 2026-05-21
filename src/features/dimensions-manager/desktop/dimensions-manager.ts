@@ -1,3 +1,4 @@
+import '../../../preload/mcp-input-lock.js';
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
 export interface DimensionsManagerAPI {

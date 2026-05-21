@@ -27,6 +27,11 @@ export function createMenuActionHandler(context: MenuActionContext) {
             'strippedTable.vpx': 'new-blank',
             'exampleTable.vpx': 'new-example',
             'lightSeqTable.vpx': 'new-lightseq',
+            'vpwBasicExampleTable.vpx': 'new-vpw-basic-example',
+            'vpwExampleTable.vpx': 'new-vpw-example',
+            'vpwRomExampleTable.vpx': 'new-vpw-rom-example',
+            'glfTutorialPlunger.vpx': 'new-glf-starter',
+            'glfExampleTable.vpx': 'new-glf-example',
           };
           loadTemplate(templateMap[arg] || 'new-table');
         }

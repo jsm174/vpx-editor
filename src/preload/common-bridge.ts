@@ -1,3 +1,4 @@
+import './mcp-input-lock.js';
 import { ipcRenderer, IpcRendererEvent } from 'electron';
 
 export interface CommonBridgeAPI {

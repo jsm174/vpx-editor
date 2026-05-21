@@ -1,0 +1,106 @@
+.mcp-info-row {
+  margin: 4px 0 8px 0;
+  padding-left: 4px;
+}
+
+.mcp-info-text {
+  font-size: 12px;
+  opacity: 0.75;
+  line-height: 1.4;
+}
+
+.mcp-status-row {
+  margin-top: 4px;
+}
+
+.mcp-status-label {
+  font-weight: 500;
+  margin-right: 6px;
+}
+
+.mcp-status-text {
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.mcp-status-ok {
+  color: #2a9b3a;
+}
+
+.mcp-status-warn {
+  color: #b07a00;
+}
+
+.mcp-status-err {
+  color: #b32626;
+}
+
+.mcp-auth-failure {
+  margin: 6px 0 0 4px;
+  padding: 8px 10px;
+  border: 1px solid #b07a00;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #b07a00;
+}
+
+.mcp-mono {
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.mcp-regenerate-row .mcp-info-text {
+  flex: 1;
+}
+
+.mcp-client-steps {
+  margin: 4px 0 8px 4px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.mcp-client-steps ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.mcp-client-steps li {
+  margin-bottom: 4px;
+}
+
+.mcp-client-steps code {
+  font-family: monospace;
+  font-size: 11px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
+}
+
+.mcp-client-steps p {
+  margin: 0 0 6px 0;
+}
+
+.mcp-snippet {
+  width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow: auto;
+  line-height: 1.5;
+}
+
+.mcp-snippet-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.mcp-feedback {
+  min-height: 16px;
+  margin-top: 6px;
+}

@@ -690,6 +690,10 @@ function setupScriptEditorModal(): void {
   });
 
   events.on('toggle-script-editor', openScriptEditor);
+  events.on('script-undone', async () => {
+    if (modal.classList.contains('hidden')) return;
+    controller.setContent(await state.platform!.fileSystem.readFile(`${EXTRACTED_DIR}/script.vbs`));
+  });
 }
 
 function setupImageManagerModal(): void {
