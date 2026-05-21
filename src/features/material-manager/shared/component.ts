@@ -1,5 +1,6 @@
 import type { Material } from '../../../types/data';
 import { colorToHexString } from '../../../shared/color-utils';
+import { getDefaultMaterial } from '../../../shared/material-defaults';
 import { escapeHtml } from '../../../shared/window-utils';
 import { addLongPressContextMenu } from '../../../shared/long-press';
 
@@ -441,29 +442,6 @@ export function initMaterialManagerComponent(
         callbacks.onMaterialsChanged?.();
       });
     });
-  }
-
-  function getDefaultMaterial(): Record<string, unknown> {
-    return {
-      name: 'NewMaterial',
-      type: 'basic',
-      wrap_lighting: 0.25,
-      roughness: 0.5,
-      glossy_image_lerp: 0.5,
-      thickness: 0.05,
-      edge: 0.0,
-      edge_alpha: 1.0,
-      opacity: 0.0,
-      base_color: '#808080',
-      glossy_color: '#000000',
-      clearcoat_color: '#000000',
-      opacity_active: false,
-      elasticity: 0.0,
-      elasticity_falloff: 0.0,
-      friction: 0.0,
-      scatter_angle: 0.0,
-      refraction_tint: '#ffffff',
-    };
   }
 
   let pendingEditMaterial: Record<string, unknown> | null = null;

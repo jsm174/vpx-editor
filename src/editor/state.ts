@@ -345,6 +345,11 @@ export function getItemSpaceReference(item: GameItem): string {
   return 'playfield';
 }
 
+export function isItemVisibleForExport(item: GameItem): boolean {
+  if (isOnHiddenLayer(item)) return false;
+  return isBackglassItem(item) === state.backglassView;
+}
+
 export function isItemVisible(item: GameItem, _name: string): boolean {
   const inPreviewMode = state.viewMode === VIEW_MODE_3D && state.previewViewMode !== 'editor';
 

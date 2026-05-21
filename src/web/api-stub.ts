@@ -69,6 +69,8 @@ export const vpxEditorAPI = {
   onRenameSubmitted: (cb: Function) => events.on('rename-submitted', cb),
   onRequestSelectionResend: (cb: Function) => events.on('request-selection-resend', cb),
 
+  restoreMcpFiles: async () => ({ success: false, error: 'MCP requires the desktop editor' }),
+  notifyScriptUndone: () => events.emit('script-undone'),
   readFile: async (_path: string) => ({ success: false, error: 'Not initialized' }),
   readBinaryFile: async (_path: string) => ({ success: false, error: 'Not initialized' }),
   objToMesh: async (_path: string) => ({ success: false, error: 'Not initialized' }),

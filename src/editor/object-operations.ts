@@ -145,6 +145,32 @@ export function moveObjectOffset(itemName: string, dx: number, dy: number): void
   }
 }
 
+export function getItemAnchor(item: GameItem): Point {
+  if (item.center) return { x: item.center.x, y: item.center.y };
+  if (item.pos) return { x: item.pos.x, y: item.pos.y };
+  if (item.pos_x !== undefined && item.pos_y !== undefined) return { x: item.pos_x, y: item.pos_y };
+  if (item.position) return { x: item.position.x, y: item.position.y };
+  if (item.ver1 && item.ver2) return { x: (item.ver1.x + item.ver2.x) / 2, y: (item.ver1.y + item.ver2.y) / 2 };
+  if (item.drag_points && item.drag_points.length > 0) return getObjectCenter(item);
+  return { x: 0, y: 0 };
+}
+
+export function moveObjectTo(itemName: string, x: number, y: number, z?: number): void {
+  const item = getItem(itemName);
+  if (!item) return;
+  const anchor = getItemAnchor(item);
+  const dx = x - anchor.x;
+  const dy = y - anchor.y;
+  moveObjectOffset(itemName, dx, dy);
+  if (item.pos_x !== undefined && item.pos_y !== undefined) {
+    item.pos_x += dx;
+    item.pos_y += dy;
+  }
+  if (z !== undefined && item.position) {
+    (item.position as unknown as Record<string, number>).z = z;
+  }
+}
+
 export function flipObjectX(itemName: string, renderCallback?: () => void): void {
   const item = getItem(itemName);
   if (!item || !item.drag_points) return;

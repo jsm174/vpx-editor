@@ -31,6 +31,9 @@ export interface WindowContextChildWindows {
 }
 
 export class WindowContext implements WindowContextState, WindowContextChildWindows {
+  public mcpEditBusy = false;
+  public mcpEditWriting = false;
+  public tableGeneration = 0;
   public readonly id: string;
   public readonly window: BrowserWindow;
   public extractedDir: string | null;
@@ -139,6 +142,7 @@ export class WindowContext implements WindowContextState, WindowContextChildWind
 
   public reset(): void {
     this.closeChildWindows();
+    this.tableGeneration++;
     this.extractedDir = null;
     this.currentTablePath = null;
     this.tableName = null;

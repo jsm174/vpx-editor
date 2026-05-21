@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>MCP Server Settings</title>
+    <script>
+      var theme = new URLSearchParams(window.location.search).get('theme');
+      if (theme) document.documentElement.setAttribute('data-theme', theme);
+    </script>
+    <link rel="stylesheet" href="../../../shared/window-base.css" />
+    <link rel="stylesheet" href="../../settings/shared/component.css" />
+    <link rel="stylesheet" href="window.css" />
+  </head>
+  <body>
+    <div class="settings-container">
+      <div class="settings-body">
+        <div class="settings-section">
+          <div class="settings-section-title">Server</div>
+          <div class="settings-checkbox-row">
+            <input type="checkbox" id="mcp-enabled" />
+            <label for="mcp-enabled">Enable MCP server when the editor is running</label>
+          </div>
+          <div class="settings-field-row">
+            <label>Port</label>
+            <input type="number" id="mcp-port" class="win-input settings-number-input" min="1024" max="65535" />
+          </div>
+          <div class="settings-field-row mcp-status-row">
+            <span class="mcp-status-label">Status:</span>
+            <span id="mcp-status-text" class="mcp-status-text">—</span>
+          </div>
+          <div id="mcp-auth-failure" class="mcp-auth-failure" hidden></div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Connection details</div>
+          <div class="mcp-info-row">
+            <span class="mcp-info-text">Every client needs these two values. Treat the token like a password and keep it out of screenshots and shared files.</span>
+          </div>
+          <div class="settings-field-row">
+            <label>Endpoint</label>
+            <input type="text" id="mcp-endpoint" class="win-input mcp-mono" readonly />
+            <button class="win-btn" id="mcp-copy-endpoint">Copy</button>
+          </div>
+          <div class="settings-field-row">
+            <label>Access token</label>
+            <input type="text" id="mcp-token" class="win-input mcp-mono" readonly />
+            <button class="win-btn" id="mcp-copy-token">Copy</button>
+          </div>
+          <div class="settings-field-row mcp-regenerate-row">
+            <label></label>
+            <button class="win-btn" id="mcp-regenerate" title="Generate a new access token and restart the server">Regenerate token</button>
+            <span class="mcp-info-text">Regenerating disconnects every client until it is set up again.</span>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Set up a client</div>
+          <div class="settings-field-row">
+            <label>Client</label>
+            <select id="mcp-client" class="win-select">
+              <option value="claude-code">Claude Code</option>
+              <option value="codex">Codex CLI</option>
+            </select>
+          </div>
+          <div id="mcp-client-steps" class="mcp-client-steps"></div>
+          <div>
+            <textarea id="mcp-snippet" class="win-input mcp-mono mcp-snippet" readonly rows="6" spellcheck="false"></textarea>
+            <div class="mcp-snippet-actions">
+              <span id="mcp-snippet-label" class="mcp-info-text"></span>
+              <button class="win-btn" id="mcp-copy-snippet">Copy</button>
+            </div>
+          </div>
+          <div id="mcp-copy-feedback" class="mcp-info-text mcp-feedback"></div>
+        </div>
+      </div>
+
+      <div class="settings-footer">
+        <button class="win-btn" id="mcp-cancel">Cancel</button>
+        <button class="win-btn primary" id="mcp-ok">OK</button>
+      </div>
+    </div>
+
+    <script type="module" src="./window.ts"></script>
+  </body>
+</html>

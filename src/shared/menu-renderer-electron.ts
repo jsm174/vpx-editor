@@ -36,6 +36,7 @@ export interface ElectronMenuDeps {
     meshImportWindow: BrowserWindow | null;
     drawingOrderWindow: BrowserWindow | null;
     renamePromptWindow?: BrowserWindow | null;
+    mcpSettingsWindow?: BrowserWindow | null;
     nativeDialogOpen?: boolean;
   };
   actions: ElectronMenuActions;
@@ -69,6 +70,7 @@ export interface ElectronMenuActions {
   toggleTableLock: () => void;
   openSettingsWindow: () => void;
   showAboutDialog: () => void;
+  mcpOpenSettings?: () => void;
 }
 
 interface WindowContext {
@@ -98,6 +100,7 @@ function getMenuState(deps: ElectronMenuDeps): MenuState {
     !!windowStates.meshImportWindow ||
     !!windowStates.drawingOrderWindow ||
     !!windowStates.renamePromptWindow ||
+    !!windowStates.mcpSettingsWindow ||
     !!windowStates.nativeDialogOpen;
 
   return {
@@ -130,6 +133,11 @@ function createActionHandler(
     'strippedTable.vpx': ['strippedTable.vpx', 'Blank Table'],
     'exampleTable.vpx': ['exampleTable.vpx', 'Example Table'],
     'lightSeqTable.vpx': ['lightSeqTable.vpx', 'Light Sequence Demo'],
+    'vpwBasicExampleTable.vpx': ['vpwBasicExampleTable.vpx', 'VPW Basic Example Table'],
+    'vpwExampleTable.vpx': ['vpwExampleTable.vpx', 'VPW Example Table'],
+    'vpwRomExampleTable.vpx': ['vpwRomExampleTable.vpx', 'VPW ROM Example Table'],
+    'glfTutorialPlunger.vpx': ['glfTutorialPlunger.vpx', 'GLF Tutorial Plunger'],
+    'glfExampleTable.vpx': ['glfExampleTable.vpx', 'GLF Example Table'],
   };
 
   switch (action) {
@@ -311,6 +319,9 @@ function createActionHandler(
           editorCtx.window.webContents.send('toggle-console');
         }
       };
+
+    case 'mcp-open-settings':
+      return () => actions.mcpOpenSettings?.();
 
     case 'export-blueprint':
       return async () => {
