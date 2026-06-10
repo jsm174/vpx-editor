@@ -464,6 +464,7 @@ export function initSoundManagerComponent(
         sounds.push({
           name,
           path: file.name,
+          internal_name: '',
           fade: 0,
           volume: 0,
           balance: 0,
@@ -517,6 +518,7 @@ export function initSoundManagerComponent(
       sounds.push({
         name: result.name,
         path: result.originalPath || '',
+        internal_name: '',
         fade: 0,
         volume: 0,
         balance: 0,
