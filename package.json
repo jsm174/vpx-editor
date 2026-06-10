@@ -40,6 +40,7 @@
     "@electron-forge/publisher-github": "^7.10.2",
     "@electron-forge/shared-types": "^7.10.2",
     "@electron/fuses": "^1.8.0",
+    "@types/fs-extra": "^11.0.4",
     "@types/node": "^25.0.3",
     "@types/three": "^0.182.0",
     "@vitejs/plugin-basic-ssl": "^2.1.4",
@@ -55,5 +56,8 @@
     "monaco-editor": "^0.55.1",
     "three": "^0.181.2",
     "update-electron-app": "^3.1.2"
+  },
+  "overrides": {
+    "yauzl": "^3.3.1"
   }
 }
