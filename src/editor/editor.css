@@ -50,3 +50,56 @@ button:focus {
   text-align: center;
   padding: 20px;
 }
+
+.loading-indicator-3d {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+  min-width: 180px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 12px;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.loading-indicator-3d-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.loading-indicator-3d-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+}
+
+.loading-indicator-3d-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 2px;
+  background: #4a9eff;
+  transition: width 0.1s linear;
+}
+
+.loading-indicator-3d-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: loading-indicator-3d-spin 0.8s linear infinite;
+}
+
+@keyframes loading-indicator-3d-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
