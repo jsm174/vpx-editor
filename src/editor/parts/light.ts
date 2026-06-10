@@ -108,8 +108,7 @@ export function createLight3DMesh(item: unknown): THREE.Object3D | null {
     }
 
     const mesh = new THREE.Mesh(geometry, material);
-    const lightHeight = (lightItem.height ?? 0) + surfaceHeight;
-    mesh.position.set(center.x, center.y, lightHeight + 0.5);
+    mesh.position.set(center.x, center.y, surfaceHeight + 0.1);
     return mesh;
   }
 

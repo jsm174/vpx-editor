@@ -12,7 +12,6 @@ import { createMaterial, getSurfaceHeight } from '../../shared/3d-material-helpe
 import { materialOptions, surfaceOptions } from '../../shared/options-generators.js';
 import { materialSelect } from '../../shared/property-templates.js';
 import { TRIGGER_DEFAULTS } from '../../shared/object-defaults.js';
-import { createMeshGeometry } from '../../shared/mesh-utils.js';
 import {
   RENDER_COLOR_GREEN,
   RENDER_COLOR_BLACK,
@@ -55,6 +54,49 @@ interface MeshData {
   positions: number[];
   normals: number[];
   indices: number[];
+}
+
+function createTriggerGeometry(
+  meshData: MeshData,
+  sx: number,
+  sy: number,
+  sz: number,
+  tilt: number,
+  rotation: number,
+  zOffset: number,
+  wireThickness: number
+): THREE.BufferGeometry {
+  const positions = new Float32Array(meshData.positions.length);
+  const normals = new Float32Array(meshData.normals.length);
+  const cosX = Math.cos(tilt);
+  const sinX = Math.sin(tilt);
+  const cosZ = Math.cos(rotation);
+  const sinZ = Math.sin(rotation);
+
+  for (let i = 0; i < meshData.positions.length; i += 3) {
+    const x = meshData.positions[i];
+    const y = meshData.positions[i + 1] * cosX - meshData.positions[i + 2] * sinX;
+    const z = meshData.positions[i + 1] * sinX + meshData.positions[i + 2] * cosX;
+    const nx0 = meshData.normals[i];
+    const ny0 = meshData.normals[i + 1] * cosX - meshData.normals[i + 2] * sinX;
+    const nz = meshData.normals[i + 1] * sinX + meshData.normals[i + 2] * cosX;
+    const nx = nx0 * cosZ - ny0 * sinZ;
+    const ny = nx0 * sinZ + ny0 * cosZ;
+    positions[i] = (x * cosZ - y * sinZ) * sx + nx * wireThickness;
+    positions[i + 1] = (x * sinZ + y * cosZ) * sy + ny * wireThickness;
+    positions[i + 2] = z * sz + zOffset + nz * wireThickness;
+    normals[i] = nx;
+    normals[i + 1] = ny;
+    normals[i + 2] = nz;
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+  if (meshData.indices && meshData.indices.length > 0) {
+    geometry.setIndex(meshData.indices);
+  }
+  return geometry;
 }
 
 export function createTrigger3DMesh(item: TriggerItem): THREE.Mesh | null {
@@ -101,8 +143,11 @@ export function createTrigger3DMesh(item: TriggerItem): THREE.Mesh | null {
   const sx = useRadius ? radius : scaleX;
   const sy = useRadius ? radius : scaleY;
   const sz = useRadius ? radius : 1;
+  const wireThickness = useRadius ? 0 : (item.wire_thickness ?? TRIGGER_DEFAULTS.wire_thickness);
+  const tilt = shape === 'wire_b' ? (-23 * Math.PI) / 180 : shape === 'wire_c' ? (140 * Math.PI) / 180 : 0;
+  const zOffset = shape === 'button' ? 5 : shape === 'wire_c' ? -19 : 0;
 
-  const geometry = createMeshGeometry(meshData, { scaleX: sx, scaleY: sy, scaleZ: sz, rotation });
+  const geometry = createTriggerGeometry(meshData, sx, sy, sz, tilt, rotation, zOffset, wireThickness);
   const material = createMaterial(item.material, null);
   const mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(center.x, center.y, getSurfaceHeight(item.surface));

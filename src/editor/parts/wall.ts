@@ -105,7 +105,7 @@ export function createWall3DMesh(item: WallItem): THREE.Mesh | null {
   shape.closePath();
 
   const material = createMaterial(item.top_material || item.side_material, item.image || item.side_image);
-  applyDisableLighting(material, item.disable_lighting_top_old ?? 0);
+  applyDisableLighting(material, item.disable_lighting_top ?? item.disable_lighting_top_old ?? 0);
 
   if (!sideVisible && topVisible) {
     const geometry = new THREE.ShapeGeometry(shape);
@@ -118,16 +118,14 @@ export function createWall3DMesh(item: WallItem): THREE.Mesh | null {
   if (sideVisible && !topVisible) {
     const geometry = createWallSidesGeometry(shape, Math.abs(height));
     const mesh = new THREE.Mesh(geometry, material);
-    const baseZ = Math.min(heightBottom, heightTop);
-    mesh.position.z = baseZ >= 0 && baseZ < 1 ? 0.5 : baseZ;
+    mesh.position.z = Math.min(heightBottom, heightTop);
     return mesh;
   }
 
   const geometry = new THREE.ExtrudeGeometry(shape, { depth: Math.abs(height), bevelEnabled: false });
   applyPlayfieldUVs(geometry);
   const mesh = new THREE.Mesh(geometry, material);
-  const baseZ = Math.min(heightBottom, heightTop);
-  mesh.position.z = baseZ >= 0 && baseZ < 1 ? 0.5 : baseZ;
+  mesh.position.z = Math.min(heightBottom, heightTop);
 
   return mesh;
 }

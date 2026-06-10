@@ -274,8 +274,7 @@ export function createRamp3DMesh(item: RampItem): THREE.Group | null {
 
   const widthBottom = item.width_bottom ?? RAMP_DEFAULTS.width_bottom;
   const widthTop = item.width_top ?? RAMP_DEFAULTS.width_top;
-  const heightBottom =
-    (item.height_bottom ?? RAMP_DEFAULTS.height_bottom) < 1 ? 0.5 : (item.height_bottom ?? RAMP_DEFAULTS.height_bottom);
+  const heightBottom = item.height_bottom ?? RAMP_DEFAULTS.height_bottom;
   const heightTop = item.height_top ?? RAMP_DEFAULTS.height_top;
 
   if (isWireRamp) {
@@ -389,8 +388,8 @@ export function createRamp3DMesh(item: RampItem): THREE.Group | null {
       floorUvs.push(vertices[i].left.x / tableWidth, vertices[i].left.y / tableHeight);
       floorUvs.push(vertices[i].right.x / tableWidth, vertices[i].right.y / tableHeight);
     } else {
-      floorUvs.push(0, 1 - t);
       floorUvs.push(1, 1 - t);
+      floorUvs.push(0, 1 - t);
     }
   }
 
