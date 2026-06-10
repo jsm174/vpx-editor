@@ -144,6 +144,7 @@ export {
   primitiveProperties,
   clearPrimitiveMeshCache,
   invalidatePrimitiveMeshCache,
+  hitTestPrimitive,
 } from './primitive.js';
 export {
   render as renderReel,
