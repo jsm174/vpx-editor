@@ -2,10 +2,12 @@ import * as THREE from 'three';
 import { state, elements, getItemByFileName } from '../state.js';
 import { toScreen, getStrokeStyle, getLineWidth, convertToUnit, getUnitSuffixHtml } from '../utils.js';
 import { createMaterial, applyDisableLighting } from '../../shared/3d-material-helpers.js';
+import { loadTexture } from '../texture-loader.js';
 import { materialOptions, imageOptions, lightOptions, renderProbeOptions } from '../../shared/options-generators.js';
 import { materialSelect, imageSelect } from '../../shared/property-templates.js';
 import { PRIMITIVE_DEFAULTS } from '../../shared/object-defaults.js';
-import { getWireframeMode } from '../canvas-renderer-3d.js';
+import { getWireframeMode, request3DRender } from '../canvas-renderer-3d.js';
+import { loadingStarted, loadingFinished } from '../loading-indicator.js';
 import { registerCallback, invokeCallback } from '../../shared/callbacks.js';
 import { RENDER_COLOR_BLACK, BLUEPRINT_SOLID_COLOR } from '../../shared/constants.js';
 import { registerEditable, IEditable, Point } from './registry.js';
@@ -50,6 +52,7 @@ interface PrimitiveItem {
   is_toy?: boolean;
   collision_reduction_factor?: number;
   disable_lighting_top_old?: number;
+  disable_lighting_top?: number;
   disable_lighting_below?: number;
   alpha?: number;
   use_3d_mesh?: boolean;
@@ -176,17 +179,36 @@ function createPrimitiveMaterial(item: PrimitiveItem): THREE.Material {
   const imageName = isPlayfield ? (state.gamedata?.image as string | undefined) : item.image;
   const materialName = isPlayfield ? (state.gamedata?.playfield_material as string | undefined) : item.material;
 
+  if (item.add_blend) {
+    const alpha = (item.alpha ?? PRIMITIVE_DEFAULTS.alpha) / 100;
+    const material = new THREE.MeshBasicMaterial({
+      color: defaultColor ?? 0xffffff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      opacity: alpha,
+    });
+    material.wireframe = getWireframeMode();
+    if (state.showMaterials && imageName) {
+      material.visible = false;
+      loadTexture(imageName).then(texture => {
+        if (texture) {
+          material.map = texture;
+          material.visible = true;
+          material.needsUpdate = true;
+        }
+      });
+    }
+    return material;
+  }
+
   const material = createMaterial(materialName, imageName, defaultColor);
   material.wireframe = getWireframeMode();
 
-  const depthMask = item.use_depth_mask !== false && !item.add_blend;
-  material.depthWrite = depthMask;
+  material.depthWrite = item.use_depth_mask !== false;
 
-  if (item.add_blend) {
-    material.transparent = true;
-    material.blending = THREE.AdditiveBlending;
-    material.depthWrite = false;
-  } else if (item.static_rendering) {
+  if (item.static_rendering) {
     material.transparent = false;
     material.opacity = 1;
   }
@@ -197,7 +219,7 @@ function createPrimitiveMaterial(item: PrimitiveItem): THREE.Material {
     material.opacity = alpha;
   }
 
-  applyDisableLighting(material, item.disable_lighting_top_old ?? 0);
+  applyDisableLighting(material, item.disable_lighting_top ?? item.disable_lighting_top_old ?? 0);
 
   return material;
 }
@@ -207,6 +229,7 @@ function replacePlaceholder(meshContainer: THREE.Group, placeholder: THREE.Mesh,
   (placeholder.geometry as THREE.BufferGeometry).dispose();
   (placeholder.material as THREE.Material).dispose();
   meshContainer.add(newObj);
+  request3DRender();
 }
 
 async function applyBuiltinMesh3D(
@@ -240,6 +263,7 @@ async function loadPrimitiveOBJOrBuiltin(
   placeholder: THREE.Mesh,
   item: PrimitiveItem
 ): Promise<void> {
+  const job = loadingStarted('meshes', 1);
   try {
     const result = await window.vpxEditor.objToMesh(objPath);
     if (!result.success || !result.mesh) {
@@ -266,6 +290,8 @@ async function loadPrimitiveOBJOrBuiltin(
     replacePlaceholder(meshContainer, placeholder, obj);
   } catch (e: unknown) {
     console.warn('Failed to load OBJ:', objPath, e);
+  } finally {
+    loadingFinished(job);
   }
 }
 
