@@ -180,7 +180,7 @@ jobs:
           archive: false
 
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2025-vs2026
     needs: [version]
     permissions:
       contents: read
