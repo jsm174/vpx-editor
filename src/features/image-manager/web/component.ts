@@ -2,11 +2,11 @@ import { initImageManagerComponent, loadImageManagerData, type ImageManagerInsta
 import { getImageDimensions, hdrFloatDataToDataUrl, type ImageData, type GameItem } from '../shared/core';
 import { initWebPrompt } from '../../prompt/web/component';
 import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
-import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
 import templateHtml from './template.html?raw';
 
 const exrLoader = new EXRLoader();
-const rgbeLoader = new RGBELoader();
+const hdrLoader = new HDRLoader();
 
 export type { ImageManagerInstance };
 
@@ -116,7 +116,7 @@ export function initWebImageManager(
                 data.buffer.byteLength === data.byteLength
                   ? data.buffer
                   : data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
-              const parsed = ext === '.exr' ? (exrLoader as any).parse(buffer) : (rgbeLoader as any).parse(buffer);
+              const parsed = ext === '.exr' ? (exrLoader as any).parse(buffer) : (hdrLoader as any).parse(buffer);
               const isHalf = parsed.data instanceof Uint16Array;
               return hdrFloatDataToDataUrl(parsed.width, parsed.height, parsed.data, isHalf);
             } catch {
