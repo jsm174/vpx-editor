@@ -11,6 +11,7 @@ import { selectItem } from './items-panel.js';
 import { computeCameraParams, VIEW_MODE_MASKS, getSpaceReferenceOffset, type ViewMode } from './view-setup.js';
 import { getItemBounds } from './utils.js';
 import { CAMERA_BASE_DISTANCE, CAMERA_ANIMATION_DURATION } from '../shared/constants.js';
+import { initLoadingIndicator, setLoadingIndicatorVisible } from './loading-indicator.js';
 import type { GameData } from '../types/data.js';
 
 import { getEditable } from './parts/index.js';
@@ -67,6 +68,11 @@ let cameraAnimationId: number | null = null;
 let composer: EffectComposer;
 let outlinePass: OutlinePass;
 let metalEnvMap: THREE.Texture | null = null;
+let renderNeeded: boolean = true;
+
+export function request3DRender(): void {
+  renderNeeded = true;
+}
 
 export function getMetalEnvMap(): THREE.Texture | null {
   return metalEnvMap;
@@ -145,7 +151,12 @@ export function init3D(container: HTMLElement): void {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   container.appendChild(renderer.domElement);
 
-  composer = new EffectComposer(renderer);
+  const bufferSize = renderer.getDrawingBufferSize(new THREE.Vector2());
+  const composerTarget = new THREE.WebGLRenderTarget(bufferSize.width, bufferSize.height, {
+    samples: 4,
+    type: THREE.HalfFloatType,
+  });
+  composer = new EffectComposer(renderer, composerTarget);
   const renderPass = new RenderPass(scene, camera);
   composer.addPass(renderPass);
 
@@ -155,6 +166,7 @@ export function init3D(container: HTMLElement): void {
   outlinePass.edgeThickness = 1.0;
   outlinePass.visibleEdgeColor.set(0xffffff);
   outlinePass.hiddenEdgeColor.set(0x888888);
+  outlinePass.enabled = false;
   composer.addPass(outlinePass);
 
   const outputPass = new OutputPass();
@@ -172,6 +184,7 @@ export function init3D(container: HTMLElement): void {
     MIDDLE: THREE.MOUSE.ROTATE,
     RIGHT: THREE.MOUSE.PAN,
   };
+  controls.addEventListener('change', request3DRender);
   controls.update();
 
   renderer.domElement.addEventListener(
@@ -220,6 +233,8 @@ export function init3D(container: HTMLElement): void {
 
   renderer.domElement.addEventListener('click', onClick3D);
 
+  initLoadingIndicator(container);
+
   isInitialized = true;
 }
 
@@ -238,11 +253,12 @@ export function disable3DKeyboard(): void {
 }
 
 export function resize3D(width: number, height: number): void {
-  if (!isInitialized) return;
+  if (!isInitialized || width <= 0 || height <= 0) return;
   (camera as THREE.PerspectiveCamera).aspect = width / height;
   camera.updateProjectionMatrix();
   renderer.setSize(width, height);
   if (composer) composer.setSize(width, height);
+  renderNeeded = true;
 }
 
 export function updateSceneLighting(): void {
@@ -580,12 +596,14 @@ export function onZoomChange(callback: ZoomChangeCallback): void {
 }
 
 export function startAnimation(): void {
+  setLoadingIndicatorVisible(true);
   if (isAnimating) return;
   isAnimating = true;
   animate();
 }
 
 export function stopAnimation(): void {
+  setLoadingIndicatorVisible(false);
   isAnimating = false;
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
@@ -603,7 +621,15 @@ function animate(): void {
 
   controls.update();
   updateSelectionOutline();
-  composer.render();
+
+  if (renderNeeded && renderer.domElement.clientWidth > 0 && renderer.domElement.clientHeight > 0) {
+    renderNeeded = false;
+    if (outlinePass.enabled) {
+      composer.render();
+    } else {
+      renderer.render(scene, camera);
+    }
+  }
 
   const currentZoom = getZoom3D();
   if (Math.abs(currentZoom - lastZoom) > 0.001 && zoomChangeCallback) {
@@ -674,12 +700,12 @@ function buildScene(): void {
   updatePlayfield();
   updateItems();
   applyWireframeMode();
+  renderNeeded = true;
 }
 
 export function refresh3DScene(): void {
   if (!isInitialized || !state.gamedata) return;
   buildScene();
-  composer.render();
 }
 
 export function invalidateItem(itemName: string): void {
@@ -690,6 +716,7 @@ export function invalidateItem(itemName: string): void {
     sceneContainer.remove(mesh);
     disposeObject(mesh);
     itemMeshes.delete(key);
+    renderNeeded = true;
   }
 }
 
@@ -700,6 +727,7 @@ export function invalidateAllItems(): void {
     disposeObject(mesh);
   }
   itemMeshes.clear();
+  renderNeeded = true;
 }
 
 function hasExplicitPlayfieldMesh(): boolean {
@@ -878,7 +906,13 @@ function updateSelectionOutline(): void {
     const mesh = itemMeshes.get(name.toLowerCase());
     if (mesh) selectedObjects.push(mesh);
   }
-  outlinePass.selectedObjects = selectedObjects;
+  const prev = outlinePass.selectedObjects;
+  const changed = prev.length !== selectedObjects.length || selectedObjects.some((obj, i) => prev[i] !== obj);
+  if (changed) {
+    outlinePass.selectedObjects = selectedObjects;
+    outlinePass.enabled = selectedObjects.length > 0;
+    renderNeeded = true;
+  }
 }
 
 function getItemNameFromObject(obj: THREE.Object3D): string | null {
@@ -956,6 +990,7 @@ export function toggleWireframe(): boolean {
     }
   });
 
+  renderNeeded = true;
   return wireframeMode;
 }
 

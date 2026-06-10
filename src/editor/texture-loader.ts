@@ -1,12 +1,48 @@
 import * as THREE from 'three';
-import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
-import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import { state } from './state.js';
 import { VIEW_MODE_3D } from '../shared/constants.js';
-import { getMetalEnvMap } from './canvas-renderer-3d.js';
+import { getMetalEnvMap, request3DRender } from './canvas-renderer-3d.js';
+import { loadingStarted, loadingFinished } from './loading-indicator.js';
 
-const exrLoader = new EXRLoader();
-const rgbeLoader = new RGBELoader();
+interface HDRDecodeResult {
+  id: number;
+  success: boolean;
+  width?: number;
+  height?: number;
+  data?: ArrayBuffer;
+  error?: string;
+}
+
+const MAX_DECODE_WORKERS = Math.min(4, Math.max(2, (navigator.hardwareConcurrency || 4) - 2));
+const decodeWorkers: Worker[] = [];
+let nextWorkerIndex = 0;
+let nextDecodeId = 0;
+const decodeCallbacks = new Map<number, (result: HDRDecodeResult) => void>();
+
+function getDecodeWorker(): Worker {
+  if (decodeWorkers.length < MAX_DECODE_WORKERS) {
+    const worker = new Worker(new URL('./texture-decode-worker.js', import.meta.url), { type: 'module' });
+    worker.onmessage = (e: MessageEvent<HDRDecodeResult>): void => {
+      const callback = decodeCallbacks.get(e.data.id);
+      decodeCallbacks.delete(e.data.id);
+      callback?.(e.data);
+    };
+    decodeWorkers.push(worker);
+    return worker;
+  }
+  nextWorkerIndex = (nextWorkerIndex + 1) % decodeWorkers.length;
+  return decodeWorkers[nextWorkerIndex];
+}
+
+function decodeHDRTexture(ext: string, data: Uint8Array, maxSize: number): Promise<HDRDecodeResult> {
+  const worker = getDecodeWorker();
+  return new Promise(resolve => {
+    const id = nextDecodeId++;
+    decodeCallbacks.set(id, resolve);
+    const buffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
+    worker.postMessage({ id, ext, buffer, maxSize }, [buffer]);
+  });
+}
 
 interface LoadQueueItem {
   imageName: string;
@@ -51,7 +87,7 @@ function colorBrightness(hex: string): number {
 
 let maxTextureSize = 2048;
 const builtinTextureCache: Map<string, THREE.Texture> = new Map();
-const LOAD_BATCH_SIZE = 2;
+const LOAD_BATCH_SIZE = 8;
 const pendingLoads = new Map<string, Promise<THREE.Texture | null>>();
 
 const loadQueue: LoadQueueItem[] = [];
@@ -84,7 +120,12 @@ export async function loadTexture(imageName: string): Promise<THREE.Texture | nu
     scheduleProcessQueue();
   });
   pendingLoads.set(imageName, promise);
-  promise.then(() => pendingLoads.delete(imageName));
+  const isHDR = /\.(exr|hdr)$/i.test((findImageInfo(imageName) as { path?: string } | undefined)?.path ?? '');
+  const job = loadingStarted('textures', isHDR ? 3000 : 50);
+  promise.then(() => {
+    pendingLoads.delete(imageName);
+    loadingFinished(job);
+  });
 
   return promise;
 }
@@ -109,6 +150,7 @@ async function processQueue(): Promise<void> {
 
   const batch = loadQueue.splice(0, LOAD_BATCH_SIZE);
   await Promise.all(batch.map(({ imageName, resolve }) => loadTextureInternal(imageName).then(resolve)));
+  request3DRender();
 
   isProcessingQueue = false;
 
@@ -137,25 +179,29 @@ async function loadTextureInternal(imageName: string): Promise<THREE.Texture | n
               : new Uint8Array(Object.values(result.data));
 
         if (ext === '.exr' || ext === '.hdr') {
-          try {
-            const parsed =
-              ext === '.exr'
-                ? exrLoader.parse(uint8Array.buffer as ArrayBuffer)
-                : (rgbeLoader as any).parse(uint8Array.buffer as ArrayBuffer);
-            const texture = new THREE.DataTexture(parsed.data, parsed.width, parsed.height, parsed.format, parsed.type);
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.RepeatWrapping;
-            texture.flipY = false;
-            texture.generateMipmaps = false;
-            texture.minFilter = THREE.LinearFilter;
-            texture.magFilter = THREE.LinearFilter;
-            texture.needsUpdate = true;
-
-            state.textureCache.set(imageName, texture);
-            return texture;
-          } catch {
+          const decoded = await decodeHDRTexture(ext, uint8Array, maxTextureSize || 2048);
+          if (!decoded.success || !decoded.data) {
+            console.warn(`[textures] ${imageName}${ext} decode failed: ${decoded.error}`);
             continue;
           }
+          const texture = new THREE.DataTexture(
+            new Uint8Array(decoded.data),
+            decoded.width!,
+            decoded.height!,
+            THREE.RGBAFormat,
+            THREE.UnsignedByteType
+          );
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.wrapS = THREE.RepeatWrapping;
+          texture.wrapT = THREE.RepeatWrapping;
+          texture.flipY = false;
+          texture.generateMipmaps = true;
+          texture.minFilter = THREE.LinearMipmapLinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+          texture.needsUpdate = true;
+
+          state.textureCache.set(imageName, texture);
+          return texture;
         }
 
         const mimeTypes: MimeTypes = {
@@ -167,15 +213,21 @@ async function loadTextureInternal(imageName: string): Promise<THREE.Texture | n
         };
 
         const blob = new Blob([uint8Array as BlobPart], { type: mimeTypes[ext] });
-        const url = URL.createObjectURL(blob);
 
         try {
-          const img = await loadImage(url);
-          URL.revokeObjectURL(url);
+          let bitmap = await createImageBitmap(blob);
+          if (maxTextureSize > 0 && (bitmap.width > maxTextureSize || bitmap.height > maxTextureSize)) {
+            const scale = maxTextureSize / Math.max(bitmap.width, bitmap.height);
+            const resized = await createImageBitmap(bitmap, {
+              resizeWidth: Math.floor(bitmap.width * scale),
+              resizeHeight: Math.floor(bitmap.height * scale),
+              resizeQuality: 'high',
+            });
+            bitmap.close();
+            bitmap = resized;
+          }
 
-          const resizedCanvas = resizeImage(img, maxTextureSize);
-
-          const texture = new THREE.CanvasTexture(resizedCanvas);
+          const texture = new THREE.Texture(bitmap);
           texture.colorSpace = THREE.SRGBColorSpace;
           texture.wrapS = THREE.RepeatWrapping;
           texture.wrapT = THREE.RepeatWrapping;
@@ -183,11 +235,11 @@ async function loadTextureInternal(imageName: string): Promise<THREE.Texture | n
           texture.generateMipmaps = true;
           texture.minFilter = THREE.LinearMipmapLinearFilter;
           texture.magFilter = THREE.LinearFilter;
+          texture.needsUpdate = true;
 
           state.textureCache.set(imageName, texture);
           return texture;
         } catch {
-          URL.revokeObjectURL(url);
           continue;
         }
       }
@@ -197,15 +249,6 @@ async function loadTextureInternal(imageName: string): Promise<THREE.Texture | n
   }
 
   return null;
-}
-
-function loadImage(url: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = (): void => resolve(img);
-    img.onerror = reject;
-    img.src = url;
-  });
 }
 
 export function loadBuiltinTexture(textureName: string): THREE.Texture {
@@ -222,33 +265,6 @@ export function loadBuiltinTexture(textureName: string): THREE.Texture {
 
   builtinTextureCache.set(textureName, texture);
   return texture;
-}
-
-function resizeImage(img: HTMLImageElement, maxSize: number): HTMLCanvasElement {
-  let { width, height } = img;
-
-  if (maxSize === 0 || (width <= maxSize && height <= maxSize)) {
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d')!;
-    ctx.drawImage(img, 0, 0);
-    return canvas;
-  }
-
-  const scale = maxSize / Math.max(width, height);
-  const newWidth = Math.floor(width * scale);
-  const newHeight = Math.floor(height * scale);
-
-  const canvas = document.createElement('canvas');
-  canvas.width = newWidth;
-  canvas.height = newHeight;
-  const ctx = canvas.getContext('2d')!;
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(img, 0, 0, newWidth, newHeight);
-
-  return canvas;
 }
 
 function findImageInfo(imageName: string): { is_opaque?: boolean } | undefined {
