@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { state, elements, getItemByFileName } from '../state.js';
-import { toScreen, getStrokeStyle, getLineWidth, convertToUnit, getUnitSuffixHtml } from '../utils.js';
+import { toScreen, getStrokeStyle, getLineWidth, convertToUnit, getUnitSuffixHtml, distToSegment } from '../utils.js';
 import { createMaterial, applyDisableLighting } from '../../shared/3d-material-helpers.js';
 import { loadTexture } from '../texture-loader.js';
 import { materialOptions, imageOptions, lightOptions, renderProbeOptions } from '../../shared/options-generators.js';
@@ -1136,6 +1136,68 @@ export function primitiveProperties(item: PrimitiveItem): string {
   `;
 }
 
+function pointInTriangle(
+  px: number,
+  py: number,
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+  cx: number,
+  cy: number
+): boolean {
+  const d1 = (px - bx) * (ay - by) - (ax - bx) * (py - by);
+  const d2 = (px - cx) * (by - cy) - (bx - cx) * (py - cy);
+  const d3 = (px - ax) * (cy - ay) - (cx - ax) * (py - ay);
+  const hasNeg = d1 < 0 || d2 < 0 || d3 < 0;
+  const hasPos = d1 > 0 || d2 > 0 || d3 > 0;
+  return !(hasNeg && hasPos);
+}
+
+export function hitTestPrimitive(item: PrimitiveItem, worldX: number, worldY: number): boolean {
+  if (item.name === 'playfield_mesh') return false;
+
+  const pos = item.position || { x: 0, y: 0, z: 0 };
+  const tolerance = 4 / (state.zoom || 1);
+  const cached = item._fileName ? meshCache.get(item._fileName) : null;
+
+  if (cached && cached.vertices && cached.indices) {
+    const size = item.size || { x: 1, y: 1, z: 1 };
+    const rotAndTra = item.rot_and_tra || [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    const { vertices2D } = transformMeshVertices(cached.vertices, [], pos, size, rotAndTra);
+    const indices = cached.indices;
+
+    for (let i = 0; i < indices.length; i += 3) {
+      const i0 = indices[i];
+      const i1 = indices[i + 1];
+      const i2 = indices[i + 2];
+      const ax = vertices2D[i0 * 2];
+      const ay = vertices2D[i0 * 2 + 1];
+      const bx = vertices2D[i1 * 2];
+      const by = vertices2D[i1 * 2 + 1];
+      const cx = vertices2D[i2 * 2];
+      const cy = vertices2D[i2 * 2 + 1];
+
+      if (pointInTriangle(worldX, worldY, ax, ay, bx, by, cx, cy)) return true;
+      if (
+        distToSegment(worldX, worldY, ax, ay, bx, by) < tolerance ||
+        distToSegment(worldX, worldY, bx, by, cx, cy) < tolerance ||
+        distToSegment(worldX, worldY, cx, cy, ax, ay) < tolerance
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  const size = item.size || {
+    x: PRIMITIVE_DEFAULTS.size_x,
+    y: PRIMITIVE_DEFAULTS.size_y,
+    z: PRIMITIVE_DEFAULTS.size_z,
+  };
+  return Math.abs(worldX - pos.x) <= size.x * 0.5 + tolerance && Math.abs(worldY - pos.y) <= size.y * 0.5 + tolerance;
+}
+
 function getCenter(item: PrimitiveItem): Point | null {
   return item.position ? { x: item.position.x, y: item.position.y } : null;
 }
@@ -1158,6 +1220,7 @@ const renderer: IEditable = {
   getProperties: primitiveProperties,
   getCenter,
   putCenter,
+  hitTest: hitTestPrimitive,
 };
 
 registerEditable('Primitive', renderer);

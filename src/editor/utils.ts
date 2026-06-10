@@ -73,6 +73,7 @@ export interface HitTestHandlersInput {
   hitTestFlipper: HitTestHandler;
   hitTestLight: HitTestHandler;
   hitTestLightSequencer: HitTestHandler;
+  hitTestPrimitive: HitTestHandler;
   hitTestRamp: HitTestHandler;
   hitTestReel: HitTestHandler;
   hitTestRubber: HitTestHandler;
@@ -95,6 +96,7 @@ export function initHitTestHandlers(objects: HitTestHandlersInput): void {
     Flipper: objects.hitTestFlipper,
     Light: objects.hitTestLight,
     LightSequencer: objects.hitTestLightSequencer,
+    Primitive: objects.hitTestPrimitive,
     Ramp: objects.hitTestRamp,
     Reel: objects.hitTestReel,
     Rubber: objects.hitTestRubber,
