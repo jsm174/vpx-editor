@@ -44,6 +44,7 @@ interface HitTargetItem {
   raise_delay?: number;
   depth_bias?: number;
   disable_lighting_top_old?: number;
+  disable_lighting_top?: number;
   disable_lighting_below?: number;
   is_visible?: boolean;
   is_reflection_enabled?: boolean;
@@ -117,9 +118,9 @@ export function createHitTarget3DMesh(item: HitTargetItem): THREE.Mesh | null {
 
   const geometry = createMeshGeometry(meshData, { scaleX: size.x, scaleY: size.y, scaleZ: size.z, rotation: rotZ });
   const material = createMaterial(item.material, item.image);
-  applyDisableLighting(material, item.disable_lighting_top_old ?? 0);
+  applyDisableLighting(material, item.disable_lighting_top ?? item.disable_lighting_top_old ?? 0);
   const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.set(pos.x, pos.y, (pos.z || 0) + 0.5);
+  mesh.position.set(pos.x, pos.y, pos.z || 0);
 
   return mesh;
 }

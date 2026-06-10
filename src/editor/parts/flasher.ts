@@ -27,6 +27,7 @@ interface FlasherVertex {
 
 export function createFlasher3DMesh(item: Flasher): THREE.Mesh | null {
   if (item.is_visible === false) return null;
+  if (item.add_blend ?? item.is_add_blend) return null;
 
   const points = item.drag_points;
   if (!points || points.length < 3) return null;
@@ -45,6 +46,19 @@ export function createFlasher3DMesh(item: Flasher): THREE.Mesh | null {
 
   const geometry = new THREE.ShapeGeometry(shape);
 
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+  for (const v of vertices) {
+    minX = Math.min(minX, v.x);
+    minY = Math.min(minY, v.y);
+    maxX = Math.max(maxX, v.x);
+    maxY = Math.max(maxY, v.y);
+  }
+  const centerX = (minX + maxX) * 0.5;
+  const centerY = (minY + maxY) * 0.5;
+
   const isWorldAlignment = item.image_alignment === 'world';
   const posAttr = geometry.getAttribute('position');
   const uvs = new Float32Array(posAttr.count * 2);
@@ -57,16 +71,6 @@ export function createFlasher3DMesh(item: Flasher): THREE.Mesh | null {
       uvs[i * 2 + 1] = posAttr.getY(i) / tableHeight;
     }
   } else {
-    let minX = Infinity,
-      minY = Infinity,
-      maxX = -Infinity,
-      maxY = -Infinity;
-    for (const v of vertices) {
-      minX = Math.min(minX, v.x);
-      minY = Math.min(minY, v.y);
-      maxX = Math.max(maxX, v.x);
-      maxY = Math.max(maxY, v.y);
-    }
     const width = maxX - minX;
     const height = maxY - minY;
     for (let i = 0; i < posAttr.count; i++) {
@@ -77,6 +81,7 @@ export function createFlasher3DMesh(item: Flasher): THREE.Mesh | null {
     }
   }
   geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  geometry.translate(-centerX, -centerY, 0);
 
   let color = FLASHER_DEFAULTS.color;
   if (item.color) {
@@ -107,7 +112,7 @@ export function createFlasher3DMesh(item: Flasher): THREE.Mesh | null {
   }
 
   const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.z = item.height ?? FLASHER_DEFAULTS.height;
+  mesh.position.set(centerX, centerY, item.height ?? FLASHER_DEFAULTS.height);
 
   if (item.rot_x) mesh.rotation.x = THREE.MathUtils.degToRad(item.rot_x);
   if (item.rot_y) mesh.rotation.y = THREE.MathUtils.degToRad(item.rot_y);
