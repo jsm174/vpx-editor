@@ -26,7 +26,7 @@ interface WindowFactoryDeps {
   versionInfo?: VersionInfo;
   WindowContext: typeof WindowContext;
   showCloseConfirm: (ctx: WindowContext) => Promise<string>;
-  saveVPX: () => Promise<void>;
+  saveVPX: () => Promise<boolean>;
   DEFAULT_UNIT_CONVERSION: string;
 }
 
@@ -556,7 +556,10 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
           return;
         }
         if (result === 'save') {
-          await deps.saveVPX();
+          const saved = await deps.saveVPX();
+          if (!saved) {
+            return;
+          }
         }
         ctx.closeConfirmed = true;
         win.close();
