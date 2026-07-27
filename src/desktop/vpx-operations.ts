@@ -402,8 +402,9 @@ export async function extractVPX(vpxPath: string, options: ExtractOptions = {}, 
     }
   } catch (err) {
     localCtx.window.webContents.send('loading', { show: false });
+    localCtx.window.webContents.send('status', 'Extraction failed');
+    sendConsoleOutput(localCtx, 'error', `Extraction failed: ${(err as Error).message}`);
     dialog.showErrorBox('Extraction Failed', (err as Error).message);
-    throw err;
   }
 }
 
@@ -512,32 +513,33 @@ export async function createNewTable(templateName: string, displayName: string, 
     createMenu();
   } catch (err) {
     localCtx.window.webContents.send('loading', { show: false });
+    localCtx.window.webContents.send('status', 'Extraction failed');
+    sendConsoleOutput(localCtx, 'error', `Extraction failed: ${(err as Error).message}`);
     dialog.showErrorBox('Extraction Failed', (err as Error).message);
-    throw err;
   }
 }
 
-export async function saveVPX(deps: SaveDeps & AssembleDeps): Promise<void> {
+export async function saveVPX(deps: SaveDeps & AssembleDeps): Promise<boolean> {
   const { windowRegistry } = deps;
   const ctx = windowRegistry.getFocused();
   if (!ctx || !ctx.extractedDir) {
     dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
-    return;
+    return false;
   }
 
   if (!ctx.currentTablePath) {
     return saveVPXAs(deps);
   }
 
-  await assembleVPX(ctx.currentTablePath, deps);
+  return assembleVPX(ctx.currentTablePath, deps);
 }
 
-export async function saveVPXAs(deps: SaveDeps & AssembleDeps): Promise<void> {
+export async function saveVPXAs(deps: SaveDeps & AssembleDeps): Promise<boolean> {
   const { windowRegistry, createMenu, settings, saveSettings } = deps;
   const ctx = windowRegistry.getFocused();
   if (!ctx || !ctx.extractedDir) {
     dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
-    return;
+    return false;
   }
 
   const nativeDialogOpenSetter = (value: boolean): void => {
@@ -558,7 +560,7 @@ export async function saveVPXAs(deps: SaveDeps & AssembleDeps): Promise<void> {
 
   nativeDialogOpenSetter(false);
 
-  if (result.canceled) return;
+  if (result.canceled) return false;
 
   const newVpxPath = result.filePath!;
   setLastFolder('Table', path.dirname(newVpxPath));
@@ -581,7 +583,7 @@ export async function saveVPXAs(deps: SaveDeps & AssembleDeps): Promise<void> {
       });
 
       if (overwriteResult.response !== 0) {
-        return;
+        return false;
       }
 
       await fs.promises.rm(newWorkDir, { recursive: true, force: true });
@@ -604,7 +606,7 @@ export async function saveVPXAs(deps: SaveDeps & AssembleDeps): Promise<void> {
     } catch (err) {
       ctx.window.webContents.send('loading', { show: false });
       dialog.showErrorBox('Copy Failed', `Failed to copy work folder: ${(err as Error).message}`);
-      return;
+      return false;
     }
   }
 
@@ -612,14 +614,17 @@ export async function saveVPXAs(deps: SaveDeps & AssembleDeps): Promise<void> {
   ctx.tableName = newTableName;
   ctx.updateWindowTitle();
 
-  await assembleVPX(newVpxPath, deps);
-  addToRecentFiles(newVpxPath, { settings, saveSettings, createMenu });
+  const saved = await assembleVPX(newVpxPath, deps);
+  if (saved) {
+    addToRecentFiles(newVpxPath, { settings, saveSettings, createMenu });
+  }
+  return saved;
 }
 
-export async function assembleVPX(outputPath: string, deps: AssembleDeps): Promise<void> {
+export async function assembleVPX(outputPath: string, deps: AssembleDeps): Promise<boolean> {
   const { windowRegistry } = deps;
   const ctx = windowRegistry.getFocused();
-  if (!ctx) return;
+  if (!ctx) return false;
 
   ctx.window.webContents.send('loading', { show: true });
   ctx.window.webContents.send('status', 'Saving...');
@@ -645,10 +650,13 @@ export async function assembleVPX(outputPath: string, deps: AssembleDeps): Promi
     ctx.window.webContents.send('mark-save-point');
     sendConsoleOutput(ctx, 'success', `Saved to ${path.basename(outputPath)}`);
     ctx.window.webContents.send('status', `Saved to ${path.basename(outputPath)}`);
+    return true;
   } catch (err) {
     ctx.window.webContents.send('loading', { show: false });
     ctx.window.webContents.send('status', 'Save failed');
-    throw err;
+    sendConsoleOutput(ctx, 'error', `Save failed: ${(err as Error).message}`);
+    dialog.showErrorBox('Save Failed', (err as Error).message);
+    return false;
   }
 }
 
@@ -680,8 +688,8 @@ export async function playTable(deps: PlayDeps & SaveDeps & AssembleDeps): Promi
     });
 
     if (result.response === 0) {
-      await saveVPXAs(deps);
-      if (ctx.currentTablePath) {
+      const saved = await saveVPXAs(deps);
+      if (saved && ctx.currentTablePath) {
         return playTable(deps);
       }
     }
@@ -729,9 +737,10 @@ async function runAssembleThenPlay(ctx: WindowContext, vpxPath: string, settings
     });
     sendConsoleOutput(ctx, 'success', 'Assembly complete.');
     launchVPinball(ctx, vpxPath, settings);
-  } catch {
+  } catch (err) {
     ctx.window.webContents.send('play-stopped');
     ctx.window.webContents.send('status', 'Play failed');
+    sendConsoleOutput(ctx, 'error', `Assembly failed: ${(err as Error).message}`);
     playingContext = null;
   }
 }
