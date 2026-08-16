@@ -150,7 +150,7 @@ export function decalProperties(item: Decal): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Font Color</label>
-          <input type="color" class="prop-input" data-prop="color" value="${item.color || '#ffffff'}">
+          <input type="color" class="prop-input" data-prop="color" value="${item.color || '#000000'}">
         </div>
         <div class="prop-row">
           <label class="prop-label">Font</label>

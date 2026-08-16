@@ -1,7 +1,7 @@
 {
   "name": "vpx-editor",
   "productName": "VPX Editor",
-  "version": "0.8.33",
+  "version": "0.8.34",
   "description": "Visual Pinball X Table Editor",
   "main": ".vite/build/main.js",
   "scripts": {
@@ -44,7 +44,7 @@
     "@types/node": "^25.0.3",
     "@types/three": "^0.182.0",
     "@vitejs/plugin-basic-ssl": "^2.1.4",
-    "electron": "39.2.5",
+    "electron": "43.4.0",
     "prettier": "^3.7.4",
     "typescript": "^5.9.3",
     "vite": "^7.3.0"
@@ -58,6 +58,12 @@
     "update-electron-app": "^3.1.2"
   },
   "overrides": {
-    "yauzl": "^3.3.1"
+    "yauzl": "^3.3.1",
+    "tar": "^7.5.22",
+    "tmp": "^0.2.7",
+    "dompurify": "^3.4.13"
+  },
+  "allowScripts": {
+    "electron@43.4.0": true
   }
 }

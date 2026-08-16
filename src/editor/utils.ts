@@ -591,6 +591,21 @@ export function toWorld(screenX: number, screenY: number): Vertex {
   };
 }
 
+export function colorrefToHex(value: number): string {
+  const r = value & 0xff;
+  const g = (value >> 8) & 0xff;
+  const b = (value >> 16) & 0xff;
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+}
+
+export function hexToColorref(hex: string): number {
+  const v = parseInt(hex.slice(1), 16);
+  const r = (v >> 16) & 0xff;
+  const g = (v >> 8) & 0xff;
+  const b = v & 0xff;
+  return (b << 16) | (g << 8) | r;
+}
+
 export function vpUnitsToInches(value: number): number {
   return sharedVpUnitsToInches(value);
 }

@@ -12,7 +12,7 @@ import {
 import { generateUniqueFileName } from '../shared/gameitem-utils.js';
 import { getDragPointCoords } from '../types/game-objects.js';
 import { VIEW_MODE_3D } from '../shared/constants.js';
-import { convertFromUnit, convertToUnit, getUnitSuffixHtml } from './utils.js';
+import { convertFromUnit, convertToUnit, getUnitSuffixHtml, hexToColorref } from './utils.js';
 import { getCollectionNameForItem, renameItemInAllCollections, saveCollections } from './collections.js';
 import { render } from './canvas-renderer.js';
 import { refresh3DScene, render3D, is3DInitialized, invalidateItem } from './canvas-renderer-3d.js';
@@ -74,6 +74,10 @@ const POSITION_PROPS: string[] = [
   'ver1.y',
   'ver2.x',
   'ver2.y',
+  'textbox_x',
+  'textbox_y',
+  'textbox_width',
+  'textbox_height',
   'vPosition.x',
   'vPosition.y',
   'vPosition.z',
@@ -795,6 +799,9 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
           value = (target as HTMLInputElement).checked;
         } else if ((target as HTMLInputElement).type === 'color' || (target as HTMLInputElement).type === 'text') {
           value = target.value;
+          if (target.dataset.type === 'colorint') {
+            value = hexToColorref(target.value);
+          }
         } else if (target.tagName === 'SELECT') {
           value = target.value;
           if (target.dataset.type === 'int') {
@@ -841,13 +848,8 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
             }
           });
         } else {
-          const isFlasherRenderMode = prop === 'render_mode' && primaryItem?._type === 'Flasher';
           for (const itemName of state.selectedItems) {
             await updateItemProperty(itemName, prop!, value);
-            if (isFlasherRenderMode) {
-              const defaultStyle = value === 'ext_render' ? 1 : 0;
-              await updateItemProperty(itemName, 'render_style', defaultStyle);
-            }
           }
         }
       });
@@ -878,16 +880,16 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
     input.addEventListener('input', (e: Event) => {
       const target = e.target as HTMLInputElement;
       const prop = target.dataset.prop;
-      const value = target.value;
+      const value: string | number = target.dataset.type === 'colorint' ? hexToColorref(target.value) : target.value;
       applyColorGradient(target);
       updateItemPropertyLive(currentItemName, prop!, value);
     });
   });
 
   elements
-    .propertiesContent!.querySelectorAll<
-      HTMLInputElement | HTMLSelectElement
-    >('.prop-input:not([type="checkbox"]), .prop-select')
+    .propertiesContent!.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+      '.prop-input:not([type="checkbox"]), .prop-select'
+    )
     .forEach(input => {
       input.addEventListener('keydown', (e: Event) => {
         const ke = e as KeyboardEvent;
@@ -1073,14 +1075,40 @@ async function updateItemProperty(itemName: string, prop: string, value: string 
   undoManager.beginUndo(`${prop} updated`);
   undoManager.markForUndo(itemName);
 
-  const path = prop.split('.');
-  let target: Record<string, unknown> = item as unknown as Record<string, unknown>;
-  for (let i = 0; i < path.length - 1; i++) {
-    target = target[path[i]] as Record<string, unknown>;
+  if (prop.startsWith('textbox_')) {
+    const tb = item as unknown as { ver1?: { x: number; y: number }; ver2?: { x: number; y: number } };
+    if (item._type === 'TextBox' && tb.ver1 && tb.ver2 && typeof value === 'number') {
+      switch (prop) {
+        case 'textbox_x': {
+          const delta = value - tb.ver1.x;
+          tb.ver1.x = value;
+          tb.ver2.x += delta;
+          break;
+        }
+        case 'textbox_y': {
+          const delta = value - tb.ver1.y;
+          tb.ver1.y = value;
+          tb.ver2.y += delta;
+          break;
+        }
+        case 'textbox_width':
+          tb.ver2.x = tb.ver1.x + value;
+          break;
+        case 'textbox_height':
+          tb.ver2.y = tb.ver1.y + value;
+          break;
+      }
+    }
+  } else {
+    const path = prop.split('.');
+    let target: Record<string, unknown> = item as unknown as Record<string, unknown>;
+    for (let i = 0; i < path.length - 1; i++) {
+      target = target[path[i]] as Record<string, unknown>;
+    }
+    const finalKey = path[path.length - 1];
+    const key = /^\d+$/.test(finalKey) ? parseInt(finalKey, 10) : finalKey;
+    (target as Record<string | number, unknown>)[key] = value;
   }
-  const finalKey = path[path.length - 1];
-  const key = /^\d+$/.test(finalKey) ? parseInt(finalKey, 10) : finalKey;
-  (target as Record<string | number, unknown>)[key] = value;
 
   const fileName = item._fileName;
   const type = item._type;
@@ -1148,6 +1176,9 @@ function setupTablePropertyHandlers(): void {
           }
         } else if ((target as HTMLInputElement).type === 'color' || (target as HTMLInputElement).type === 'text') {
           value = target.value;
+          if (target.dataset.type === 'colorint') {
+            value = hexToColorref(target.value);
+          }
         } else if (target.tagName === 'SELECT') {
           value = target.value;
           if (prop === 'tone_mapper' || prop === 'override_physics') {
@@ -1226,9 +1257,9 @@ function setupTablePropertyHandlers(): void {
   });
 
   elements
-    .propertiesContent!.querySelectorAll<
-      HTMLInputElement | HTMLSelectElement
-    >('.prop-input:not([type="checkbox"]), .prop-select')
+    .propertiesContent!.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+      '.prop-input:not([type="checkbox"]), .prop-select'
+    )
     .forEach(input => {
       input.addEventListener('keydown', (e: Event) => {
         const ke = e as KeyboardEvent;
@@ -1414,9 +1445,9 @@ function setupBackglassPropertyHandlers(): void {
   });
 
   elements
-    .propertiesContent!.querySelectorAll<
-      HTMLInputElement | HTMLSelectElement
-    >('.prop-input:not([type="checkbox"]), .prop-select')
+    .propertiesContent!.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+      '.prop-input:not([type="checkbox"]), .prop-select'
+    )
     .forEach(input => {
       input.addEventListener('keydown', (e: Event) => {
         const ke = e as KeyboardEvent;
@@ -1535,9 +1566,9 @@ function setupPartGroupPropertyHandlers(groupName: string): void {
   });
 
   elements
-    .propertiesContent!.querySelectorAll<
-      HTMLInputElement | HTMLSelectElement
-    >('.prop-input:not([data-mask]), .prop-select')
+    .propertiesContent!.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+      '.prop-input:not([data-mask]), .prop-select'
+    )
     .forEach(input => {
       input.addEventListener('change', async (e: Event) => {
         if (state.isTableLocked) return;

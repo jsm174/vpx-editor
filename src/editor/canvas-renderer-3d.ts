@@ -257,7 +257,10 @@ export function resize3D(width: number, height: number): void {
   (camera as THREE.PerspectiveCamera).aspect = width / height;
   camera.updateProjectionMatrix();
   renderer.setSize(width, height);
-  if (composer) composer.setSize(width, height);
+  if (composer) {
+    const bufferSize = renderer.getDrawingBufferSize(new THREE.Vector2());
+    composer.setSize(bufferSize.width, bufferSize.height);
+  }
   renderNeeded = true;
 }
 
@@ -624,11 +627,7 @@ function animate(): void {
 
   if (renderNeeded && renderer.domElement.clientWidth > 0 && renderer.domElement.clientHeight > 0) {
     renderNeeded = false;
-    if (outlinePass.enabled) {
-      composer.render();
-    } else {
-      renderer.render(scene, camera);
-    }
+    composer.render();
   }
 
   const currentZoom = getZoom3D();

@@ -1537,6 +1537,8 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     });
 
     ctx.searchSelectWindow.webContents.on('did-finish-load', async () => {
+      const title = ctx.tableName ? `Search/Select Element - [${ctx.tableName}.vpx]` : 'Search/Select Element';
+      ctx.searchSelectWindow!.setTitle(title);
       const state = await getSearchSelectState(ctx);
       if (state) {
         ctx.searchSelectWindow!.webContents.send('init', state);
@@ -1572,10 +1574,8 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
           const itemContent = await fs.promises.readFile(itemPath, 'utf-8');
           const itemData = JSON.parse(itemContent);
           const itemType = Object.keys(itemData)[0];
-          if (itemType !== 'Decal') {
-            const item = itemData[itemType];
-            allItems.push(item.name || file);
-          }
+          const item = itemData[itemType];
+          allItems.push(item.name || file);
         }
       }
     }
@@ -1815,6 +1815,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
         currentName: currentName || '',
         defaultValue,
         existingNames,
+        maxLength: 31,
       });
       collectionPromptWindow!.show();
     });
@@ -1937,7 +1938,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
         currentName,
         defaultValue: currentName,
         existingNames: existingNames || [],
-        maxLength: entityType === 'table' || entityType === 'element' ? 32 : 0,
+        maxLength: ['image', 'sound', 'material', 'renderprobe'].includes(entityType) ? 0 : 31,
       });
       renamePromptWindow!.show();
     });

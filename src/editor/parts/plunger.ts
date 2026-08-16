@@ -5,7 +5,7 @@ import { createMaterial, getSurfaceHeight } from '../../shared/3d-material-helpe
 import { materialOptions, imageOptions, surfaceOptions } from '../../shared/options-generators.js';
 import { materialSelect, imageSelect } from '../../shared/property-templates.js';
 import { PLUNGER_DEFAULTS } from '../../shared/object-defaults.js';
-import { RENDER_COLOR_GRAY, RENDER_COLOR_BLACK } from '../../shared/constants.js';
+import { RENDER_COLOR_BLACK } from '../../shared/constants.js';
 import { registerEditable, IEditable, Point } from './registry.js';
 
 interface PlungerItem {
@@ -72,26 +72,25 @@ function drawPlunger(
   scale: number,
   strokeStyle: string,
   lineWidth: number,
-  parkLineColor: string
+  parkLineColor: string,
+  parkLineWidth: number
 ): void {
   const { s, left, right, top, bottom } = getPlungerGeometry(item, cx, cy, scale);
-
-  ctx.strokeStyle = strokeStyle;
-  ctx.lineWidth = lineWidth;
-  ctx.strokeRect(left, top, right - left, bottom - top);
 
   const parkPosition = item.park_position ?? PLUNGER_DEFAULTS.park_position;
   if (parkPosition > 0 && parkPosition < 1) {
     const parkY = cy - s + parkPosition * s;
     ctx.strokeStyle = parkLineColor;
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = parkLineWidth;
     ctx.beginPath();
     ctx.moveTo(left, parkY);
     ctx.lineTo(right, parkY);
     ctx.stroke();
-    ctx.setLineDash([]);
   }
+
+  ctx.strokeStyle = strokeStyle;
+  ctx.lineWidth = lineWidth;
+  ctx.strokeRect(left, top, right - left, bottom - top);
 }
 
 export function uiRenderPass1(_item: PlungerItem, _isSelected: boolean): void {}
@@ -110,7 +109,8 @@ export function uiRenderPass2(item: PlungerItem, isSelected: boolean): void {
     state.zoom,
     getStrokeStyle(item, isSelected),
     getLineWidth(isSelected),
-    RENDER_COLOR_GRAY
+    'rgb(0, 180, 0)',
+    isSelected ? 4 : item.is_locked ? 1 : 2
   );
 }
 
@@ -123,7 +123,7 @@ export function renderBlueprint(
   const { center } = item;
   if (!center) return;
 
-  drawPlunger(ctx, item, center.x * scale, center.y * scale, scale, RENDER_COLOR_BLACK, 1, RENDER_COLOR_BLACK);
+  drawPlunger(ctx, item, center.x * scale, center.y * scale, scale, RENDER_COLOR_BLACK, 1, RENDER_COLOR_BLACK, 1);
 }
 
 export function render(item: PlungerItem, isSelected: boolean): void {

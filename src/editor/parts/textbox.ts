@@ -121,9 +121,9 @@ export function textBoxProperties(item: TextBoxItem): string {
         <div class="prop-row">
           <label class="prop-label">Alignment</label>
           <select class="prop-select" data-prop="align">
-            <option value="left"${(item.align || 'left') === 'left' ? ' selected' : ''}>Left</option>
+            <option value="left"${item.align === 'left' ? ' selected' : ''}>Left</option>
             <option value="center"${item.align === 'center' ? ' selected' : ''}>Center</option>
-            <option value="right"${item.align === 'right' ? ' selected' : ''}>Right</option>
+            <option value="right"${(item.align || 'right') === 'right' ? ' selected' : ''}>Right</option>
           </select>
         </div>
       </div>
@@ -131,19 +131,19 @@ export function textBoxProperties(item: TextBoxItem): string {
         <div class="prop-group-title">Position</div>
         <div class="prop-row">
           <label class="prop-label">X</label>
-          <input type="number" class="prop-input" data-prop="ver1.x" value="${v1.x.toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="textbox_x" value="${v1.x.toFixed(1)}" step="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Y</label>
-          <input type="number" class="prop-input" data-prop="ver1.y" value="${v1.y.toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="textbox_y" value="${v1.y.toFixed(1)}" step="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Width</label>
-          <input type="number" class="prop-input" data-prop="ver2.x" value="${v2.x.toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="textbox_width" value="${(v2.x - v1.x).toFixed(1)}" step="1">
         </div>
         <div class="prop-row">
           <label class="prop-label">Height</label>
-          <input type="number" class="prop-input" data-prop="ver2.y" value="${v2.y.toFixed(1)}" step="1">
+          <input type="number" class="prop-input" data-prop="textbox_height" value="${(v2.y - v1.y).toFixed(1)}" step="1">
         </div>
       </div>
       <div class="prop-group">

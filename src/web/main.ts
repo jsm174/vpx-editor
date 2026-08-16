@@ -385,7 +385,7 @@ function enhanceApi(): void {
         entityType: mode,
         currentName,
         existingNames,
-        maxLength: 32,
+        maxLength: 31,
         title,
       })
       .then(result => {

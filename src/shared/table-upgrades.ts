@@ -208,24 +208,40 @@ function canStripLayerPrefix(
   return true;
 }
 
+function isScriptIdentifier(name: string, script: string): boolean {
+  if (!script || isPurelyNumeric(name)) return false;
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`\\b${escaped}\\b`, 'i').test(script);
+}
+
 function resolveGroupNameConflict(
   initialName: string,
   itemNames: Set<string>,
   collectionNames: Set<string>,
-  takenGroupNames: Set<string>
+  takenGroupNames: Set<string>,
+  script: string
 ): string {
   let layerName = initialName;
-  while (hasNameConflict(layerName, itemNames, collectionNames, takenGroupNames)) {
-    if (!layerName.endsWith('_Layer')) {
+  let renameIndex = 1;
+  let layerPostpend = false;
+  while (
+    hasNameConflict(layerName, itemNames, collectionNames, takenGroupNames) ||
+    isScriptIdentifier(layerName, script)
+  ) {
+    if (!layerPostpend && !layerName.endsWith('_Layer')) {
+      layerPostpend = true;
       layerName = `${layerName}_Layer`;
       continue;
     }
     const match = layerName.match(/^(.*?)(\d+)$/);
     if (match) {
-      layerName = `${match[1]}${parseInt(match[2], 10) + 1}`;
+      layerName = match[1];
+      renameIndex = Math.max(renameIndex, parseInt(match[2], 10) + 1);
     } else {
-      layerName = `${layerName}_001`;
+      layerName = `${layerName}_`;
     }
+    layerName = `${layerName}${String(renameIndex).padStart(3, '0')}`;
+    renameIndex++;
   }
   return layerName;
 }
@@ -281,6 +297,7 @@ export async function upgradeLayersToPartGroups(
 
   const groupNameRemap = new Map<string, string>();
   const takenGroupNames = new Set<string>();
+  const scriptCode = script.replace(/"[^"\n]*"/g, '""').replace(/'[^\n]*/g, '');
 
   for (const groupName of layers.keys()) {
     let finalName = groupName;
@@ -292,7 +309,7 @@ export async function upgradeLayersToPartGroups(
       }
     }
 
-    finalName = resolveGroupNameConflict(finalName, itemNames, collectionNames, takenGroupNames);
+    finalName = resolveGroupNameConflict(finalName, itemNames, collectionNames, takenGroupNames, scriptCode);
     groupNameRemap.set(groupName, finalName);
     takenGroupNames.add(finalName.toLowerCase());
   }

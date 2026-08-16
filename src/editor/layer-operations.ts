@@ -13,6 +13,7 @@ import {
   deletePartGroup,
 } from './state.js';
 import { findItemsAtPoint } from './utils.js';
+import { deleteObject } from './object-factory.js';
 import { generateUniqueFileName, nameEquals, includesName } from '../shared/gameitem-utils.js';
 import { saveItemToFile, updateGameitemsJson } from './table-loader.js';
 import { updateItemsList } from './items-panel.js';
@@ -30,12 +31,6 @@ interface SelectedNode {
 interface PartGroupSaveData {
   name?: string;
   is_locked?: boolean;
-  [key: string]: unknown;
-}
-
-interface ItemSaveData {
-  name?: string;
-  part_group_name?: string | null;
   [key: string]: unknown;
 }
 
@@ -239,8 +234,8 @@ export async function renamePartGroup(oldName: string, newName: string): Promise
     await window.vpxEditor.writeFile(`${state.extractedDir}/gameitems.json`, JSON.stringify(state.gameitems, null, 2));
   }
 
+  undoManager.markCollectionsForUndo();
   if (renameItemInAllCollections(oldName, newName)) {
-    undoManager.markCollectionsForUndo();
     await saveCollections();
   }
 
@@ -257,20 +252,29 @@ export async function renamePartGroup(oldName: string, newName: string): Promise
   });
 }
 
+function isInGroup(item: GameItem, groupName: string): boolean {
+  return (
+    ((item.part_group_name != null && nameEquals(item.part_group_name, groupName)) ||
+      (item._layerName != null && nameEquals(item._layerName, groupName))) &&
+    item._type !== 'PartGroup'
+  );
+}
+
+function getChildGroupNames(groupName: string): string[] {
+  return Object.values(state.partGroups as Record<string, PartGroup>)
+    .filter(g => g.part_group_name != null && nameEquals(g.part_group_name, groupName))
+    .map(g => g.name as string)
+    .filter(Boolean);
+}
+
 function countItemsInGroup(groupName: string): number {
   let count = 0;
 
-  const childGroups = Object.entries(state.partGroups as Record<string, PartGroup>)
-    .filter(([_, g]) => g.part_group_name === groupName)
-    .map(([name]) => name);
-
-  for (const childName of childGroups) {
+  for (const childName of getChildGroupNames(groupName)) {
     count += countItemsInGroup(childName);
   }
 
-  count += Object.values(state.items as Record<string, GameItem>).filter(
-    item => (item.part_group_name === groupName || item._layerName === groupName) && item._type !== 'PartGroup'
-  ).length;
+  count += Object.values(state.items as Record<string, GameItem>).filter(item => isInGroup(item, groupName)).length;
 
   return count;
 }
@@ -282,60 +286,42 @@ export async function showDeletePartGroupModal(groupName: string): Promise<void>
   const itemCount = countItemsInGroup(groupName);
   if (itemCount > 0) {
     const confirmed = confirm(
-      `Group "${groupName}" contains ${itemCount} item${itemCount === 1 ? '' : 's'}. Delete group and move items to root?`
+      `Group "${groupName}" contains ${itemCount} item${itemCount === 1 ? '' : 's'}. Delete group and its items?`
     );
     if (!confirmed) return;
   }
 
   undoManager.beginUndo('Group deleted');
-  await deleteGroupAndMoveItems(groupName, null);
+  await deleteGroupAndContents(groupName);
   await window.vpxEditor.writeFile(`${state.extractedDir}/gameitems.json`, JSON.stringify(state.gameitems, null, 2));
   undoManager.endUndo();
 
   state.selectedPartGroup = null;
+  state.selectedItems = state.selectedItems.filter(name => getItem(name));
+  if (state.primarySelectedItem && !getItem(state.primarySelectedItem)) {
+    state.primarySelectedItem = null;
+  }
   updateLayersList();
+  updateItemsList();
   updatePropertiesPanel();
   render();
 }
 
-export async function deleteGroupAndMoveItems(groupName: string, targetGroup: string | null): Promise<void> {
+export async function deleteGroupAndContents(groupName: string): Promise<void> {
   const group = getPartGroup(groupName);
   if (!group) return;
 
-  const childGroups = Object.entries(state.partGroups as Record<string, PartGroup>)
-    .filter(([_, g]) => g.part_group_name === groupName)
-    .map(([name]) => name);
-
-  for (const childName of childGroups) {
-    await deleteGroupAndMoveItems(childName, targetGroup);
+  for (const childName of getChildGroupNames(groupName)) {
+    await deleteGroupAndContents(childName);
   }
 
-  const itemsInGroup = Object.entries(state.items as Record<string, GameItem>).filter(
-    ([_, item]) => (item.part_group_name === groupName || item._layerName === groupName) && item._type !== 'PartGroup'
-  );
+  const itemsInGroup = Object.keys(state.items as Record<string, GameItem>).filter(name => {
+    const item = getItem(name);
+    return item && isInGroup(item, groupName);
+  });
 
-  for (const [itemName, item] of itemsInGroup) {
-    undoManager.markForUndo(itemName);
-    item.part_group_name = targetGroup;
-    item._layerName = targetGroup || null;
-    const fileName = item._fileName;
-    if (fileName) {
-      const itemSaveData: ItemSaveData = { ...item };
-      delete (itemSaveData as Record<string, unknown>)._type;
-      delete (itemSaveData as Record<string, unknown>)._fileName;
-      delete (itemSaveData as Record<string, unknown>)._layer;
-      if (!targetGroup) {
-        delete itemSaveData.part_group_name;
-      }
-      const wrapper: Record<string, ItemSaveData> = {};
-      wrapper[item._type!] = itemSaveData;
-      await window.vpxEditor.writeFile(`${state.extractedDir}/${fileName}`, JSON.stringify(wrapper, null, 2));
-      const baseFileName = fileName.split('/').pop();
-      const giEntry = state.gameitems.find((gi: GameItemEntry) => gi.file_name === baseFileName);
-      if (giEntry) {
-        giEntry.editor_layer_name = targetGroup || '';
-      }
-    }
+  for (const itemName of itemsInGroup) {
+    await deleteObject(itemName, true);
   }
 
   await undoManager.markForDelete(groupName);
@@ -344,6 +330,7 @@ export async function deleteGroupAndMoveItems(groupName: string, targetGroup: st
     await window.vpxEditor.deleteFile(`${state.extractedDir}/${fileName}`);
     const baseFileName = fileName.split('/').pop();
     state.gameitems = state.gameitems.filter((gi: GameItemEntry) => gi.file_name !== baseFileName);
+    await window.vpxEditor.writeFile(`${state.extractedDir}/gameitems.json`, JSON.stringify(state.gameitems, null, 2));
   }
   deletePartGroup(groupName);
   deleteItem(groupName);
