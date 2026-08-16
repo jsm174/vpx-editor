@@ -3,7 +3,8 @@ import { deleteMeshCompanions } from './mesh-files.js';
 import { invalidatePrimitiveMeshCache } from './parts/primitive.js';
 import { GameItem, GameItemEntry, Point, DragPoint } from './state.js';
 import { objectTypes, getObjectDefaults, hasObjectDragPoints } from './object-types.js';
-import { generateUniqueFileName } from '../shared/gameitem-utils.js';
+import { generateUniqueFileName, includesName } from '../shared/gameitem-utils.js';
+import { removeItemFromAllCollections, saveCollections } from './collections.js';
 
 interface BackglassPropertyMap {
   [key: string]: string;
@@ -33,11 +34,12 @@ const NAME_PREFIX: NamePrefixMap = {
 };
 
 export function generateUniqueName(baseName: string): string {
+  const root = baseName.length > 29 ? baseName.substring(0, 29) : baseName;
   let counter = 1;
   let name: string;
   do {
     const suffix = counter < 10 ? `00${counter}` : counter < 100 ? `0${counter}` : `${counter}`;
-    name = `${baseName}${suffix}`;
+    name = `${root}${suffix}`;
     counter++;
   } while (hasItem(name) && counter < 1000);
   return name;
@@ -175,6 +177,12 @@ async function deleteObjectInternal(name: string): Promise<boolean> {
   const vpxEditor = window.vpxEditor;
   const item = getItem(name);
   if (!item || !item._fileName) return false;
+
+  if (state.collections.some(c => c.items && includesName(c.items, name))) {
+    undoManager.markCollectionsForUndo();
+    removeItemFromAllCollections(name);
+    await saveCollections();
+  }
 
   const filePath = `${state.extractedDir}/${item._fileName}`;
   const baseFileName = item._fileName.replace('gameitems/', '');

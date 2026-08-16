@@ -2194,10 +2194,8 @@ function updateCollectionEditorWindow(ctx: WindowContext) {
           const itemContent = await fs.promises.readFile(itemPath, 'utf-8');
           const itemData = JSON.parse(itemContent);
           const itemType = Object.keys(itemData)[0];
-          if (itemType !== 'Decal') {
-            const item = itemData[itemType];
-            allItems.push(item.name || file);
-          }
+          const item = itemData[itemType];
+          allItems.push(item.name || file);
         }
       }
     }

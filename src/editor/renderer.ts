@@ -361,7 +361,12 @@ window.vpxEditor.onLoading?.(data => {
 function zoomAtPoint(offsetX: number, offsetY: number, zoomFactor: number): void {
   const oldZoom = state.zoom;
   const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, state.zoom * zoomFactor));
-  if (newZoom === oldZoom) return;
+  if (newZoom === oldZoom) {
+    state.panX += elements.canvas!.width / 2 - offsetX;
+    state.panY += elements.canvas!.height / 2 - offsetY;
+    render();
+    return;
+  }
   state.zoom = newZoom;
   state.panX = offsetX - (offsetX - state.panX) * (state.zoom / oldZoom);
   state.panY = offsetY - (offsetY - state.panY) * (state.zoom / oldZoom);

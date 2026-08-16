@@ -131,7 +131,7 @@ export async function createCollection(
 export async function createCollectionFromSelection(selectedItems: string[]): Promise<Collection | null> {
   const scriptableItems = selectedItems.filter(name => {
     const item = state.items[name.toLowerCase()];
-    return item && item._type !== 'Decal';
+    return !!item;
   });
 
   if (scriptableItems.length === 0) {

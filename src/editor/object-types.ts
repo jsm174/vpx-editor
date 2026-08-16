@@ -1119,7 +1119,7 @@ export const objectTypes: ObjectTypes = {
         weight: 400,
         style: [],
       },
-      align: 'left',
+      align: 'right',
       is_transparent: false,
       is_locked: false,
     },

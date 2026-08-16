@@ -12,7 +12,7 @@ import { registerCallback, invokeCallback } from '../../shared/callbacks.js';
 import { RENDER_COLOR_BLACK, BLUEPRINT_SOLID_COLOR } from '../../shared/constants.js';
 import { registerEditable, IEditable, Point } from './registry.js';
 
-interface PrimitiveItem {
+export interface PrimitiveItem {
   name?: string;
   _fileName?: string;
   position?: { x: number; y: number; z: number };
@@ -101,7 +101,7 @@ export function invalidatePrimitiveMeshCache(fileName: string): void {
   meshCache.delete(fileName);
 }
 
-export function createPrimitive3DMesh(item: PrimitiveItem): THREE.Group {
+export function buildPrimitiveFullMatrix(item: PrimitiveItem): THREE.Matrix4 {
   const pos = item.position || { x: 0, y: 0, z: 0 };
   const size = item.size || { x: 1, y: 1, z: 1 };
   const rotAndTra = item.rot_and_tra || [0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -136,7 +136,11 @@ export function createPrimitive3DMesh(item: PrimitiveItem): THREE.Group {
     .multiply(rotZMatrix)
     .multiply(transMatrix);
 
-  const fullMatrix = new THREE.Matrix4().multiply(posMatrix).multiply(rtMatrix).multiply(scaleMatrix);
+  return new THREE.Matrix4().multiply(posMatrix).multiply(rtMatrix).multiply(scaleMatrix);
+}
+
+export function createPrimitive3DMesh(item: PrimitiveItem): THREE.Group {
+  const fullMatrix = buildPrimitiveFullMatrix(item);
 
   const group = new THREE.Group();
   group.matrixAutoUpdate = false;

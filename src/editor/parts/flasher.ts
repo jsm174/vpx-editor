@@ -10,9 +10,10 @@ import {
   drawPolygon,
   convertToUnit,
   getUnitSuffixHtml,
+  colorrefToHex,
 } from '../utils.js';
 import { loadTexture } from '../texture-loader.js';
-import { imageOptions } from '../../shared/options-generators.js';
+import { imageOptions, lightOptions } from '../../shared/options-generators.js';
 import { imageSelect } from '../../shared/property-templates.js';
 import { FLASHER_DEFAULTS } from '../../shared/object-defaults.js';
 import { PATH_SMOOTHING_ACCURACY } from '../../shared/constants.js';
@@ -34,8 +35,28 @@ export function createFlasher3DMesh(item: Flasher): THREE.Mesh | null {
 
   const result = generateSmoothedPath(points, true, PATH_SMOOTHING_ACCURACY);
   if (!Array.isArray(result)) return null;
-  const vertices = result;
+  let vertices = result;
   if (vertices.length < 3) return null;
+
+  const isDisplayMode = (item.render_mode || 'flasher') !== 'flasher';
+  if (isDisplayMode) {
+    let bMinX = Infinity,
+      bMinY = Infinity,
+      bMaxX = -Infinity,
+      bMaxY = -Infinity;
+    for (const v of vertices) {
+      bMinX = Math.min(bMinX, v.x);
+      bMinY = Math.min(bMinY, v.y);
+      bMaxX = Math.max(bMaxX, v.x);
+      bMaxY = Math.max(bMaxY, v.y);
+    }
+    vertices = [
+      { x: bMinX, y: bMinY },
+      { x: bMaxX, y: bMinY },
+      { x: bMaxX, y: bMaxY },
+      { x: bMinX, y: bMaxY },
+    ];
+  }
 
   const shape = new THREE.Shape();
   shape.moveTo(vertices[0].x, vertices[0].y);
@@ -59,7 +80,7 @@ export function createFlasher3DMesh(item: Flasher): THREE.Mesh | null {
   const centerX = (minX + maxX) * 0.5;
   const centerY = (minY + maxY) * 0.5;
 
-  const isWorldAlignment = item.image_alignment === 'world';
+  const isWorldAlignment = !isDisplayMode && item.image_alignment === 'world';
   const posAttr = geometry.getAttribute('position');
   const uvs = new Float32Array(posAttr.count * 2);
 
@@ -153,11 +174,44 @@ export function uiRenderPass1(item: Flasher, _isSelected: boolean): void {
 
 export function uiRenderPass2(item: Flasher, isSelected: boolean): void {
   if (!elements.ctx) return;
+  const ctx = elements.ctx;
 
   const vertices = getFlasherVertices(item);
   if (vertices.length < 2) return;
 
-  drawPolygon(elements.ctx, vertices, toScreen, null, getStrokeStyle(item, isSelected), getLineWidth(isSelected));
+  const strokeStyle = getStrokeStyle(item, isSelected);
+  const lineWidth = getLineWidth(isSelected);
+  drawPolygon(ctx, vertices, toScreen, null, strokeStyle, lineWidth);
+
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+  for (const v of vertices) {
+    minX = Math.min(minX, v.x);
+    minY = Math.min(minY, v.y);
+    maxX = Math.max(maxX, v.x);
+    maxY = Math.max(maxY, v.y);
+  }
+
+  ctx.strokeStyle = strokeStyle;
+  ctx.lineWidth = lineWidth;
+
+  if ((item.render_mode || 'flasher') !== 'flasher') {
+    const min = toScreen(minX, minY);
+    const max = toScreen(maxX, maxY);
+    ctx.strokeRect(min.x, min.y, max.x - min.x, max.y - min.y);
+  }
+
+  const center = toScreen((minX + maxX) * 0.5, (minY + maxY) * 0.5);
+  const arm = 10 * state.zoom;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(center.x - arm, center.y);
+  ctx.lineTo(center.x + arm, center.y);
+  ctx.moveTo(center.x, center.y - arm);
+  ctx.lineTo(center.x, center.y + arm);
+  ctx.stroke();
 }
 
 export function renderBlueprint(
@@ -206,10 +260,11 @@ function getStyleOptions(mode: string, selectedStyle: number | undefined): strin
   };
   const opts = styles[mode] || [];
   const offset = mode === 'ext_render' ? 1 : 0;
+  const selected = Math.min(Math.max(selectedStyle ?? offset, offset), opts.length - 1 + offset);
   return opts
     .map((label, i) => {
       const value = i + offset;
-      return `<option value="${value}"${(selectedStyle ?? offset) === value ? ' selected' : ''}>${label}</option>`;
+      return `<option value="${value}"${selected === value ? ' selected' : ''}>${label}</option>`;
     })
     .join('');
 }
@@ -222,13 +277,11 @@ export function flasherProperties(item: Flasher): string {
   const isDisplay = !isFlasher && !isExtRender;
   const groupTitle = isFlasher
     ? 'Images'
-    : isExtRender
-      ? 'External Renderer'
-      : mode === 'dmd'
-        ? 'DMD Style'
-        : mode === 'display'
-          ? 'Display Style'
-          : 'Alpha Seg. Style';
+    : mode === 'dmd'
+      ? 'DMD Style'
+      : mode === 'display'
+        ? 'Display Style'
+        : 'Alpha Seg. Style';
   const opacityLabel = isFlasher ? 'Opacity' : 'Brightness';
 
   return `
@@ -251,7 +304,7 @@ export function flasherProperties(item: Flasher): string {
         </div>
         <div class="prop-row" style="${isExtRender ? 'display:none' : ''}">
           <label class="prop-label">Color</label>
-          <input type="color" class="prop-input" data-prop="color" value="${item.color || '#ffffff'}">
+          <input type="color" class="prop-input" data-prop="color" value="${item.color || '#32c832'}">
         </div>
         <div class="prop-row">
           <label class="prop-label">Depth Bias</label>
@@ -263,7 +316,7 @@ export function flasherProperties(item: Flasher): string {
         </div>
       </div>
       <div class="prop-group">
-        <div class="prop-group-title">${groupTitle}</div>
+        ${isExtRender ? '' : `<div class="prop-group-title">${groupTitle}</div>`}
         <div class="prop-row" style="${isDisplay || isExtRender ? '' : 'display:none'}">
           <label class="prop-label">Render Style</label>
           <select class="prop-select" data-prop="render_style" data-type="int">${getStyleOptions(mode, item.render_style)}</select>
@@ -281,7 +334,7 @@ export function flasherProperties(item: Flasher): string {
         </div>
         <div class="prop-row" style="${isDisplay ? '' : 'display:none'}">
           <label class="prop-label">Ambient</label>
-          <input type="number" class="prop-input" data-prop="glass_ambient" data-type="int" value="${item.glass_ambient ?? 0}" step="1">
+          <input type="color" class="prop-input" data-prop="glass_ambient" data-type="colorint" value="${colorrefToHex(item.glass_ambient ?? 0)}">
         </div>
         <div class="prop-row" style="${isDisplay ? '' : 'display:none'}">
           <label class="prop-label">Pad T/B</label>
@@ -308,7 +361,7 @@ export function flasherProperties(item: Flasher): string {
         </div>
         <div class="prop-row" style="${isFlasher ? '' : 'display:none'}">
           <label class="prop-label">Mix</label>
-          <select class="prop-select" data-prop="filter">
+          <select class="prop-select" data-prop="filter"${item.image_b ? '' : ' disabled'}>
             <option value="none"${item.filter === 'none' ? ' selected' : ''}>None</option>
             <option value="additive"${item.filter === 'additive' ? ' selected' : ''}>Additive</option>
             <option value="overlay"${(item.filter || 'overlay') === 'overlay' ? ' selected' : ''}>Overlay</option>
@@ -318,11 +371,11 @@ export function flasherProperties(item: Flasher): string {
         </div>
         <div class="prop-row" style="${isFlasher ? '' : 'display:none'}">
           <label class="prop-label">Mix Factor</label>
-          <input type="number" class="prop-input" data-prop="filter_amount" data-type="int" value="${item.filter_amount ?? FLASHER_DEFAULTS.filter_amount}" step="10" min="0" max="100">
+          <input type="number" class="prop-input" data-prop="filter_amount" data-type="int" value="${item.filter_amount ?? FLASHER_DEFAULTS.filter_amount}" step="10" min="0" max="100"${item.image_b ? '' : ' disabled'}>
         </div>
         <div class="prop-row" style="${isFlasher ? '' : 'display:none'}">
           <label class="prop-label">Show in Editor</label>
-          <input type="checkbox" class="prop-input" data-prop="display_texture" ${item.display_texture !== false ? 'checked' : ''}>
+          <input type="checkbox" class="prop-input" data-prop="display_texture" ${item.display_texture ? 'checked' : ''}>
         </div>
       </div>
       <div class="prop-group" style="${isExtRender ? 'display:none' : ''}">
@@ -331,8 +384,9 @@ export function flasherProperties(item: Flasher): string {
           <label class="prop-label">${opacityLabel}</label>
           <input type="number" class="prop-input" data-prop="alpha" data-type="int" value="${item.alpha ?? FLASHER_DEFAULTS.alpha}" step="5" min="0" max="100">
         </div>
-        <div style="${isAlphaSeg ? 'display:none' : ''}">
-          ${imageSelect('Lightmap', 'light_map', imageOptions(item.light_map))}
+        <div class="prop-row" style="${isAlphaSeg ? 'display:none' : ''}">
+          <label class="prop-label">Lightmap</label>
+          <select class="prop-select" data-prop="light_map">${lightOptions(item.light_map)}</select>
         </div>
         <div class="prop-row" style="${isAlphaSeg ? 'display:none' : ''}">
           <label class="prop-label">Additive Blend</label>
@@ -395,12 +449,15 @@ function getCenter(item: Flasher): Point | null {
     }
     return null;
   }
+  let vertices: FlasherVertex[] = getFlasherVertices(item);
+  if (vertices.length === 0) {
+    vertices = points.map(p => getDragPointCoords(p));
+  }
   let minX = Infinity,
     minY = Infinity,
     maxX = -Infinity,
     maxY = -Infinity;
-  for (const p of points) {
-    const { x, y } = getDragPointCoords(p);
+  for (const { x, y } of vertices) {
     minX = Math.min(minX, x);
     minY = Math.min(minY, y);
     maxX = Math.max(maxX, x);

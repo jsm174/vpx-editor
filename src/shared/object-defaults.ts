@@ -28,7 +28,7 @@ export const FLASHER_DEFAULTS = {
   height: 50.0,
   size: 100.0,
   alpha: 100,
-  color: 0xffff00,
+  color: 0x32c832,
   modulate_vs_add: 0.9,
   filter_amount: 100,
   depth_bias: 0.0,

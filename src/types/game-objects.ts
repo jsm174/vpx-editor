@@ -531,6 +531,14 @@ export interface Rubber extends GameObject {
   overwrite_physics: boolean;
 }
 
+export interface VpxFont {
+  charset?: number;
+  style: string[];
+  weight: number;
+  size: number;
+  name: string;
+}
+
 export interface Decal extends GameObject {
   center: Point;
   vCenter?: Point;
@@ -543,15 +551,8 @@ export interface Decal extends GameObject {
   decal_type: number | 'image' | 'text' | string;
   text?: string;
   sizing_type: number | 'auto_size' | 'auto_width' | 'manual_size' | string;
-  font?: {
-    name: string;
-    size: number;
-    weight: number;
-    italic: boolean;
-  };
-  font_color?: string;
+  font?: VpxFont;
   color?: string;
-  is_vertical_text: boolean;
   vertical_text?: boolean;
 }
 
@@ -600,13 +601,8 @@ export interface TextBox extends GameObject {
   font_color: string;
   intensity_scale: number;
   text?: string;
-  font?: {
-    name: string;
-    size: number;
-    weight: number;
-    italic: boolean;
-  };
-  align: number;
+  font?: VpxFont;
+  align: 'left' | 'center' | 'right' | string;
   is_transparent: boolean;
   is_dmd: boolean;
 }

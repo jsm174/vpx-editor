@@ -19,6 +19,7 @@ export interface GameItem {
   _type: string;
   _fileName?: string;
   _layer?: number;
+  _layerName?: string | null;
   name?: string;
   is_locked?: boolean;
   is_backglass?: boolean;

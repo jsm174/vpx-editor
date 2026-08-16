@@ -16,7 +16,11 @@ import { clearPrimitiveMeshCache } from './parts/primitive.js';
 import { updateItemsList, selectItem } from './items-panel.js';
 import { updatePropertiesPanel } from './properties-panel.js';
 import { updateLayersList, updateCollectionsList } from './layers-panel.js';
-import { getItem, setItem, setPartGroup, clearFileNameMap } from './state.js';
+import { getItem, setItem, setPartGroup, getPartGroup, clearFileNameMap, hasItem } from './state.js';
+import { nameEquals } from '../shared/gameitem-utils.js';
+import { generateUniqueName } from './object-factory.js';
+import { upgradeBackglassPrimitives } from './backglass-upgrade.js';
+import { appendConsoleLine } from './console-panel.js';
 
 interface MimeTypes {
   [key: string]: string;
@@ -140,6 +144,7 @@ export async function loadTable(): Promise<void> {
   state.items = {};
   state.partGroups = {};
   clearFileNameMap();
+  const loadedEntries: { item: GameItem; itemInfo: GameItemEntry; type: string }[] = [];
   for (const itemInfo of state.gameitems) {
     const itemPath = `${state.extractedDir}/gameitems/${itemInfo.file_name}`;
     const itemResult = await window.vpxEditor.readFile(itemPath);
@@ -159,19 +164,66 @@ export async function loadTable(): Promise<void> {
         (item as Record<string, unknown>)['return_'] = (item as Record<string, unknown>)['return'];
         delete (item as Record<string, unknown>)['return'];
       }
-
-      const itemName = item.name || itemInfo.file_name;
-      setItem(itemName, item, itemInfo.file_name);
-
-      if (type === 'PartGroup' && item.name) {
-        setPartGroup(item.name, item);
-      }
+      loadedEntries.push({ item, itemInfo, type });
     } else {
       console.warn(`Failed to load item: ${itemPath}`, itemResult.error);
     }
   }
+
+  const orderedEntries = [...loadedEntries.filter(e => e.item.name), ...loadedEntries.filter(e => !e.item.name)];
+  const groupRenames = new Map<string, string>();
+  for (const { item, itemInfo, type } of orderedEntries) {
+    let itemName = item.name as string | undefined;
+    let renamed = false;
+    if (!itemName) {
+      if (type === 'Decal') {
+        itemName = generateUniqueName('Decal');
+        renamed = true;
+      } else {
+        itemName = itemInfo.file_name;
+      }
+    } else if (hasItem(itemName)) {
+      const uniqueName = generateUniqueName(itemName);
+      console.warn(`Duplicate part name '${itemName}' renamed to '${uniqueName}'`);
+      if (type === 'PartGroup') {
+        groupRenames.set(itemName, uniqueName);
+      }
+      itemName = uniqueName;
+      renamed = true;
+    }
+    if (renamed) {
+      item.name = itemName;
+    }
+    setItem(itemName, item, itemInfo.file_name);
+    if (renamed) {
+      await saveItemToFile(itemName);
+    }
+
+    if (type === 'PartGroup' && item.name) {
+      setPartGroup(item.name, item);
+    }
+  }
+
+  const orphanedGroupRenames = [...groupRenames].filter(([oldName]) => !getPartGroup(oldName));
+  if (orphanedGroupRenames.length > 0) {
+    for (const key of Object.keys(state.items)) {
+      const item = getItem(key);
+      const groupRef = item?.part_group_name;
+      if (!item || !groupRef) continue;
+      for (const [oldName, newName] of orphanedGroupRenames) {
+        if (nameEquals(groupRef, oldName)) {
+          item.part_group_name = newName;
+          await saveItemToFile(key);
+          break;
+        }
+      }
+    }
+  }
   console.log(`Loaded ${Object.keys(state.items).length} items`);
   console.log(`Loaded ${Object.keys(state.partGroups).length} part groups`);
+
+  await upgradeBackglassPrimitives();
+  warnOnMissingBackdropImages();
 
   if (state.gamedata && state.gamedata.image) {
     loadBackdropImage(state.gamedata.image as string);
@@ -184,6 +236,26 @@ export async function loadTable(): Promise<void> {
   updatePropertiesPanel();
   fitToView();
   render();
+}
+
+function warnOnMissingBackdropImages(): void {
+  const gamedata = state.gamedata as Record<string, unknown> | null;
+  if (!gamedata) return;
+  const imageNames = new Set(Object.keys(state.images || {}).map(name => name.toLowerCase()));
+  const backdropSets: [string, string][] = [
+    ['Desktop', 'backglass_image_full_desktop'],
+    ['Cabinet', 'backglass_image_full_fullscreen'],
+    ['Full Single Screen', 'backglass_image_full_single_screen'],
+  ];
+  for (const [setName, prop] of backdropSets) {
+    const imageName = gamedata[prop] as string | undefined;
+    if (imageName && imageName.toLowerCase() !== '<none>' && !imageNames.has(imageName.toLowerCase())) {
+      appendConsoleLine(
+        `Warning: ${setName} backdrop image '${imageName}' is not present in the table (renders black)`,
+        'warn'
+      );
+    }
+  }
 }
 
 export async function loadBackdropImage(imageName: string): Promise<void> {
