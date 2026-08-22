@@ -167,6 +167,19 @@ async function saveToHandle(handle: FileSystemFileHandle, bytes: Uint8Array): Pr
   await writable.close();
 }
 
+type PermissionedHandle = FileSystemFileHandle & {
+  queryPermission?: (options: { mode: string }) => Promise<PermissionState>;
+  requestPermission?: (options: { mode: string }) => Promise<PermissionState>;
+};
+
+async function ensureWritePermission(handle: FileSystemFileHandle): Promise<boolean> {
+  const permissioned = handle as PermissionedHandle;
+  if (!permissioned.queryPermission || !permissioned.requestPermission) return true;
+  const options = { mode: 'readwrite' };
+  if ((await permissioned.queryPermission(options)) === 'granted') return true;
+  return (await permissioned.requestPermission(options)) === 'granted';
+}
+
 async function getNewSaveHandle(suggestedName: string): Promise<FileSystemFileHandle | null> {
   if ('showSaveFilePicker' in window) {
     try {
@@ -204,7 +217,12 @@ function downloadFile(bytes: Uint8Array, fileName: string): void {
 
 export async function handleSave(): Promise<void> {
   const events = getEvents();
-  const handle = state.currentFileHandle || (await getNewSaveHandle(state.currentFileName));
+  let handle = state.currentFileHandle;
+  if (handle && !(await ensureWritePermission(handle))) {
+    state.currentFileHandle = null;
+    handle = null;
+  }
+  handle = handle || (await getNewSaveHandle(state.currentFileName));
 
   if (!handle && 'showSaveFilePicker' in window) {
     events.emit('status', 'Save cancelled');
