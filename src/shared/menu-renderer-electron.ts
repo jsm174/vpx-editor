@@ -331,6 +331,12 @@ function createActionHandler(
         ctx.window.webContents.send('export-blueprint', { solid, isBackglass });
       };
 
+    case 'export-obj-mesh':
+      return () => {
+        const ctx = windowRegistry.getFocused();
+        ctx?.window.webContents.send('export-obj-mesh');
+      };
+
     default:
       return undefined;
   }

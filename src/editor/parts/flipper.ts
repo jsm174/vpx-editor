@@ -157,6 +157,7 @@ export function createFlipper3DMesh(item: FlipperItem): THREE.Group | null {
     0
   );
   const bodyMesh = new THREE.Mesh(bodyGeom, baseMat);
+  bodyMesh.name = 'Base';
   group.add(bodyMesh);
 
   if (rubberThickness > 0) {
@@ -170,6 +171,7 @@ export function createFlipper3DMesh(item: FlipperItem): THREE.Group | null {
       rubberHeight
     );
     const rubberMesh = new THREE.Mesh(rubberGeom, rubberMat);
+    rubberMesh.name = 'Rubber';
     group.add(rubberMesh);
   }
 

@@ -62,12 +62,16 @@ export function createSpinner3DMesh(item: SpinnerItem): THREE.Group | null {
   if (item.show_bracket !== false) {
     const bracketGeom = createMeshGeometry(spinnerBracketMesh, { scale: length, rotation, offsetZ: height });
     const bracketMat = createMaterial(item.material, item.image);
-    group.add(new THREE.Mesh(bracketGeom, bracketMat));
+    const bracketMesh = new THREE.Mesh(bracketGeom, bracketMat);
+    bracketMesh.name = 'Bracket';
+    group.add(bracketMesh);
   }
 
   const plateGeom = createMeshGeometry(spinnerPlateMesh, { scale: length, rotation, offsetZ: height });
   const plateMat = createMaterial(item.material, item.image);
-  group.add(new THREE.Mesh(plateGeom, plateMat));
+  const plateMesh = new THREE.Mesh(plateGeom, plateMat);
+  plateMesh.name = 'Plate';
+  group.add(plateMesh);
 
   group.position.set(center.x, center.y, getSurfaceHeight(item.surface));
   return group;

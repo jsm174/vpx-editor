@@ -47,6 +47,11 @@ export function createMenuActionHandler(context: MenuActionContext) {
       case 'export-blueprint':
         context.showBlueprintModal();
         break;
+      case 'export-obj-mesh':
+        import('../editor/obj-export.js').then(({ exportTableMeshAndSave }) => {
+          exportTableMeshAndSave();
+        });
+        break;
       case 'undo':
         events.emit('undo');
         break;
