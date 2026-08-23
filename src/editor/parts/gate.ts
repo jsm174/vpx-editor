@@ -91,12 +91,16 @@ export function createGate3DMesh(item: GateItem): THREE.Group | null {
       offsetZ: height,
     });
     const bracketMat = createMaterial(item.material, null);
-    group.add(new THREE.Mesh(bracketGeom, bracketMat));
+    const bracketMesh = new THREE.Mesh(bracketGeom, bracketMat);
+    bracketMesh.name = 'Bracket';
+    group.add(bracketMesh);
   }
 
   const wireGeom = createMeshGeometry(wireMeshData, { scaleXY: length, scaleZ: length, rotation, offsetZ: height });
   const wireMat = createMaterial(item.material, null);
-  group.add(new THREE.Mesh(wireGeom, wireMat));
+  const wireMesh = new THREE.Mesh(wireGeom, wireMat);
+  wireMesh.name = 'Wire';
+  group.add(wireMesh);
 
   group.position.set(center.x, center.y, getSurfaceHeight(item.surface));
   return group;

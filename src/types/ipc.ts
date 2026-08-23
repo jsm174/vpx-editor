@@ -412,6 +412,8 @@ export interface VpxEditorAPI {
 
   exportBlueprint?: (data: number[], filename: string) => Promise<boolean>;
   onExportBlueprint?: (callback: IpcCallback<{ solid: boolean; isBackglass: boolean }>) => void;
+  exportObjMeshGetPath?: (suggestedName: string) => Promise<string | null>;
+  onExportObjMesh?: (callback: IpcCallback<void>) => void;
   onApplyTransform?: (callback: IpcCallback<TransformData>) => void;
   onUndoTransform?: (callback: IpcCallback) => void;
   onSaveTransform?: (callback: IpcCallback<{ type: string }>) => void;

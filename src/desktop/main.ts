@@ -757,6 +757,26 @@ ipcMain.handle('export-blueprint', async (event, data: ArrayBuffer, suggestedNam
   }
 });
 
+ipcMain.handle('export-obj-mesh-get-path', async (event, suggestedName: string) => {
+  const ctx = getContextForManagerEvent(event);
+  const win = BrowserWindow.fromWebContents(event.sender) || ctx?.window;
+  if (!win) return null;
+  const result = await dialog.showSaveDialog(win, {
+    title: 'Export OBJ Mesh',
+    defaultPath: path.join(getLastFolder('Obj'), suggestedName),
+    filters: [
+      { name: 'Wavefront OBJ', extensions: ['obj'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+  });
+
+  if (result.canceled || !result.filePath) {
+    return null;
+  }
+  setLastFolder('Obj', path.dirname(result.filePath));
+  return result.filePath;
+});
+
 ipcMain.handle('export-blueprint-get-path', async (event, suggestedName: string) => {
   const ctx = getContextForManagerEvent(event);
   const win = BrowserWindow.fromWebContents(event.sender) || ctx?.window;

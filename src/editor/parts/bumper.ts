@@ -57,7 +57,9 @@ export function createBumper3DMesh(item: Bumper): THREE.Group | null {
       rotation: orientation,
     });
     const mat = createMaterialWithTexture(item.base_material, null, 'BumperBase.webp');
-    group.add(new THREE.Mesh(geom, mat));
+    const mesh = new THREE.Mesh(geom, mat);
+    mesh.name = 'Base';
+    group.add(mesh);
   }
 
   if (item.is_cap_visible !== false) {
@@ -68,7 +70,9 @@ export function createBumper3DMesh(item: Bumper): THREE.Group | null {
       rotation: orientation,
     });
     const mat = createMaterialWithTexture(item.cap_material, null, 'BumperCap.webp');
-    group.add(new THREE.Mesh(geom, mat));
+    const mesh = new THREE.Mesh(geom, mat);
+    mesh.name = 'Cap';
+    group.add(mesh);
   }
 
   if (item.is_ring_visible !== false) {
@@ -79,7 +83,9 @@ export function createBumper3DMesh(item: Bumper): THREE.Group | null {
       rotation: orientation,
     });
     const mat = createMaterialWithTexture(item.ring_material, null, 'BumperRing.webp');
-    group.add(new THREE.Mesh(geom, mat));
+    const mesh = new THREE.Mesh(geom, mat);
+    mesh.name = 'Ring';
+    group.add(mesh);
   }
 
   if (item.is_socket_visible !== false) {
@@ -90,7 +96,9 @@ export function createBumper3DMesh(item: Bumper): THREE.Group | null {
       rotation: orientation,
     });
     const mat = createMaterialWithTexture(item.socket_material, null, 'BumperSkirt.webp');
-    group.add(new THREE.Mesh(geom, mat));
+    const mesh = new THREE.Mesh(geom, mat);
+    mesh.name = 'Skirt';
+    group.add(mesh);
   }
 
   group.position.set(center.x, center.y, getSurfaceHeight(item.surface));

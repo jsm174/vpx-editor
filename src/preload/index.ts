@@ -625,6 +625,11 @@ const vpxEditorAPI: VpxEditorAPI = {
       callback(data)
     );
   },
+  exportObjMeshGetPath: (suggestedName: string): Promise<string | null> =>
+    ipcRenderer.invoke('export-obj-mesh-get-path', suggestedName),
+  onExportObjMesh: (callback: () => void): void => {
+    ipcRenderer.on('export-obj-mesh', () => callback());
+  },
   onApplyTransform: (callback: (data: TransformData) => void): void => {
     ipcRenderer.on('apply-transform', (_event: IpcRendererEvent, data: TransformData) => callback(data));
   },

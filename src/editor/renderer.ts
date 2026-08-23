@@ -888,6 +888,15 @@ window.vpxEditor.onExportBlueprint?.(async data => {
   await exportBlueprintAndDownload(data.solid, data.isBackglass);
 });
 
+window.vpxEditor.onExportObjMesh?.(async () => {
+  const { exportTableMeshAndSave } = await import('./obj-export.js');
+  if (elements.statusBar) elements.statusBar.textContent = 'Exporting OBJ mesh...';
+  const objPath = await exportTableMeshAndSave();
+  if (elements.statusBar) {
+    elements.statusBar.textContent = objPath ? `Exported mesh: ${objPath}` : 'OBJ export cancelled';
+  }
+});
+
 document.getElementById('toggle-wireframe')?.addEventListener('click', () => {
   if (state.viewMode === VIEW_MODE_3D && is3DInitialized()) {
     const isWireframe = toggleWireframe();

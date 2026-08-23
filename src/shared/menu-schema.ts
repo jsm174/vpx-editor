@@ -132,6 +132,13 @@ export const menuSchema: MenuItemSchema[] = [
         requires: ['hasTable'],
         disabledWhen: ['dialogOpen'],
       },
+      {
+        id: 'export-obj-mesh',
+        label: 'Export OBJ Mesh...',
+        action: 'export-obj-mesh',
+        requires: ['hasTable'],
+        disabledWhen: ['dialogOpen'],
+      },
       { id: 'file-sep-4', type: 'separator' },
       {
         id: 'close',
