@@ -5,7 +5,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { state, isItemVisible, getItem, getPartGroup } from './state.js';
+import { state, isItemVisible, getItem, getPartGroup, getItemSpaceReference } from './state.js';
 import type { GameItem } from './state.js';
 import { selectItem } from './items-panel.js';
 import { computeCameraParams, VIEW_MODE_MASKS, getSpaceReferenceOffset, type ViewMode } from './view-setup.js';
@@ -98,22 +98,6 @@ function isVisibleInPreviewMode(item: GameItem): boolean {
   }
 
   return true;
-}
-
-function getItemSpaceReference(item: GameItem): string {
-  let groupName = item.part_group_name;
-  while (groupName) {
-    const partGroup = getPartGroup(groupName);
-    if (!partGroup) break;
-
-    const spaceRef = partGroup.space_reference;
-    if (spaceRef && spaceRef !== 'inherit') {
-      return spaceRef;
-    }
-
-    groupName = partGroup.part_group_name;
-  }
-  return 'playfield';
 }
 
 function getSceneBackgroundColor(): THREE.Color {
