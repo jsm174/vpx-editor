@@ -898,9 +898,14 @@ window.vpxEditor.onExportBlueprint?.(async data => {
 });
 
 window.vpxEditor.onExportObjMesh?.(async () => {
+  const options = await window.vpxEditor.promptMeshExportOptions();
+  if (!options) {
+    if (elements.statusBar) elements.statusBar.textContent = 'OBJ export cancelled';
+    return;
+  }
   const { exportTableMeshAndSave } = await import('./obj-export.js');
   if (elements.statusBar) elements.statusBar.textContent = 'Exporting OBJ mesh...';
-  const objPath = await exportTableMeshAndSave();
+  const objPath = await exportTableMeshAndSave(options);
   if (elements.statusBar) {
     elements.statusBar.textContent = objPath ? `Exported mesh: ${objPath}` : 'OBJ export cancelled';
   }

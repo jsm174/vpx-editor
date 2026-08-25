@@ -1,3 +1,4 @@
+import type { ObjExchangeOptions } from '../shared/obj-transform.js';
 import type { VpxEditorAPI } from '../types/ipc.js';
 import type { ClipboardData } from '../types/data.js';
 import { markDirty, markClean } from './state.js';
@@ -70,7 +71,7 @@ export const vpxEditorAPI = {
 
   readFile: async (_path: string) => ({ success: false, error: 'Not initialized' }),
   readBinaryFile: async (_path: string) => ({ success: false, error: 'Not initialized' }),
-  objToMesh: async (_path: string, _convertToLeftHanded?: boolean) => ({ success: false, error: 'Not initialized' }),
+  objToMesh: async (_path: string) => ({ success: false, error: 'Not initialized' }),
   generateBuiltinPrimitive: async (_sides: number, _drawTexturesInside: boolean) => ({
     success: false,
     error: 'Not initialized',
@@ -141,8 +142,12 @@ export const vpxEditorAPI = {
     new Promise(resolve => {
       events.emit('show-mesh-import', primitiveFileName, resolve);
     }),
-  exportMesh: (primitiveFileName: string, suggestedName?: string) =>
-    events.emit('export-mesh', primitiveFileName, suggestedName),
+  exportMesh: (primitiveFileName: string, suggestedName?: string, options?: ObjExchangeOptions) =>
+    events.emit('export-mesh', primitiveFileName, suggestedName, options),
+  promptMeshExportOptions: (): Promise<ObjExchangeOptions | null> =>
+    new Promise(resolve => {
+      events.emit('show-mesh-export', resolve);
+    }),
 
   getGamedata: async () => null,
   saveGamedata: async (_gamedata: Record<string, unknown>) => {},

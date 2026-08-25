@@ -166,6 +166,25 @@ export async function saveVpxFile(onProgress?: (message: string) => void): Promi
   return result;
 }
 
+export async function exportObjTableFiles(
+  options: import('@francisdb/vpin-wasm').ObjExportOptions | null
+): Promise<Record<string, Uint8Array> | null> {
+  if (!state.tableLoaded || !state.platform) return null;
+
+  const events = getEvents();
+  const wasmProgress = (msg: string) => {
+    events.emit('console-output', { type: 'info', text: msg });
+  };
+
+  try {
+    const files = await collectVpxFiles(wasmProgress);
+    return state.platform.vpxEngine.exportObj(files, options, wasmProgress);
+  } catch (e: unknown) {
+    events.emit('console-output', { type: 'error', text: `OBJ export failed: ${(e as Error).message}` });
+    return null;
+  }
+}
+
 export async function handleExportGlb(): Promise<void> {
   if (!state.tableLoaded || !state.platform) return;
 

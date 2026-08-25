@@ -1,3 +1,4 @@
+import type { ObjExchangeOptions } from '../shared/obj-transform.js';
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 import type {
   VpxEditorAPI,
@@ -261,8 +262,7 @@ const vpxEditorAPI: VpxEditorAPI = {
   savePanelSettings: (settings: PanelSettings): Promise<void> => ipcRenderer.invoke('save-panel-settings', settings),
   readFile: (filePath: string) => ipcRenderer.invoke('read-file', filePath),
   readBinaryFile: (filePath: string) => ipcRenderer.invoke('read-binary-file', filePath),
-  objToMesh: (filePath: string, convertToLeftHanded?: boolean) =>
-    ipcRenderer.invoke('obj-to-mesh', filePath, convertToLeftHanded),
+  objToMesh: (filePath: string) => ipcRenderer.invoke('obj-to-mesh', filePath),
   generateBuiltinPrimitive: (sides: number, drawTexturesInside: boolean) =>
     ipcRenderer.invoke('generate-builtin-primitive', sides, drawTexturesInside),
   writeFile: (filePath: string, content: string) => ipcRenderer.invoke('write-file', filePath, content),
@@ -275,8 +275,13 @@ const vpxEditorAPI: VpxEditorAPI = {
   importMesh: (primitiveFileName: string): Promise<{ success: boolean; cancelled?: boolean }> =>
     ipcRenderer.invoke('import-mesh', primitiveFileName),
   browseObjFile: (): Promise<string | null> => ipcRenderer.invoke('browse-obj-file'),
+  readObjHeader: (filePath: string): Promise<string | null> => ipcRenderer.invoke('read-obj-header', filePath),
   meshImportResult: (result: { meshData: string; options: MeshImportOptions } | null): void => {
     ipcRenderer.send('mesh-import-result', result);
+  },
+  promptMeshExportOptions: (): Promise<ObjExchangeOptions | null> => ipcRenderer.invoke('prompt-mesh-export-options'),
+  meshExportResult: (result: ObjExchangeOptions | null): void => {
+    ipcRenderer.send('mesh-export-result', result);
   },
   onShowAbout: (callback: (data: AboutData) => void): void => {
     ipcRenderer.on('show-about', (_event: IpcRendererEvent, data: AboutData) => callback(data));
@@ -374,8 +379,8 @@ const vpxEditorAPI: VpxEditorAPI = {
       callback(settings)
     );
   },
-  exportMesh: (primitiveFileName: string, suggestedName: string) =>
-    ipcRenderer.invoke('export-mesh', primitiveFileName, suggestedName),
+  exportMesh: (primitiveFileName: string, suggestedName: string, options?: ObjExchangeOptions) =>
+    ipcRenderer.invoke('export-mesh', primitiveFileName, suggestedName, options),
   playTable: (): Promise<void> => ipcRenderer.invoke('play-table'),
   onPlayStarted: (callback: () => void): void => {
     ipcRenderer.on('play-started', () => callback());
@@ -627,6 +632,8 @@ const vpxEditorAPI: VpxEditorAPI = {
   },
   exportObjMeshGetPath: (suggestedName: string): Promise<string | null> =>
     ipcRenderer.invoke('export-obj-mesh-get-path', suggestedName),
+  exportObjTable: (options: import('@francisdb/vpin-wasm').ObjExportOptions | null) =>
+    ipcRenderer.invoke('export-obj-table', options),
   onExportObjMesh: (callback: () => void): void => {
     ipcRenderer.on('export-obj-mesh', () => callback());
   },

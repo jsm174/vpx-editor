@@ -1,3 +1,4 @@
+import type { MeshIoOptions, ObjExportOptions } from '@francisdb/vpin-wasm';
 import type { VpxEngine, VpxFiles, ProgressCallback, PrimitiveMeshData } from './types.js';
 
 let vpinModule: typeof import('@francisdb/vpin-wasm') | null = null;
@@ -39,14 +40,18 @@ export class VpinWasmEngine implements VpxEngine {
     return vpinModule.export_glb(files, { exportInvisibleItems }, onProgress);
   }
 
-  objToMesh(data: Uint8Array, convertToLeftHanded: boolean = true): PrimitiveMeshData {
+  exportObj(files: VpxFiles, options?: ObjExportOptions | null, onProgress?: ProgressCallback): VpxFiles {
     if (!this.initialized || !vpinModule) {
       throw new Error('VpxEngine not initialized');
     }
-    const mesh = vpinModule.obj_to_mesh(
-      data,
-      convertToLeftHanded ? null : { axes: vpinModule.AxisConvention.ZUpLeftHanded }
-    );
+    return vpinModule.export_obj(files, options ?? null, onProgress);
+  }
+
+  objToMesh(data: Uint8Array, options: MeshIoOptions | null = null): PrimitiveMeshData {
+    if (!this.initialized || !vpinModule) {
+      throw new Error('VpxEngine not initialized');
+    }
+    const mesh = vpinModule.obj_to_mesh(data, options);
     const result: PrimitiveMeshData = {
       name: mesh.name,
       positions: mesh.positions,
@@ -65,19 +70,12 @@ export class VpinWasmEngine implements VpxEngine {
     texCoords: Float32Array,
     normals: Float32Array,
     indices: Uint32Array,
-    convertToLeftHanded: boolean = true
+    options: MeshIoOptions | null = null
   ): Uint8Array {
     if (!this.initialized || !vpinModule) {
       throw new Error('VpxEngine not initialized');
     }
-    return vpinModule.mesh_to_obj(
-      name,
-      positions,
-      texCoords,
-      normals,
-      indices,
-      convertToLeftHanded ? null : { axes: vpinModule.AxisConvention.ZUpLeftHanded }
-    );
+    return vpinModule.mesh_to_obj(name, positions, texCoords, normals, indices, options);
   }
 
   generateBuiltinPrimitive(sides: number, drawTexturesInside: boolean): PrimitiveMeshData {

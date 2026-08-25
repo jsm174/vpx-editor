@@ -1,3 +1,4 @@
+import type { ObjExchangeOptions } from '../shared/obj-transform.js';
 import type { GameData, TableInfo, TableLoadedData, Collection, ClipboardData } from './data.js';
 import type { GameItemMeta } from './state.js';
 import type { MeshImportOptions } from '../features/mesh-import/shared/component.js';
@@ -229,7 +230,7 @@ export interface VpxEditorAPI {
   readBinaryFile: (
     filePath: string
   ) => Promise<{ success: boolean; data?: Buffer | Uint8Array | number[]; error?: string }>;
-  objToMesh: (filePath: string, convertToLeftHanded?: boolean) => Promise<MeshLoadResult>;
+  objToMesh: (filePath: string) => Promise<MeshLoadResult>;
   generateBuiltinPrimitive: (sides: number, drawTexturesInside: boolean) => Promise<MeshLoadResult>;
   writeFile: (filePath: string, content: string) => Promise<WriteResult>;
   listDir: (dirPath: string) => Promise<string[]>;
@@ -240,7 +241,10 @@ export interface VpxEditorAPI {
   renameFile: (oldPath: string, newPath: string) => Promise<RenameResult>;
   importMesh: (primitiveFileName: string) => Promise<{ success: boolean; cancelled?: boolean }>;
   browseObjFile: () => Promise<string | null>;
+  readObjHeader: (filePath: string) => Promise<string | null>;
   meshImportResult: (result: { meshData: string; options: MeshImportOptions } | null) => void;
+  promptMeshExportOptions: () => Promise<ObjExchangeOptions | null>;
+  meshExportResult: (result: ObjExchangeOptions | null) => void;
   onShowAbout: (callback: IpcCallback<AboutData>) => void;
   onInitSettings: (callback: IpcCallback<EditorSettings>) => void;
   onThemeChanged: (callback: IpcCallback<string>) => void;
@@ -276,7 +280,11 @@ export interface VpxEditorAPI {
   notifyBackglassViewChanged: (enabled: boolean) => void;
   getEditorSettings: () => Promise<EditorSettings>;
   onEditorSettingsChanged: (callback: IpcCallback<EditorSettings>) => void;
-  exportMesh: (primitiveFileName: string, suggestedName: string) => Promise<string | null>;
+  exportMesh: (
+    primitiveFileName: string,
+    suggestedName: string,
+    options?: ObjExchangeOptions
+  ) => Promise<string | null>;
   playTable: () => Promise<void>;
   onPlayStarted: (callback: IpcCallback) => void;
   onPlayStopped: (callback: IpcCallback) => void;
@@ -413,6 +421,9 @@ export interface VpxEditorAPI {
   exportBlueprint?: (data: number[], filename: string) => Promise<boolean>;
   onExportBlueprint?: (callback: IpcCallback<{ solid: boolean; isBackglass: boolean }>) => void;
   exportObjMeshGetPath?: (suggestedName: string) => Promise<string | null>;
+  exportObjTable?: (
+    options: import('@francisdb/vpin-wasm').ObjExportOptions | null
+  ) => Promise<{ success: boolean; files?: Record<string, Uint8Array>; error?: string }>;
   onExportObjMesh?: (callback: IpcCallback<void>) => void;
   onApplyTransform?: (callback: IpcCallback<TransformData>) => void;
   onUndoTransform?: (callback: IpcCallback) => void;

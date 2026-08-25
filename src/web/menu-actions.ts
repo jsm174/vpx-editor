@@ -49,8 +49,11 @@ export function createMenuActionHandler(context: MenuActionContext) {
         context.showBlueprintModal();
         break;
       case 'export-obj-mesh':
-        import('../editor/obj-export.js').then(({ exportTableMeshAndSave }) => {
-          exportTableMeshAndSave();
+        window.vpxEditor.promptMeshExportOptions().then(options => {
+          if (!options) return;
+          import('../editor/obj-export.js').then(({ exportTableMeshAndSave }) => {
+            exportTableMeshAndSave(options);
+          });
         });
         break;
       case 'export-glb':

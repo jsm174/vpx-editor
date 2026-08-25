@@ -6,6 +6,8 @@ import {
   DEFAULT_GRID_SIZE,
   DEFAULT_TEXTURE_QUALITY,
   DEFAULT_UNIT_CONVERSION,
+  DEFAULT_OBJ_UNIT,
+  DEFAULT_OBJ_ORIENTATION,
   DEFAULT_VPINBALL_PATH_MACOS,
   DEFAULT_MATERIAL_COLOR,
   DEFAULT_ELEMENT_SELECT_COLOR,
@@ -57,6 +59,10 @@ export interface Settings {
   lastObjFolder: string | null;
   windowBounds: Record<string, WindowBounds>;
   unitConversion?: string;
+  objExportUnit?: string;
+  objExportOrientation?: string;
+  objImportUnit?: string;
+  objImportOrientation?: string;
   [key: `last${string}Folder`]: string | null;
 }
 
@@ -93,6 +99,10 @@ let settings: Settings = {
   lastObjFolder: null,
   windowBounds: {},
   unitConversion: DEFAULT_UNIT_CONVERSION,
+  objExportUnit: DEFAULT_OBJ_UNIT,
+  objExportOrientation: DEFAULT_OBJ_ORIENTATION,
+  objImportUnit: DEFAULT_OBJ_UNIT,
+  objImportOrientation: DEFAULT_OBJ_ORIENTATION,
 };
 
 function getSettingsPath(): string {

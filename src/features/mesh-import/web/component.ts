@@ -5,7 +5,17 @@ import {
   parseMtlContent,
   type MeshImportOptions,
 } from '../shared/component';
-import type { VpxEngine } from '../../../platform/types';
+import type { StorageProvider, VpxEngine } from '../../../platform/types';
+import { loadObjImportOptions, saveObjImportOptions } from '../../mesh-export/web/component';
+import {
+  defaultExchange,
+  insertObjHeaderComment,
+  isIdentityExchange,
+  exportMeshIoOptions,
+  importMeshIoOptions,
+  type ObjExchangeOptions,
+} from '../../../shared/obj-transform';
+import { UNIT_CONVERSION_VPU } from '../../../shared/constants';
 import templateHtml from './template.html?raw';
 
 let templateInjected = false;
@@ -33,6 +43,7 @@ function injectTemplate(): void {
 }
 
 export interface WebMeshImportDeps {
+  storage: StorageProvider;
   fileSystem: {
     readFile: (path: string) => Promise<{ success: boolean; content?: string }>;
     writeFile: (path: string, content: string) => Promise<unknown>;
@@ -84,7 +95,7 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
 
     pendingResolve = resolve ?? null;
     currentPrimitiveFileName = primitiveFileName;
-    body.innerHTML = createMeshImportHTML();
+    body.innerHTML = createMeshImportHTML(await loadObjImportOptions(deps.storage));
 
     componentInstance = initMeshImportComponent(body as HTMLElement, {
       onBrowse: async () => {
@@ -107,7 +118,7 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
               if (file === objFile) continue;
               extras.set(file.name, await file.text());
             }
-            resolve({ path: objFile.name, content, extras });
+            resolve({ path: objFile.name, content, header: content.slice(0, 1024), extras });
           };
           input.click();
         });
@@ -120,7 +131,9 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
           const destFileName = currentPrimitiveFileName.replace('.json', '.obj');
 
           const bytes = new TextEncoder().encode(content);
-          const mesh = deps.vpxEngine.objToMesh(bytes, options.convertCoords);
+          const exchange = defaultExchange(options.unit ?? UNIT_CONVERSION_VPU, options.orientation);
+          await saveObjImportOptions(deps.storage, exchange);
+          const mesh = deps.vpxEngine.objToMesh(bytes, importMeshIoOptions(exchange));
           const midpoint = mesh.midpoint;
 
           let positions = mesh.positions;
@@ -140,7 +153,7 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
             mesh.texCoords,
             mesh.normals,
             mesh.indices,
-            true
+            null
           );
 
           await deps.fileSystem.writeBinaryFile(`${extractedDir}/${destFileName}`, processedBytes);
@@ -217,6 +230,10 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
 
   deps.events.on('export-mesh', async (...args: unknown[]) => {
     const primitiveFileName = args[0] as string;
+    const exchange = defaultExchange(
+      (args[2] as ObjExchangeOptions | undefined)?.unit ?? UNIT_CONVERSION_VPU,
+      (args[2] as ObjExchangeOptions | undefined)?.orientation
+    );
     const extractedDir = deps.getExtractedDir();
     if (!extractedDir) return;
 
@@ -226,6 +243,20 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
 
       const fileResult = await deps.fileSystem.readFile(srcPath);
       let objContent = fileResult.success ? fileResult.content : null;
+
+      if (objContent && !isIdentityExchange(exchange)) {
+        const mesh = deps.vpxEngine.objToMesh(new TextEncoder().encode(objContent), null);
+        objContent = new TextDecoder().decode(
+          deps.vpxEngine.meshToObj(
+            mesh.name || 'mesh',
+            mesh.positions,
+            mesh.texCoords,
+            mesh.normals,
+            mesh.indices,
+            exportMeshIoOptions(exchange)
+          )
+        );
+      }
 
       if (!objContent) {
         const jsonPath = `${extractedDir}/${primitiveFileName}`;
@@ -242,7 +273,7 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
                 mesh.texCoords,
                 mesh.normals,
                 mesh.indices,
-                true
+                exportMeshIoOptions(exchange)
               );
               objContent = new TextDecoder().decode(objBytes);
             }
@@ -294,7 +325,7 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
         objContent = objContent.slice(0, firstNewline + 1) + mtlRef + objContent.slice(firstNewline + 1);
       }
 
-      downloadFile(objContent, baseName);
+      downloadFile(insertObjHeaderComment(objContent, exchange), baseName);
       if (mtlContent) {
         downloadFile(mtlContent, mtlBaseName);
       }

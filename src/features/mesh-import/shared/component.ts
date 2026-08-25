@@ -1,13 +1,28 @@
+import type { ObjExchangeOptions, ObjOrientation } from '../../../shared/obj-transform.js';
+import { parseObjHeaderComment } from '../../../shared/obj-transform.js';
+import {
+  DEFAULT_OBJ_EXCHANGE,
+  getObjProfileValue,
+  objProfileRadiosHtml,
+  optionsForProfile,
+  profileFor,
+  setObjProfileValue,
+} from '../../../shared/obj-exchange-ui.js';
+
 export interface MeshImportOptions {
-  convertCoords: boolean;
   centerMesh: boolean;
   importMaterial: boolean;
   absolutePosition: boolean;
+  unit: string;
+  orientation: ObjOrientation;
 }
+
+export const DEFAULT_MESH_IMPORT_EXCHANGE: ObjExchangeOptions = DEFAULT_OBJ_EXCHANGE;
 
 export interface MeshImportBrowseResult {
   path: string;
   content: string;
+  header?: string;
   extras?: Map<string, string>;
 }
 
@@ -17,7 +32,7 @@ export interface MeshImportCallbacks {
   onCancel: () => void;
 }
 
-export function createMeshImportHTML(): string {
+export function createMeshImportHTML(exchange: ObjExchangeOptions = DEFAULT_MESH_IMPORT_EXCHANGE): string {
   return `
     <div class="mesh-import-container">
       <div class="mesh-import-file-row">
@@ -29,12 +44,20 @@ export function createMeshImportHTML(): string {
       <fieldset class="mesh-import-options">
         <legend>Options</legend>
         <div class="mesh-import-grid">
-          <label><input type="checkbox" id="mesh-import-convert-coords" checked> Convert coordinate system</label>
           <label><input type="checkbox" id="mesh-import-center-mesh"> Center mesh to it's midpoint</label>
           <label><input type="checkbox" id="mesh-import-material"> Import mesh's material</label>
           <div></div>
           <label class="full-width"><input type="radio" name="mesh-position" id="mesh-import-rel-position" checked> Place at primitive's position</label>
           <label class="full-width"><input type="radio" name="mesh-position" id="mesh-import-abs-position"> Place at mesh's absolute position (use mesh's midpoint)</label>
+        </div>
+      </fieldset>
+
+      <fieldset class="mesh-import-options">
+        <legend>Units and axes</legend>
+        <div class="mesh-import-exchange">
+          ${objProfileRadiosHtml('mesh-import-profile', exchange)}
+
+          <div class="mesh-import-detected hidden" id="mesh-import-detected"></div>
         </div>
       </fieldset>
 
@@ -55,10 +78,10 @@ export function initMeshImportComponent(
   const okBtn = container.querySelector('#mesh-import-ok') as HTMLButtonElement;
   const cancelBtn = container.querySelector('#mesh-import-cancel') as HTMLButtonElement;
 
-  const convertCoordsCheck = container.querySelector('#mesh-import-convert-coords') as HTMLInputElement;
   const centerMeshCheck = container.querySelector('#mesh-import-center-mesh') as HTMLInputElement;
   const materialCheck = container.querySelector('#mesh-import-material') as HTMLInputElement;
   const absPositionRadio = container.querySelector('#mesh-import-abs-position') as HTMLInputElement;
+  const detected = container.querySelector('#mesh-import-detected') as HTMLElement;
 
   let selectedFilePath = '';
   let selectedFileContent = '';
@@ -72,6 +95,15 @@ export function initMeshImportComponent(
       selectedExtras = result.extras;
       pathInput.value = result.path;
       okBtn.disabled = false;
+
+      const fromHeader = parseObjHeaderComment(result.header ?? result.content);
+      if (fromHeader) {
+        setObjProfileValue(container, 'mesh-import-profile', profileFor(fromHeader).value);
+        detected.textContent = 'Units and axes detected from the file.';
+        detected.classList.remove('hidden');
+      } else {
+        detected.classList.add('hidden');
+      }
     }
   };
 
@@ -79,10 +111,10 @@ export function initMeshImportComponent(
     if (!selectedFilePath || !selectedFileContent) return;
 
     const options: MeshImportOptions = {
-      convertCoords: convertCoordsCheck.checked,
       centerMesh: centerMeshCheck.checked,
       importMaterial: materialCheck.checked,
       absolutePosition: absPositionRadio.checked,
+      ...optionsForProfile(getObjProfileValue(container, 'mesh-import-profile')),
     };
 
     callbacks.onImport(selectedFilePath, selectedFileContent, options, selectedExtras);
