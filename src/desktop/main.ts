@@ -22,7 +22,18 @@ import {
   DEFAULT_GRID_SIZE,
   DEFAULT_TEXTURE_QUALITY,
   DEFAULT_UNIT_CONVERSION,
+  DEFAULT_OBJ_UNIT,
+  DEFAULT_OBJ_ORIENTATION,
+  UNIT_CONVERSION_VPU,
 } from '../shared/constants.js';
+import {
+  defaultExchange,
+  exportMeshIoOptions,
+  importMeshIoOptions,
+  insertObjHeaderComment,
+  isIdentityExchange,
+  type ObjExchangeOptions,
+} from '../shared/obj-transform.js';
 import { reorderGameitems } from '../features/drawing-order/shared/component.js';
 import {
   settings,
@@ -498,14 +509,11 @@ ipcMain.handle('read-binary-file', async (_event, filePath: string) => {
   }
 });
 
-ipcMain.handle('obj-to-mesh', async (_event, filePath: string, convertToLeftHanded?: boolean) => {
+ipcMain.handle('obj-to-mesh', async (_event, filePath: string) => {
   try {
     const buffer = await fs.promises.readFile(filePath);
     const vpin = await vpxOps.initVpinModule();
-    const mesh = vpin.obj_to_mesh(
-      new Uint8Array(buffer),
-      (convertToLeftHanded ?? true) ? null : { axes: vpin.AxisConvention.ZUpLeftHanded }
-    );
+    const mesh = vpin.obj_to_mesh(new Uint8Array(buffer), null);
     const result = {
       success: true,
       mesh: {
@@ -758,6 +766,12 @@ ipcMain.handle('export-blueprint', async (event, data: ArrayBuffer, suggestedNam
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message };
   }
+});
+
+ipcMain.handle('export-obj-table', async (event, options: import('@francisdb/vpin-wasm').ObjExportOptions | null) => {
+  const ctx = getContextForManagerEvent(event);
+  if (!ctx) return { success: false, error: 'No window context' };
+  return vpxOps.exportObjTable(ctx, options);
 });
 
 ipcMain.handle('export-obj-mesh-get-path', async (event, suggestedName: string) => {
@@ -1838,12 +1852,59 @@ ipcMain.handle('import-mesh', async (event, primitiveFileName: string) => {
 
   ctx.meshImportPrimitiveFileName = primitiveFileName;
 
-  const result = await windowFactory.openMeshImportWindow(ctx);
+  const remembered = defaultExchange(
+    settings.objImportUnit ?? DEFAULT_OBJ_UNIT,
+    settings.objImportOrientation ?? DEFAULT_OBJ_ORIENTATION
+  );
+
+  const result = await windowFactory.openMeshImportWindow(ctx, remembered);
   if (!result) {
     return { success: false, cancelled: true };
   }
 
+  settings.objImportUnit = result.options.unit;
+  settings.objImportOrientation = result.options.orientation;
+  saveSettings();
+
   return await performMeshImport(ctx, { filePath: result.meshData, options: result.options });
+});
+
+ipcMain.handle('prompt-mesh-export-options', async event => {
+  const ctx = windowRegistry.getContextFromEvent(event);
+  if (!ctx) return null;
+
+  const initial = defaultExchange(
+    settings.objExportUnit ?? DEFAULT_OBJ_UNIT,
+    settings.objExportOrientation ?? DEFAULT_OBJ_ORIENTATION
+  );
+
+  const result = await windowFactory.openMeshExportWindow(ctx, initial);
+  if (!result) return null;
+
+  settings.objExportUnit = result.unit;
+  settings.objExportOrientation = result.orientation;
+  saveSettings();
+
+  return result;
+});
+
+ipcMain.on('mesh-export-result', (_event, result: ObjExchangeOptions | null) => {
+  windowFactory.resolveMeshExport(result);
+});
+
+ipcMain.handle('read-obj-header', async (_event, filePath: string) => {
+  try {
+    const handle = await fs.promises.open(filePath, 'r');
+    try {
+      const buffer = Buffer.alloc(1024);
+      const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
+      return buffer.subarray(0, bytesRead).toString('utf-8');
+    } finally {
+      await handle.close();
+    }
+  } catch {
+    return null;
+  }
 });
 
 ipcMain.handle('browse-obj-file', async event => {
@@ -1878,10 +1939,8 @@ async function performMeshImport(ctx: WindowContext, args: { filePath: string; o
   try {
     const buffer = await fs.promises.readFile(filePath);
     const vpin = await vpxOps.initVpinModule();
-    const mesh = vpin.obj_to_mesh(
-      new Uint8Array(buffer),
-      options.convertCoords ? null : { axes: vpin.AxisConvention.ZUpLeftHanded }
-    );
+    const exchange = defaultExchange(options.unit ?? UNIT_CONVERSION_VPU, options.orientation);
+    const mesh = vpin.obj_to_mesh(new Uint8Array(buffer), importMeshIoOptions(exchange));
     const midpoint = mesh.midpoint;
 
     let positions = mesh.positions;
@@ -1980,77 +2039,95 @@ async function findPrimitiveMaterial(
   }
 }
 
-ipcMain.handle('export-mesh', async (event, primitiveFileName: string, suggestedName?: string) => {
-  const ctx = windowRegistry.getContextFromEvent(event);
-  if (!ctx?.extractedDir) return null;
+ipcMain.handle(
+  'export-mesh',
+  async (event, primitiveFileName: string, suggestedName?: string, exchange?: ObjExchangeOptions) => {
+    const ctx = windowRegistry.getContextFromEvent(event);
+    if (!ctx?.extractedDir) return null;
 
-  const srcFileName = primitiveFileName.replace('.json', '.obj');
-  const srcPath = path.join(ctx.extractedDir, srcFileName);
+    const options = defaultExchange(exchange?.unit ?? UNIT_CONVERSION_VPU, exchange?.orientation);
+    const rewrite = !isIdentityExchange(options);
 
-  let hasObjFile = false;
-  try {
-    await fs.promises.access(srcPath);
-    hasObjFile = true;
-  } catch {
-    // no obj file
-  }
+    const srcFileName = primitiveFileName.replace('.json', '.obj');
+    const srcPath = path.join(ctx.extractedDir, srcFileName);
 
-  let generatedOBJ: string | null = null;
-  if (!hasObjFile) {
+    let hasObjFile = false;
     try {
-      const jsonPath = path.join(ctx.extractedDir, primitiveFileName);
-      const jsonContent = await fs.promises.readFile(jsonPath, 'utf-8');
-      const itemData = JSON.parse(jsonContent);
-      const prim = itemData.Primitive;
-      if (prim && !prim.use_3d_mesh) {
+      await fs.promises.access(srcPath);
+      hasObjFile = true;
+    } catch {
+      // no obj file
+    }
+
+    let generatedOBJ: string | null = null;
+    if (!hasObjFile) {
+      try {
+        const jsonPath = path.join(ctx.extractedDir, primitiveFileName);
+        const jsonContent = await fs.promises.readFile(jsonPath, 'utf-8');
+        const itemData = JSON.parse(jsonContent);
+        const prim = itemData.Primitive;
+        if (prim && !prim.use_3d_mesh) {
+          const vpin = await vpxOps.initVpinModule();
+          const mesh = vpin.generate_builtin_primitive(prim.sides ?? 4, !!prim.draw_textures_inside);
+          const objBytes = vpin.mesh_to_obj(
+            prim.name || 'primitive',
+            mesh.positions,
+            mesh.texCoords,
+            mesh.normals,
+            mesh.indices,
+            exportMeshIoOptions(options)
+          );
+          mesh.free();
+          generatedOBJ = Buffer.from(objBytes).toString('utf-8');
+        }
+      } catch {
+        // fall through
+      }
+      if (!generatedOBJ) {
+        return null;
+      }
+    } else if (rewrite) {
+      try {
         const vpin = await vpxOps.initVpinModule();
-        const mesh = vpin.generate_builtin_primitive(prim.sides ?? 4, !!prim.draw_textures_inside);
+        const srcBytes = await fs.promises.readFile(srcPath);
+        const mesh = vpin.obj_to_mesh(new Uint8Array(srcBytes), null);
         const objBytes = vpin.mesh_to_obj(
-          prim.name || 'primitive',
+          mesh.name || 'mesh',
           mesh.positions,
           mesh.texCoords,
           mesh.normals,
           mesh.indices,
-          null
+          exportMeshIoOptions(options)
         );
         mesh.free();
         generatedOBJ = Buffer.from(objBytes).toString('utf-8');
+      } catch (err: unknown) {
+        console.error('Mesh export transform failed:', (err as Error).message);
+        return null;
       }
-    } catch {
-      // fall through
     }
-    if (!generatedOBJ) {
-      return null;
-    }
-  }
 
-  const defaultPath = path.join(getLastFolder('Obj'), suggestedName || srcFileName);
-  const result = await dialog.showSaveDialog(ctx.window, {
-    title: 'Export Mesh',
-    defaultPath,
-    filters: [
-      { name: 'Wavefront OBJ', extensions: ['obj'] },
-      { name: 'All Files', extensions: ['*'] },
-    ],
-  });
+    const defaultPath = path.join(getLastFolder('Obj'), suggestedName || srcFileName);
+    const result = await dialog.showSaveDialog(ctx.window, {
+      title: 'Export Mesh',
+      defaultPath,
+      filters: [
+        { name: 'Wavefront OBJ', extensions: ['obj'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    });
 
-  if (result.canceled || !result.filePath) return null;
+    if (result.canceled || !result.filePath) return null;
 
-  setLastFolder('Obj', path.dirname(result.filePath));
-  try {
-    const objFilePath = result.filePath;
-    const mtlFileName = path.basename(objFilePath, '.obj') + '.mtl';
-    const mtlFilePath = path.join(path.dirname(objFilePath), mtlFileName);
+    setLastFolder('Obj', path.dirname(result.filePath));
+    try {
+      const objFilePath = result.filePath;
+      const mtlFileName = path.basename(objFilePath, '.obj') + '.mtl';
+      const mtlFilePath = path.join(path.dirname(objFilePath), mtlFileName);
 
-    const matInfo = await findPrimitiveMaterial(ctx.extractedDir, primitiveFileName);
+      const matInfo = await findPrimitiveMaterial(ctx.extractedDir, primitiveFileName);
 
-    if (generatedOBJ) {
-      const mtlRef = matInfo ? `mtllib ${mtlFileName}\nusemtl ${matInfo.materialName}\n` : '';
-      const firstNewline = generatedOBJ.indexOf('\n');
-      const objWithMtl = generatedOBJ.slice(0, firstNewline + 1) + mtlRef + generatedOBJ.slice(firstNewline + 1);
-      await fs.promises.writeFile(objFilePath, objWithMtl, 'utf-8');
-    } else {
-      let objContent = await fs.promises.readFile(srcPath, 'utf-8');
+      let objContent = generatedOBJ ?? (await fs.promises.readFile(srcPath, 'utf-8'));
       if (matInfo) {
         const mtlRef = `mtllib ${mtlFileName}\nusemtl ${matInfo.materialName}\n`;
         const firstNewline = objContent.indexOf('\n');
@@ -2058,20 +2135,20 @@ ipcMain.handle('export-mesh', async (event, primitiveFileName: string, suggested
           objContent = objContent.slice(0, firstNewline + 1) + mtlRef + objContent.slice(firstNewline + 1);
         }
       }
-      await fs.promises.writeFile(objFilePath, objContent, 'utf-8');
-    }
+      await fs.promises.writeFile(objFilePath, insertObjHeaderComment(objContent, options), 'utf-8');
 
-    if (matInfo) {
-      const mtlContent = generateMtlContent(matInfo.materialName, matInfo.material);
-      await fs.promises.writeFile(mtlFilePath, mtlContent, 'utf-8');
-    }
+      if (matInfo) {
+        const mtlContent = generateMtlContent(matInfo.materialName, matInfo.material);
+        await fs.promises.writeFile(mtlFilePath, mtlContent, 'utf-8');
+      }
 
-    return objFilePath;
-  } catch (err: unknown) {
-    console.error('Mesh export failed:', (err as Error).message);
-    return null;
+      return objFilePath;
+    } catch (err: unknown) {
+      console.error('Mesh export failed:', (err as Error).message);
+      return null;
+    }
   }
-});
+);
 
 ipcMain.handle(
   'update-item-material',

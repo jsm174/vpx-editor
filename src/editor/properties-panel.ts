@@ -965,7 +965,12 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
       const filename = exportBtn.dataset.filename;
       const name = exportBtn.dataset.name || 'mesh';
       if (!filename) return;
-      const exportPath = await window.vpxEditor.exportMesh(filename, `${name}.obj`);
+      const options = await window.vpxEditor.promptMeshExportOptions();
+      if (!options) {
+        elements.statusBar!.textContent = `Export cancelled`;
+        return;
+      }
+      const exportPath = await window.vpxEditor.exportMesh(filename, `${name}.obj`, options);
       if (exportPath) {
         elements.statusBar!.textContent = `Mesh exported to ${exportPath}`;
       } else {

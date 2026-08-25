@@ -4,6 +4,7 @@ import { spawn, ChildProcess } from 'node:child_process';
 import fs from 'fs-extra';
 import os from 'node:os';
 import { getLastFolder, setLastFolder, Settings } from './settings-manager.js';
+import type { ObjExportOptions } from '@francisdb/vpin-wasm';
 import type { WindowContext, WindowRegistry } from './window-context.js';
 
 const MAX_RECENT_FILES = 10;
@@ -130,6 +131,32 @@ async function runVpinExtract(
   sendConsoleOutput(ctx, 'success', `Extracted ${totalFiles} files`);
 }
 
+export async function readWorkDirFiles(workDir: string): Promise<Record<string, Uint8Array>> {
+  const diskFiles = await getAllFilesRecursively(workDir);
+  const files: Record<string, Uint8Array> = {};
+  for (const relPath of diskFiles) {
+    const data = await fs.promises.readFile(path.join(workDir, relPath));
+    files['/vpx/' + relPath.replaceAll('\\', '/')] = data;
+  }
+  return files;
+}
+
+export async function exportObjTable(
+  ctx: WindowContext,
+  options: ObjExportOptions | null
+): Promise<{ success: boolean; files?: Record<string, Uint8Array>; error?: string }> {
+  if (!ctx.extractedDir) return { success: false, error: 'No table loaded' };
+  try {
+    const vpin = await initVpinModule();
+    const files = await readWorkDirFiles(ctx.extractedDir);
+    const wasmProgress = (msg: string) => sendConsoleOutput(ctx, 'info', msg);
+    const out = vpin.export_obj(files, options, wasmProgress);
+    return { success: true, files: out };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message };
+  }
+}
+
 export async function exportGlbForWindow(ctx: WindowContext): Promise<void> {
   if (!ctx.extractedDir) return;
 
@@ -152,15 +179,9 @@ export async function exportGlbForWindow(ctx: WindowContext): Promise<void> {
     const workDir = ctx.extractedDir;
 
     ctx.window.webContents.send('console-open');
-    const diskFiles = await getAllFilesRecursively(workDir);
-    const files: Record<string, Uint8Array> = {};
-    for (const relPath of diskFiles) {
-      const data = await fs.promises.readFile(path.join(workDir, relPath));
-      files['/vpx/' + relPath.replaceAll('\\', '/')] = data;
-    }
+    const files = await readWorkDirFiles(workDir);
 
     const wasmProgress = (msg: string) => sendConsoleOutput(ctx, 'info', msg);
-    wasmProgress('Exporting GLB...');
     const bytes = vpin.export_glb(files, null, wasmProgress);
     await fs.promises.writeFile(result.filePath, bytes);
     sendConsoleOutput(ctx, 'success', `Exported ${result.filePath}`);
@@ -181,19 +202,9 @@ async function runVpinAssemble(
   ctx.window.webContents.send('console-open');
   sendConsoleOutput(ctx, 'info', infoMessage);
 
-  const diskFiles = await getAllFilesRecursively(workDir);
-  const totalFiles = diskFiles.length;
-  const files: Record<string, Uint8Array> = {};
-
-  for (let i = 0; i < diskFiles.length; i++) {
-    const fullPath = path.join(workDir, diskFiles[i]);
-    const data = await fs.promises.readFile(fullPath);
-    const vpxPath = '/vpx/' + diskFiles[i].replaceAll('\\', '/');
-    files[vpxPath] = data;
-    if ((i + 1) % 10 === 0 || i === totalFiles - 1) {
-      onProgress?.(`Reading files... ${i + 1}/${totalFiles}`);
-    }
-  }
+  onProgress?.('Reading files...');
+  const files = await readWorkDirFiles(workDir);
+  const totalFiles = Object.keys(files).length;
 
   const wasmProgress = (msg: string) => {
     sendConsoleOutput(ctx, 'info', msg);
@@ -204,7 +215,7 @@ async function runVpinAssemble(
   const outputData = vpin.assemble(files, wasmProgress);
 
   await fs.promises.writeFile(outputPath, outputData);
-  sendConsoleOutput(ctx, 'success', `Assembled ${diskFiles.length} files`);
+  sendConsoleOutput(ctx, 'success', `Assembled ${totalFiles} files`);
 
   const sourceVpxPath = path.join(workDir, SOURCE_VPX_FILENAME);
   await fs.promises.writeFile(sourceVpxPath, outputData);

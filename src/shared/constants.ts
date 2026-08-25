@@ -4,8 +4,15 @@ export const DEFAULT_TEXTURE_QUALITY = 2048 as const;
 
 export const UNIT_CONVERSION_INCHES = 'inches' as const;
 export const UNIT_CONVERSION_MM = 'mm' as const;
+export const UNIT_CONVERSION_M = 'm' as const;
 export const UNIT_CONVERSION_VPU = 'vpu' as const;
 export const DEFAULT_UNIT_CONVERSION = UNIT_CONVERSION_VPU;
+
+export const OBJ_ORIENTATION_VPX = 'vpx' as const;
+export const OBJ_ORIENTATION_Y_UP_RH = 'y-up-rh' as const;
+
+export const DEFAULT_OBJ_UNIT = UNIT_CONVERSION_VPU;
+export const DEFAULT_OBJ_ORIENTATION = OBJ_ORIENTATION_VPX;
 
 export const DEFAULT_VPINBALL_PATH_MACOS = '/Applications/VPinballX_BGFX.app/Contents/MacOS/VPinballX_BGFX' as const;
 

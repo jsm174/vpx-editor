@@ -1,3 +1,4 @@
+import type { ObjExchangeOptions } from '../shared/obj-transform.js';
 import { app, BrowserWindow, dialog, Menu, ContextMenuParams, Event, MenuItemConstructorOptions } from 'electron';
 import path from 'node:path';
 import fs from 'fs-extra';
@@ -132,6 +133,7 @@ interface WindowStates {
   aboutWindow: BrowserWindow | null;
   tableInfoWindow: BrowserWindow | null;
   meshImportWindow: BrowserWindow | null;
+  meshExportWindow: BrowserWindow | null;
   drawingOrderWindow: BrowserWindow | null;
   collectionEditorWindow: BrowserWindow | null;
   collectionPromptWindow: BrowserWindow | null;
@@ -151,7 +153,8 @@ export interface WindowFactory {
   openScriptEditorWindow(ctx?: WindowContext | null): void;
   openSettingsWindow(): void;
   openTransformWindow(type: string, data: TransformData, ctx: WindowContext): void;
-  openMeshImportWindow(ctx: WindowContext): Promise<MeshImportResult | null>;
+  openMeshImportWindow(ctx: WindowContext, initial: ObjExchangeOptions): Promise<MeshImportResult | null>;
+  openMeshExportWindow(ctx: WindowContext, initial: ObjExchangeOptions): Promise<ObjExchangeOptions | null>;
   openDrawingOrderWindow(ctx: WindowContext, mode: string, items: DrawingOrderItem[]): Promise<string[] | null>;
   showSearchSelect(): Promise<void>;
   setupDialogEditMenu(browserWindow: BrowserWindow): void;
@@ -161,6 +164,7 @@ export interface WindowFactory {
   getMeshImportWindowContext(): WindowContext | null;
   getDrawingOrderWindowContext(): WindowContext | null;
   resolveMeshImport(result: MeshImportResult | null): void;
+  resolveMeshExport(result: ObjExchangeOptions | null): void;
   resolveDrawingOrder(result: string[] | null): void;
   openCollectionEditorWindow(ctx: WindowContext, collectionName: string): Promise<void>;
   openCollectionPromptWindow(ctx: WindowContext, mode: string, currentName?: string): Promise<void>;
@@ -205,6 +209,8 @@ let tableInfoWindowContext: WindowContext | null = null;
 let meshImportWindow: BrowserWindow | null = null;
 let meshImportResolve: ((value: MeshImportResult | null) => void) | null = null;
 let meshImportWindowContext: WindowContext | null = null;
+let meshExportWindow: BrowserWindow | null = null;
+let meshExportResolve: ((value: ObjExchangeOptions | null) => void) | null = null;
 let drawingOrderWindow: BrowserWindow | null = null;
 let drawingOrderResolve: ((value: string[] | null) => void) | null = null;
 let drawingOrderWindowContext: WindowContext | null = null;
@@ -1345,7 +1351,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     });
   }
 
-  function openMeshImportWindow(ctx: WindowContext): Promise<MeshImportResult | null> {
+  function openMeshImportWindow(ctx: WindowContext, initial: ObjExchangeOptions): Promise<MeshImportResult | null> {
     return new Promise(resolve => {
       if (meshImportWindow) {
         meshImportWindow.focus();
@@ -1361,7 +1367,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
 
       meshImportWindow = new BrowserWindow({
         width: 520,
-        height: 300,
+        height: 440,
         title: 'Wavefront OBJ Importer',
         show: false,
         resizable: false,
@@ -1382,11 +1388,17 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
 
       setupDialogEditMenu(meshImportWindow);
 
-      const themeQuery = { theme: getActualTheme(settings.theme) };
+      const themeQuery = {
+        theme: getActualTheme(settings.theme),
+        unit: initial.unit,
+        orientation: initial.orientation,
+      };
       if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
         const url = new URL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
         url.pathname = '/src/features/mesh-import/desktop/window.html';
-        url.searchParams.set('theme', themeQuery.theme);
+        for (const [key, value] of Object.entries(themeQuery)) {
+          url.searchParams.set(key, value);
+        }
         meshImportWindow.loadURL(url.toString());
       } else {
         meshImportWindow.loadFile(
@@ -1410,6 +1422,81 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
 
       meshImportWindow.webContents.on('did-finish-load', () => {
         meshImportWindow!.show();
+      });
+    });
+  }
+
+  function openMeshExportWindow(ctx: WindowContext, initial: ObjExchangeOptions): Promise<ObjExchangeOptions | null> {
+    return new Promise(resolve => {
+      if (meshExportWindow) {
+        meshExportWindow.focus();
+        resolve(null);
+        return;
+      }
+
+      meshExportResolve = resolve;
+
+      const preloadPath = app.isPackaged
+        ? path.join(__dirname, 'index.js')
+        : path.join(process.cwd(), '.vite/build/index.js');
+
+      meshExportWindow = new BrowserWindow({
+        width: 460,
+        height: 248,
+        title: 'Wavefront OBJ Exporter',
+        parent: ctx.window,
+        show: false,
+        resizable: false,
+        minimizable: false,
+        alwaysOnTop: true,
+        webPreferences: {
+          preload: preloadPath,
+          contextIsolation: true,
+          nodeIntegration: false,
+        },
+      });
+
+      windowRegistry.forEach(c => {
+        c.window.webContents.send('set-input-disabled', true);
+      });
+
+      createMenu();
+
+      setupDialogEditMenu(meshExportWindow);
+
+      const query = {
+        theme: getActualTheme(settings.theme),
+        unit: initial.unit,
+        orientation: initial.orientation,
+      };
+      if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+        const url = new URL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+        url.pathname = '/src/features/mesh-export/desktop/window.html';
+        for (const [key, value] of Object.entries(query)) {
+          url.searchParams.set(key, value);
+        }
+        meshExportWindow.loadURL(url.toString());
+      } else {
+        meshExportWindow.loadFile(
+          path.join(__dirname, '../renderer/main_window/src/features/mesh-export/desktop/window.html'),
+          { query }
+        );
+      }
+
+      meshExportWindow.on('closed', () => {
+        windowRegistry.forEach(c => {
+          c.window.webContents.send('set-input-disabled', false);
+        });
+        meshExportWindow = null;
+        if (meshExportResolve) {
+          meshExportResolve(null);
+          meshExportResolve = null;
+        }
+        createMenu();
+      });
+
+      meshExportWindow.webContents.on('did-finish-load', () => {
+        meshExportWindow!.show();
       });
     });
   }
@@ -1958,6 +2045,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     openSettingsWindow,
     openTransformWindow,
     openMeshImportWindow,
+    openMeshExportWindow,
     openDrawingOrderWindow,
     showSearchSelect,
     setupDialogEditMenu,
@@ -1967,6 +2055,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
       aboutWindow,
       tableInfoWindow,
       meshImportWindow,
+      meshExportWindow,
       drawingOrderWindow,
       collectionEditorWindow,
       collectionPromptWindow,
@@ -1976,6 +2065,15 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     getTableInfoWindowContext: (): WindowContext | null => tableInfoWindowContext,
     getMeshImportWindowContext: (): WindowContext | null => meshImportWindowContext,
     getDrawingOrderWindowContext: (): WindowContext | null => drawingOrderWindowContext,
+    resolveMeshExport: (result: ObjExchangeOptions | null): void => {
+      if (meshExportResolve) {
+        meshExportResolve(result);
+        meshExportResolve = null;
+      }
+      if (meshExportWindow) {
+        meshExportWindow.close();
+      }
+    },
     resolveMeshImport: (result: MeshImportResult | null): void => {
       if (meshImportResolve) {
         meshImportResolve(result);

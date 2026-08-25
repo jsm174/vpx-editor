@@ -8,6 +8,7 @@ import '../features/material-manager/web/styles.css';
 import '../features/dimensions-manager/web/styles.css';
 import '../features/render-probe-manager/web/styles.css';
 import '../features/mesh-import/web/styles.css';
+import '../features/mesh-export/web/styles.css';
 import '../features/transform/web/styles.css';
 import '../features/prompt/web/styles.css';
 import type { EditorSettings, PanelSettings, ConsoleSettings } from '../types/ipc';
@@ -15,6 +16,7 @@ import { initWebSettings } from '../features/settings/web/component';
 import { initWebAbout } from '../features/about/web/component';
 import { initWebTransform } from '../features/transform/web/component';
 import { initWebMeshImport } from '../features/mesh-import/web/component';
+import { initWebMeshExport } from '../features/mesh-export/web/component';
 import {
   registerVbsCompletionProvider,
   injectScriptEditorTemplate,
@@ -94,10 +96,10 @@ function enhanceApi(): void {
     }
   };
 
-  api.objToMesh = async (path: string, convertToLeftHanded?: boolean) => {
+  api.objToMesh = async (path: string) => {
     try {
       const data = await state.platform!.fileSystem.readBinaryFile(path);
-      const mesh = state.platform!.vpxEngine.objToMesh(data, convertToLeftHanded);
+      const mesh = state.platform!.vpxEngine.objToMesh(data);
       return { success: true, mesh };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -1026,7 +1028,9 @@ async function init(): Promise<void> {
   });
   setupBlueprintModal();
   initWebTransform({ events });
+  initWebMeshExport({ storage: state.platform!.storage, events });
   initWebMeshImport({
+    storage: state.platform!.storage,
     fileSystem: {
       readFile: window.vpxEditor.readFile,
       writeFile: window.vpxEditor.writeFile,

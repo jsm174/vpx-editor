@@ -25,6 +25,7 @@ export default defineConfig({
         'material-editor-window': resolve(__dirname, 'src/features/material-manager/desktop/editor-window.html'),
         'generic-prompt-window': resolve(__dirname, 'src/features/prompt/desktop/window.html'),
         'mesh-import-window': resolve(__dirname, 'src/features/mesh-import/desktop/window.html'),
+        'mesh-export-window': resolve(__dirname, 'src/features/mesh-export/desktop/window.html'),
 
         'settings-window': resolve(__dirname, 'src/features/settings/desktop/window.html'),
         'transform-window': resolve(__dirname, 'src/features/transform/desktop/window.html'),

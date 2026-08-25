@@ -1,3 +1,4 @@
+import type { MeshIoOptions, ObjExportOptions } from '@francisdb/vpin-wasm';
 export interface FileSystemProvider {
   readFile(path: string): Promise<string>;
   readBinaryFile(path: string): Promise<Uint8Array>;
@@ -31,14 +32,15 @@ export interface VpxEngine {
   extract(vpxData: Uint8Array, onProgress?: ProgressCallback): Promise<VpxFiles>;
   assemble(files: VpxFiles, onProgress?: ProgressCallback): Uint8Array;
   exportGlb(files: VpxFiles, exportInvisibleItems?: boolean, onProgress?: ProgressCallback): Uint8Array;
-  objToMesh(data: Uint8Array, convertToLeftHanded?: boolean): PrimitiveMeshData;
+  exportObj(files: VpxFiles, options?: ObjExportOptions | null, onProgress?: ProgressCallback): VpxFiles;
+  objToMesh(data: Uint8Array, options?: MeshIoOptions | null): PrimitiveMeshData;
   meshToObj(
     name: string,
     positions: Float32Array,
     texCoords: Float32Array,
     normals: Float32Array,
     indices: Uint32Array,
-    convertToLeftHanded?: boolean
+    options?: MeshIoOptions | null
   ): Uint8Array;
   generateBuiltinPrimitive(sides: number, drawTexturesInside: boolean): PrimitiveMeshData;
   isInitialized(): boolean;

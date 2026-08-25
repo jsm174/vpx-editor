@@ -52,8 +52,8 @@
   grid-column: 1 / -1;
 }
 
-.mesh-import-grid input[type="checkbox"],
-.mesh-import-grid input[type="radio"] {
+.mesh-import-grid input[type='checkbox'],
+.mesh-import-grid input[type='radio'] {
   margin: 0;
 }
 
@@ -61,4 +61,51 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.mesh-import-exchange {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mesh-import-detected {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.mesh-import-detected.hidden {
+  display: none;
+}
+
+.obj-profile-radios {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.obj-profile-radio {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.obj-profile-radio input {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.obj-profile-radio-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.obj-profile-radio-hint {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: pre-line;
 }

@@ -1,0 +1,55 @@
+.mesh-export-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px;
+}
+
+.mesh-export-options {
+  border: 1px solid var(--border-color);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.mesh-export-options legend {
+  padding: 0 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.mesh-export-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.obj-profile-radios {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.obj-profile-radio {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.obj-profile-radio input {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.obj-profile-radio-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.obj-profile-radio-hint {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: pre-line;
+}
