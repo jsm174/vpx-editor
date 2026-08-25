@@ -340,13 +340,14 @@ export async function showObjectContextMenu(
   menu.appendChild(createSeparator());
 
   if (!isTableLocked && callbacks.onAssignToLayer && Object.keys(state.partGroups).length > 0) {
-    const currentGroup = item.part_group_name || null;
-    const layerItems: SubmenuItem[] = Object.keys(state.partGroups)
-      .sort()
-      .map(groupName => ({
-        label: groupName,
-        onClick: () => callbacks.onAssignToLayer?.(itemName, groupName),
-        checked: groupName === currentGroup,
+    const currentGroup = item.part_group_name?.toLowerCase() || null;
+    const layerItems: SubmenuItem[] = Object.entries(state.partGroups)
+      .map(([key, group]) => ({ key, name: (group as { name?: string }).name || key }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(({ key, name }) => ({
+        label: name,
+        onClick: () => callbacks.onAssignToLayer?.(itemName, name),
+        checked: key === currentGroup,
       }));
 
     layerItems.push({ separator: true });
@@ -526,13 +527,14 @@ export async function showItemsPanelContextMenu(
   menu.appendChild(createSeparator());
 
   if (!isTableLocked && callbacks.onAssignToLayer && Object.keys(state.partGroups).length > 0) {
-    const currentGroup = item.part_group_name || null;
-    const layerItems: SubmenuItem[] = Object.keys(state.partGroups)
-      .sort()
-      .map(groupName => ({
-        label: groupName,
-        onClick: () => callbacks.onAssignToLayer?.(itemName, groupName),
-        checked: groupName === currentGroup,
+    const currentGroup = item.part_group_name?.toLowerCase() || null;
+    const layerItems: SubmenuItem[] = Object.entries(state.partGroups)
+      .map(([key, group]) => ({ key, name: (group as { name?: string }).name || key }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(({ key, name }) => ({
+        label: name,
+        onClick: () => callbacks.onAssignToLayer?.(itemName, name),
+        checked: key === currentGroup,
       }));
 
     layerItems.push({ separator: true });
