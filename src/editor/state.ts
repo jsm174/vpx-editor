@@ -324,6 +324,22 @@ export function isBackglassItem(item: GameItem): boolean {
   return false;
 }
 
+export function getItemSpaceReference(item: GameItem): string {
+  let groupName = item.part_group_name;
+  while (groupName) {
+    const partGroup = getPartGroup(groupName);
+    if (!partGroup) break;
+
+    const spaceRef = partGroup.space_reference;
+    if (spaceRef && spaceRef !== 'inherit') {
+      return spaceRef;
+    }
+
+    groupName = partGroup.part_group_name;
+  }
+  return 'playfield';
+}
+
 export function isItemVisible(item: GameItem, _name: string): boolean {
   const inPreviewMode = state.viewMode === VIEW_MODE_3D && state.previewViewMode !== 'editor';
 
@@ -337,19 +353,8 @@ export function isItemVisible(item: GameItem, _name: string): boolean {
     return false;
   }
 
-  if (state.viewMode !== VIEW_MODE_3D && item.part_group_name) {
-    let groupName: string | undefined = item.part_group_name;
-    while (groupName) {
-      const partGroup: PartGroup | undefined = state.partGroups[groupName];
-      if (!partGroup) break;
-
-      const spaceRef = partGroup.space_reference;
-      if (spaceRef && spaceRef !== 'playfield' && spaceRef !== 'inherit') {
-        return false;
-      }
-
-      groupName = partGroup.part_group_name ?? undefined;
-    }
+  if (state.viewMode !== VIEW_MODE_3D && getItemSpaceReference(item) !== 'playfield') {
+    return false;
   }
 
   return true;
