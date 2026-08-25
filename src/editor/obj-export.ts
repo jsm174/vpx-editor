@@ -1,7 +1,15 @@
 import * as THREE from 'three';
-import { state, isItemVisible, getItemByFileName, type GameItem, type Material } from './state.js';
+import {
+  state,
+  isItemVisibleForExport,
+  getItemSpaceReference,
+  getItemByFileName,
+  type GameItem,
+  type Material,
+} from './state.js';
 import { getEditable } from './parts/index.js';
 import { buildPrimitiveFullMatrix, buildPrimitiveExportGeometry } from './parts/primitive.js';
+import { getSpaceReferenceOffset, type SpaceReference } from './view-setup.js';
 import type { GameData } from '../types/data.js';
 
 // The element types that implement IEditable::ExportMesh upstream. Everything else
@@ -185,7 +193,7 @@ function writePlayfield(writer: ObjWriter, gd: GameData): void {
   writer.updateFaceOffset(4);
 }
 
-function isExportable(item: GameItem, name: string): boolean {
+function isExportable(item: GameItem): boolean {
   const type = item._type || '';
   if (!EXPORTABLE_TYPES.has(type)) return false;
 
@@ -194,10 +202,18 @@ function isExportable(item: GameItem, name: string): boolean {
     if (withVisibility.is_visible === false || withVisibility.visible === false) return false;
   }
 
-  return isItemVisible(item, name);
+  return isItemVisibleForExport(item);
+}
+
+function spaceMatrix(item: GameItem): THREE.Matrix4 {
+  const spaceRef = getItemSpaceReference(item) as SpaceReference;
+  const zOffset = getSpaceReferenceOffset(state.gamedata as GameData | null, spaceRef);
+  return new THREE.Matrix4().makeTranslation(0, 0, zOffset);
 }
 
 async function writeItem(writer: ObjWriter, item: GameItem, name: string): Promise<void> {
+  const spaceOffset = spaceMatrix(item);
+
   if (item._type === 'Primitive') {
     const geometry = await buildPrimitiveExportGeometry(item as Parameters<typeof buildPrimitiveExportGeometry>[0]);
     if (!geometry) return;
@@ -205,7 +221,7 @@ async function writeItem(writer: ObjWriter, item: GameItem, name: string): Promi
     writeGeometry(
       writer,
       geometry,
-      buildPrimitiveFullMatrix(item as Parameters<typeof buildPrimitiveFullMatrix>[0]),
+      spaceOffset.clone().multiply(buildPrimitiveFullMatrix(item as Parameters<typeof buildPrimitiveFullMatrix>[0])),
       itemMaterialName(item)
     );
     geometry.dispose();
@@ -228,7 +244,7 @@ async function writeItem(writer: ObjWriter, item: GameItem, name: string): Promi
       wroteName = true;
     }
 
-    writeGeometry(writer, mesh.geometry, mesh.matrixWorld, itemMaterialName(item));
+    writeGeometry(writer, mesh.geometry, spaceOffset.clone().multiply(mesh.matrixWorld), itemMaterialName(item));
   });
 }
 
@@ -246,7 +262,7 @@ export async function exportTableMesh(mtlFileName: string): Promise<{ obj: strin
     if (!item) continue;
 
     const name = (item.name || '').toLowerCase();
-    if (!isExportable(item, name)) continue;
+    if (!isExportable(item)) continue;
 
     try {
       await writeItem(writer, item, name);

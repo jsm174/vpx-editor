@@ -324,6 +324,11 @@ export function isBackglassItem(item: GameItem): boolean {
   return false;
 }
 
+function isOnHiddenLayer(item: GameItem): boolean {
+  if (item.editor_layer_visibility === false) return true;
+  return state.hiddenLayers.has(item._layer ?? 0);
+}
+
 export function getItemSpaceReference(item: GameItem): string {
   let groupName = item.part_group_name;
   while (groupName) {
@@ -340,13 +345,16 @@ export function getItemSpaceReference(item: GameItem): string {
   return 'playfield';
 }
 
+export function isItemVisibleForExport(item: GameItem): boolean {
+  if (isOnHiddenLayer(item)) return false;
+  return isBackglassItem(item) === state.backglassView;
+}
+
 export function isItemVisible(item: GameItem, _name: string): boolean {
   const inPreviewMode = state.viewMode === VIEW_MODE_3D && state.previewViewMode !== 'editor';
 
-  if (!inPreviewMode) {
-    if (item.editor_layer_visibility === false) return false;
-    const layer = item._layer ?? 0;
-    if (state.hiddenLayers.has(layer)) return false;
+  if (!inPreviewMode && isOnHiddenLayer(item)) {
+    return false;
   }
 
   if (isBackglassItem(item) !== state.backglassView) {
