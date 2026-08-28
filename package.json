@@ -1,7 +1,7 @@
 {
   "name": "vpx-editor",
   "productName": "VPX Editor",
-  "version": "0.8.35",
+  "version": "0.8.36",
   "description": "Visual Pinball X Table Editor",
   "main": ".vite/build/main.js",
   "scripts": {
@@ -50,7 +50,7 @@
     "vite": "^7.3.0"
   },
   "dependencies": {
-    "@francisdb/vpin-wasm": "^0.27.0",
+    "@francisdb/vpin-wasm": "^0.28.2",
     "electron-squirrel-startup": "^1.0.1",
     "fs-extra": "^11.3.3",
     "monaco-editor": "^0.55.1",
@@ -61,9 +61,15 @@
     "yauzl": "^3.3.1",
     "tar": "^7.5.22",
     "tmp": "^0.2.7",
-    "dompurify": "^3.4.13"
+    "dompurify": "^3.4.13",
+    "@electron/node-gyp": "10.2.0-electron.2"
   },
   "allowScripts": {
-    "electron@43.4.0": true
+    "electron@43.4.0": true,
+    "electron-winstaller@5.4.4": true,
+    "fs-xattr@0.3.1": true,
+    "macos-alias@0.2.12": true,
+    "esbuild@0.28.2": true,
+    "fsevents@2.3.3": true
   }
 }
