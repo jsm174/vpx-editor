@@ -15,6 +15,7 @@ export interface MeshOptions {
   scaleZ?: number;
   offsetZ?: number;
   rotation?: number;
+  rotationX?: number;
 }
 
 export function createMeshGeometry(meshData: MeshData, options: MeshOptions = {}): THREE.BufferGeometry {
@@ -24,6 +25,7 @@ export function createMeshGeometry(meshData: MeshData, options: MeshOptions = {}
     scaleZ = options.scaleXY ?? options.scale ?? 1,
     offsetZ = 0,
     rotation = 0,
+    rotationX = 0,
   } = options;
 
   const positions = new Float32Array(meshData.positions.length);
@@ -31,11 +33,26 @@ export function createMeshGeometry(meshData: MeshData, options: MeshOptions = {}
 
   const cos = Math.cos(rotation);
   const sin = Math.sin(rotation);
+  const cosX = Math.cos(rotationX);
+  const sinX = Math.sin(rotationX);
 
   for (let i = 0; i < meshData.positions.length; i += 3) {
     const x = meshData.positions[i] * scaleX;
-    const y = meshData.positions[i + 1] * scaleY;
-    const z = meshData.positions[i + 2] * scaleZ + offsetZ;
+    let y = meshData.positions[i + 1] * scaleY;
+    let z = meshData.positions[i + 2] * scaleZ;
+    const nx = meshData.normals[i];
+    let ny = meshData.normals[i + 1];
+    let nz = meshData.normals[i + 2];
+
+    if (rotationX !== 0) {
+      const y0 = y;
+      y = y0 * cosX - z * sinX;
+      z = y0 * sinX + z * cosX;
+      const ny0 = ny;
+      ny = ny0 * cosX - nz * sinX;
+      nz = ny0 * sinX + nz * cosX;
+    }
+    z += offsetZ;
 
     if (rotation !== 0) {
       positions[i] = x * cos - y * sin;
@@ -45,10 +62,6 @@ export function createMeshGeometry(meshData: MeshData, options: MeshOptions = {}
       positions[i + 1] = y;
     }
     positions[i + 2] = z;
-
-    const nx = meshData.normals[i];
-    const ny = meshData.normals[i + 1];
-    const nz = meshData.normals[i + 2];
 
     if (rotation !== 0) {
       normals[i] = nx * cos - ny * sin;

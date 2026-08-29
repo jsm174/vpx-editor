@@ -112,7 +112,7 @@ function getBumperGeometry(item: Bumper, scale: number): BumperGeometry {
   const outerR = r * BUMPER_OUTER_RADIUS_MULT;
   const poleR = BUMPER_POLE_RADIUS * scale;
   const poleOffset = r + BUMPER_POLE_OFFSET * scale;
-  const rad = (-(orientation - 90) * Math.PI) / 180;
+  const rad = ((orientation - 90) * Math.PI) / 180;
 
   return { r, outerR, poleR, poleOffset, rad };
 }

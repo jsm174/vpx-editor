@@ -101,7 +101,7 @@ export function createDecal3DMesh(item: Decal): THREE.Mesh | null {
 
   const mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(center.x, center.y, getSurfaceHeight(item.surface) + 0.2);
-  mesh.rotation.z = -rotation;
+  mesh.rotation.z = rotation;
 
   return mesh;
 }

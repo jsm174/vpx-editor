@@ -570,8 +570,8 @@ export function generateRampShape(centerline: Vertex[], widthBottom: number, wid
       vnormal = { x: vmiddle.x - intersectx, y: vmiddle.y - intersecty };
     }
 
-    left.push({ x: vmiddle.x + vnormal.x * halfWidth, y: vmiddle.y + vnormal.y * halfWidth });
-    right.push({ x: vmiddle.x - vnormal.x * halfWidth, y: vmiddle.y - vnormal.y * halfWidth });
+    right.push({ x: vmiddle.x + vnormal.x * halfWidth, y: vmiddle.y + vnormal.y * halfWidth });
+    left.push({ x: vmiddle.x - vnormal.x * halfWidth, y: vmiddle.y - vnormal.y * halfWidth });
   }
 
   return { left, right };
