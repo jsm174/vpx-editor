@@ -39,30 +39,140 @@ interface WallItem extends Wall {
   hit_event?: boolean;
 }
 
-function createWallSidesGeometry(shape: THREE.Shape, height: number): THREE.BufferGeometry {
-  const points = shape.getPoints();
-  const vertices: number[] = [];
+interface SidePoint extends Point {
+  smooth: boolean;
+  dragPoint: WallDragPoint | null;
+}
+
+function getSidePoints(item: WallItem): SidePoint[] {
+  const result = generateSmoothedPath(item.drag_points, true, PATH_SMOOTHING_ACCURACY, true) as {
+    vertices: Point[];
+    controlPointIndices: number[];
+  };
+
+  const controlDragPoints: WallDragPoint[] = [];
+  const dps = item.drag_points;
+  for (let i = 0; i < dps.length; i++) {
+    const p1 = getDragPointCoords(dps[i]);
+    const p2 = getDragPointCoords(dps[(i + 1) % dps.length]);
+    if (p1.x === p2.x && p1.y === p2.y) continue;
+    controlDragPoints.push(dps[i]);
+  }
+
+  const points: SidePoint[] = result.vertices.map(v => ({ x: v.x, y: v.y, smooth: true, dragPoint: null }));
+  result.controlPointIndices.forEach((vertexIndex, k) => {
+    const dp = controlDragPoints[k];
+    if (!dp || !points[vertexIndex]) return;
+    points[vertexIndex].dragPoint = dp;
+    points[vertexIndex].smooth = dp.smooth === true || dp.is_smooth === true;
+  });
+  return points;
+}
+
+function getSideTextureCoords(points: SidePoint[]): number[] {
+  const cpoints = points.length;
+  const coords = new Array<number>(cpoints).fill(0);
+  const texPoints: number[] = [];
+  const renderPoints: number[] = [];
+  const texCoordOf = (dp: WallDragPoint | null): number => dp?.tex_coord ?? dp?.texture_coord ?? 0;
+
+  for (let i = 0; i < cpoints; i++) {
+    const dp = points[i].dragPoint;
+    if (dp && dp.has_auto_texture === false) {
+      texPoints.push(i);
+      renderPoints.push(i);
+    }
+  }
+
+  const noCoords = texPoints.length === 0;
+  if (noCoords) {
+    texPoints.push(0);
+    renderPoints.push(0);
+  }
+  texPoints.push(texPoints[0]);
+  renderPoints.push(renderPoints[0] + cpoints);
+
+  for (let i = 0; i < texPoints.length - 1; i++) {
+    const startRenderPoint = renderPoints[i] % cpoints;
+    let endRenderPoint = renderPoints[i + 1] % cpoints;
+    const startTexCoord = noCoords ? 0 : texCoordOf(points[texPoints[i]].dragPoint);
+    const endTexCoord = noCoords ? 1 : texCoordOf(points[texPoints[i + 1]].dragPoint);
+    const deltaCoord = endTexCoord - startTexCoord;
+
+    if (endRenderPoint <= startRenderPoint) endRenderPoint += cpoints;
+
+    let totalLength = 0;
+    for (let l = startRenderPoint; l < endRenderPoint; l++) {
+      const pv1 = points[l % cpoints];
+      const pv2 = points[(l + 1) % cpoints];
+      totalLength += Math.hypot(pv1.x - pv2.x, pv1.y - pv2.y);
+    }
+    if (totalLength === 0) totalLength = 1;
+
+    let partialLength = 0;
+    for (let l = startRenderPoint; l < endRenderPoint; l++) {
+      const pv1 = points[l % cpoints];
+      const pv2 = points[(l + 1) % cpoints];
+      coords[l % cpoints] = (partialLength / totalLength) * deltaCoord + startTexCoord;
+      partialLength += Math.hypot(pv1.x - pv2.x, pv1.y - pv2.y);
+    }
+  }
+
+  return coords;
+}
+
+function createWallSidesGeometry(points: SidePoint[], bottom: number, top: number): THREE.BufferGeometry {
+  const n = points.length;
+  const texCoords = getSideTextureCoords(points);
+  const edgeNormals: Point[] = [];
+  for (let i = 0; i < n; i++) {
+    const pv1 = points[i];
+    const pv2 = points[(i + 1) % n];
+    const dx = pv1.x - pv2.x;
+    const dy = pv1.y - pv2.y;
+    const invLen = 1 / Math.hypot(dx, dy);
+    edgeNormals.push({ x: dy * invLen, y: dx * invLen });
+  }
+
+  const normalized = (v: Point): Point => {
+    const len = Math.hypot(v.x, v.y) || 1;
+    return { x: v.x / len, y: v.y / len };
+  };
+
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const uvs: number[] = [];
   const indices: number[] = [];
 
-  for (let i = 0; i < points.length; i++) {
-    const p1 = points[i];
-    const p2 = points[(i + 1) % points.length];
-    const baseIdx = vertices.length / 3;
+  for (let i = 0; i < n; i++) {
+    const pv1 = points[i];
+    const pv2 = points[(i + 1) % n];
+    const a = i === 0 ? n - 1 : i - 1;
+    const c = (i + 1) % n;
 
-    vertices.push(p1.x, p1.y, 0);
-    vertices.push(p2.x, p2.y, 0);
-    vertices.push(p1.x, p1.y, height);
-    vertices.push(p2.x, p2.y, height);
+    const vn0 = normalized(
+      pv1.smooth
+        ? { x: (edgeNormals[a].x + edgeNormals[i].x) * 0.5, y: (edgeNormals[a].y + edgeNormals[i].y) * 0.5 }
+        : edgeNormals[i]
+    );
+    const vn1 = normalized(
+      pv2.smooth
+        ? { x: (edgeNormals[i].x + edgeNormals[c].x) * 0.5, y: (edgeNormals[i].y + edgeNormals[c].y) * 0.5 }
+        : edgeNormals[i]
+    );
 
-    indices.push(baseIdx, baseIdx + 1, baseIdx + 2);
-    indices.push(baseIdx + 1, baseIdx + 3, baseIdx + 2);
+    const base = positions.length / 3;
+    positions.push(pv1.x, pv1.y, bottom, pv1.x, pv1.y, top, pv2.x, pv2.y, top, pv2.x, pv2.y, bottom);
+    normals.push(vn0.x, -vn0.y, 0, vn0.x, -vn0.y, 0, vn1.x, -vn1.y, 0, vn1.x, -vn1.y, 0);
+    uvs.push(texCoords[i], 1, texCoords[i], 0, texCoords[c], 0, texCoords[c], 1);
+    indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
   }
 
   const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
   geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-
   return geometry;
 }
 
@@ -78,7 +188,7 @@ function applyPlayfieldUVs(geometry: THREE.BufferGeometry): void {
   uv.needsUpdate = true;
 }
 
-export function createWall3DMesh(item: WallItem): THREE.Mesh | null {
+export function createWall3DMesh(item: WallItem): THREE.Object3D | null {
   const points = item.drag_points;
   if (!points || points.length < 3) return null;
 
@@ -93,41 +203,39 @@ export function createWall3DMesh(item: WallItem): THREE.Mesh | null {
 
   if (Math.abs(height) < 0.1 && !topVisible) return null;
 
-  const vertices = generateSmoothedPath(points, true, PATH_SMOOTHING_ACCURACY) as Point[];
-  if (vertices.length < 3) return null;
+  const sidePoints = getSidePoints(item);
+  if (sidePoints.length < 3) return null;
 
-  const shape = new THREE.Shape();
-  shape.moveTo(vertices[0].x, vertices[0].y);
+  const disableLighting = item.disable_lighting_top ?? item.disable_lighting_top_old ?? 0;
+  const group = new THREE.Group();
 
-  for (let i = 1; i < vertices.length; i++) {
-    shape.lineTo(vertices[i].x, vertices[i].y);
-  }
-  shape.closePath();
-
-  const material = createMaterial(item.top_material || item.side_material, item.image || item.side_image);
-  applyDisableLighting(material, item.disable_lighting_top ?? item.disable_lighting_top_old ?? 0);
-
-  if (!sideVisible && topVisible) {
-    const geometry = new THREE.ShapeGeometry(shape);
-    applyPlayfieldUVs(geometry);
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.z = heightTop;
-    return mesh;
+  if (sideVisible) {
+    const sideMaterial = createMaterial(item.side_material, item.side_image);
+    applyDisableLighting(sideMaterial, disableLighting);
+    const sideMesh = new THREE.Mesh(createWallSidesGeometry(sidePoints, heightBottom, heightTop), sideMaterial);
+    sideMesh.name = 'Side';
+    group.add(sideMesh);
   }
 
-  if (sideVisible && !topVisible) {
-    const geometry = createWallSidesGeometry(shape, Math.abs(height));
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.z = Math.min(heightBottom, heightTop);
-    return mesh;
+  if (topVisible) {
+    const shape = new THREE.Shape();
+    shape.moveTo(sidePoints[0].x, sidePoints[0].y);
+    for (let i = 1; i < sidePoints.length; i++) {
+      shape.lineTo(sidePoints[i].x, sidePoints[i].y);
+    }
+    shape.closePath();
+
+    const topGeometry = new THREE.ShapeGeometry(shape);
+    applyPlayfieldUVs(topGeometry);
+    const topMaterial = createMaterial(item.top_material, item.image);
+    applyDisableLighting(topMaterial, disableLighting);
+    const topMesh = new THREE.Mesh(topGeometry, topMaterial);
+    topMesh.name = 'Top';
+    topMesh.position.z = heightTop;
+    group.add(topMesh);
   }
 
-  const geometry = new THREE.ExtrudeGeometry(shape, { depth: Math.abs(height), bevelEnabled: false });
-  applyPlayfieldUVs(geometry);
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.z = Math.min(heightBottom, heightTop);
-
-  return mesh;
+  return group;
 }
 
 function getVertices(item: WallItem): Point[] | null {

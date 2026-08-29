@@ -321,11 +321,11 @@ export function createRamp3DMesh(item: RampItem): THREE.Group | null {
     } else if (rampType === 'three_wire_left') {
       buildWire(wireDistanceX / 2);
       buildWire(-wireDistanceX / 2);
-      buildWire(wireDistanceX / 2, wireDistanceY / 2);
+      buildWire(-wireDistanceX / 2, wireDistanceY / 2);
     } else if (rampType === 'three_wire_right') {
       buildWire(wireDistanceX / 2);
       buildWire(-wireDistanceX / 2);
-      buildWire(-wireDistanceX / 2, wireDistanceY / 2);
+      buildWire(wireDistanceX / 2, wireDistanceY / 2);
     } else if (rampType === 'four_wire') {
       buildWire(wireDistanceX / 2);
       buildWire(-wireDistanceX / 2);
@@ -361,8 +361,8 @@ export function createRamp3DMesh(item: RampItem): THREE.Group | null {
     const { nx, ny } = computeRampNormal(smoothedPath, i);
 
     vertices.push({
-      left: new THREE.Vector3(p.x + (nx * width) / 2, p.y + (ny * width) / 2, height),
-      right: new THREE.Vector3(p.x - (nx * width) / 2, p.y - (ny * width) / 2, height),
+      right: new THREE.Vector3(p.x + (nx * width) / 2, p.y + (ny * width) / 2, height),
+      left: new THREE.Vector3(p.x - (nx * width) / 2, p.y - (ny * width) / 2, height),
     });
   }
 
@@ -382,11 +382,11 @@ export function createRamp3DMesh(item: RampItem): THREE.Group | null {
 
   for (let i = 0; i < vertices.length; i++) {
     const t = vertices.length > 1 ? i / (vertices.length - 1) : 0;
-    floorPos.push(vertices[i].left.x, vertices[i].left.y, vertices[i].left.z);
     floorPos.push(vertices[i].right.x, vertices[i].right.y, vertices[i].right.z);
+    floorPos.push(vertices[i].left.x, vertices[i].left.y, vertices[i].left.z);
     if (isWorldAlignment) {
-      floorUvs.push(vertices[i].left.x / tableWidth, vertices[i].left.y / tableHeight);
       floorUvs.push(vertices[i].right.x / tableWidth, vertices[i].right.y / tableHeight);
+      floorUvs.push(vertices[i].left.x / tableWidth, vertices[i].left.y / tableHeight);
     } else {
       floorUvs.push(1, 1 - t);
       floorUvs.push(0, 1 - t);
@@ -442,8 +442,8 @@ export function createRamp3DMesh(item: RampItem): THREE.Group | null {
         tl = i * 2 + 1,
         br = (i + 1) * 2,
         tr = (i + 1) * 2 + 1;
-      wallIdx.push(bl, br, tl);
-      wallIdx.push(br, tr, tl);
+      wallIdx.push(bl, tl, br);
+      wallIdx.push(br, tl, tr);
     }
 
     wallGeom.setAttribute('position', new THREE.Float32BufferAttribute(wallPos, 3));
@@ -485,8 +485,8 @@ export function createRamp3DMesh(item: RampItem): THREE.Group | null {
         tl = i * 2 + 1,
         br = (i + 1) * 2,
         tr = (i + 1) * 2 + 1;
-      wallIdx.push(bl, tl, br);
-      wallIdx.push(br, tl, tr);
+      wallIdx.push(bl, br, tl);
+      wallIdx.push(br, tr, tl);
     }
 
     wallGeom.setAttribute('position', new THREE.Float32BufferAttribute(wallPos, 3));
@@ -608,8 +608,8 @@ function drawRampShape(
       ctx.strokeStyle = RENDER_COLOR_BLACK;
       ctx.lineWidth = 3;
       ctx.beginPath();
-      for (let i = 0; i < left.length; i++) {
-        const pt = transformFn(left[i].x, left[i].y);
+      for (let i = 0; i < right.length; i++) {
+        const pt = transformFn(right[i].x, right[i].y);
         if (i === 0) ctx.moveTo(pt.x, pt.y);
         else ctx.lineTo(pt.x, pt.y);
       }
@@ -619,8 +619,8 @@ function drawRampShape(
       ctx.strokeStyle = RENDER_COLOR_BLACK;
       ctx.lineWidth = 3;
       ctx.beginPath();
-      for (let i = 0; i < right.length; i++) {
-        const pt = transformFn(right[i].x, right[i].y);
+      for (let i = 0; i < left.length; i++) {
+        const pt = transformFn(left[i].x, left[i].y);
         if (i === 0) ctx.moveTo(pt.x, pt.y);
         else ctx.lineTo(pt.x, pt.y);
       }

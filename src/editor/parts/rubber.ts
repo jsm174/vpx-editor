@@ -187,7 +187,6 @@ export function createRubber3DMesh(item: unknown): THREE.Object3D | null {
 
     const group = new THREE.Group();
     group.add(mesh);
-    group.rotation.order = 'ZYX';
     group.rotation.set(rotX, rotY, rotZ);
     group.position.set(center.x, center.y, center.z);
     return group;
@@ -246,11 +245,11 @@ function generateRubberShape(
       }
     }
 
-    left.push({
+    right.push({
       x: curr.x + vnormal.x * halfWidth,
       y: curr.y + vnormal.y * halfWidth,
     });
-    right.push({
+    left.push({
       x: curr.x - vnormal.x * halfWidth,
       y: curr.y - vnormal.y * halfWidth,
     });

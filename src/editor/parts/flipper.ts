@@ -70,42 +70,53 @@ interface FlipperParams {
   endAngleVal: number;
 }
 
+const FLIPPER_MESH_TIP_CENTER_Y = 0.786319;
+
+function applyFix(
+  x: number,
+  y: number,
+  centerX: number,
+  centerY: number,
+  midAngle: number,
+  radius: number,
+  newCenterX: number,
+  newCenterY: number,
+  fixAngleScale: number
+): { x: number; y: number } {
+  let vAngle = Math.atan2(y - centerY, x - centerX);
+  if (midAngle < 0) {
+    if (vAngle > 0) vAngle -= Math.PI * 2;
+  } else {
+    if (vAngle < 0) vAngle += Math.PI * 2;
+  }
+  vAngle -= (vAngle - midAngle) * fixAngleScale * Math.sign(midAngle);
+  return { x: Math.cos(vAngle) * radius + newCenterX, y: Math.sin(vAngle) * radius + newCenterY };
+}
+
 function createFlipperGeometry(
   meshData: MeshData,
   baseRadius: number,
   endRadius: number,
   flipperRadius: number,
+  fixAngleScale: number,
   zScale: number,
   zOffset: number
 ): THREE.BufferGeometry {
   const positions = new Float32Array(meshData.positions.length);
   const normals = new Float32Array(meshData.normals.length);
 
-  const meshEndY = 0.887744;
-  const meshBaseRadius = 0.100762;
-
   for (let i = 0; i < meshData.positions.length; i += 3) {
-    let x = meshData.positions[i];
-    let y = meshData.positions[i + 1];
-    let z = meshData.positions[i + 2];
+    const mx = meshData.positions[i];
+    const my = meshData.positions[i + 1];
+    const z = meshData.positions[i + 2];
 
-    const isEnd = y > 0.5;
-    if (isEnd) {
-      const radiusScale = endRadius / meshBaseRadius;
-      x *= radiusScale;
-      const localY = (y - meshEndY) * radiusScale;
-      y = flipperRadius + localY;
-    } else {
-      const radiusScale = baseRadius / meshBaseRadius;
-      x *= radiusScale;
-      y *= radiusScale;
-    }
+    const fixed =
+      my > 0.5
+        ? applyFix(mx, my, 0, FLIPPER_MESH_TIP_CENTER_Y, Math.PI * 0.5, endRadius, 0, flipperRadius, fixAngleScale)
+        : applyFix(mx, my, 0, 0, -Math.PI * 0.5, baseRadius, 0, 0, fixAngleScale);
 
-    x = -x;
-    y = -y;
-
-    positions[i] = x;
-    positions[i + 1] = y;
+    positions[i] = -fixed.x;
+    positions[i + 1] = -fixed.y;
     positions[i + 2] = z * zScale + zOffset;
 
     normals[i] = -meshData.normals[i];
@@ -146,6 +157,9 @@ export function createFlipper3DMesh(item: FlipperItem): THREE.Group | null {
 
   const baseMat = createMaterial(item.material, item.image);
 
+  const sinAngle = Math.max(-1, Math.min(1, (baseRadius - endRadius) / flipperRadius));
+  const fixAngleScale = Math.asin(sinAngle) / (Math.PI * 0.5);
+
   const bodyBaseRadius = baseRadius - rubberThickness;
   const bodyEndRadius = endRadius - rubberThickness;
   const bodyGeom = createFlipperGeometry(
@@ -153,6 +167,7 @@ export function createFlipper3DMesh(item: FlipperItem): THREE.Group | null {
     bodyBaseRadius,
     bodyEndRadius,
     flipperRadius,
+    fixAngleScale,
     height,
     0
   );
@@ -167,6 +182,7 @@ export function createFlipper3DMesh(item: FlipperItem): THREE.Group | null {
       baseRadius,
       endRadius,
       flipperRadius,
+      fixAngleScale,
       rubberWidth,
       rubberHeight
     );
