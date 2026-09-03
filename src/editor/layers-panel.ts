@@ -16,6 +16,7 @@ import { updatePropertiesPanel } from './properties-panel.js';
 import { TreeControl, TreeNode as BaseTreeNode } from './components/tree-control.js';
 import { registerCallback, invokeCallback, getCallback } from '../shared/callbacks.js';
 import { generateUniqueFileName, getPartGroupInsertIndex } from '../shared/gameitem-utils.js';
+import { applyGroupVisibilityToItem } from './layer-operations.js';
 interface TreeNode {
   id: string;
   label: string;
@@ -386,6 +387,7 @@ async function reassignItemToGroup(itemName: string, groupName: string | null): 
   undoManager.markForUndo(itemName);
 
   item.part_group_name = groupName ?? undefined;
+  applyGroupVisibilityToItem(item, groupName);
 
   const fileName = item._fileName;
   if (fileName) {

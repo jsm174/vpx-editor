@@ -82,6 +82,20 @@ export function renameItem(itemName: string): void {
   showRenameModal(itemName, item._type);
 }
 
+export function applyGroupVisibilityToItem(item: GameItem, groupName: string | null): void {
+  if (!groupName) return;
+  let show = false;
+  let hide = false;
+  for (const other of Object.values(state.items as Record<string, GameItem>)) {
+    if (other === item || !isInGroup(other, groupName)) continue;
+    if (other.editor_layer_visibility === false) hide = true;
+    else show = true;
+  }
+  const visible = item.editor_layer_visibility !== false;
+  if (visible && hide && !show) item.editor_layer_visibility = false;
+  else if (!visible && show && !hide) item.editor_layer_visibility = undefined;
+}
+
 export async function assignItemToGroup(itemName: string, groupName: string | null): Promise<void> {
   const item = getItem(itemName);
   if (!item) return;
@@ -90,6 +104,7 @@ export async function assignItemToGroup(itemName: string, groupName: string | nu
   undoManager.markForUndo(itemName);
 
   item.part_group_name = groupName;
+  applyGroupVisibilityToItem(item, groupName);
 
   await saveItemToFile(itemName);
 
