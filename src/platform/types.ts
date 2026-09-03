@@ -30,6 +30,7 @@ export interface VpxEngine {
   init(): Promise<void>;
   extract(vpxData: Uint8Array, onProgress?: ProgressCallback): Promise<VpxFiles>;
   assemble(files: VpxFiles, onProgress?: ProgressCallback): Uint8Array;
+  exportGlb(files: VpxFiles, exportInvisibleItems?: boolean, onProgress?: ProgressCallback): Uint8Array;
   objToMesh(data: Uint8Array, convertToLeftHanded?: boolean): PrimitiveMeshData;
   meshToObj(
     name: string,

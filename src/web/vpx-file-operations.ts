@@ -127,12 +127,11 @@ export async function openVpxFile(file: File): Promise<void> {
   }
 }
 
-export async function saveVpxFile(onProgress?: (message: string) => void): Promise<Uint8Array> {
+async function collectVpxFiles(onProgress?: (message: string) => void): Promise<VpxFiles> {
   if (!state.tableLoaded || !state.platform) {
     throw new Error('No VPX file loaded');
   }
 
-  const events = getEvents();
   const opfs = state.platform.fileSystem as OpfsFileSystem;
   const allFiles = await opfs.getAllPaths();
   const opfsFiles = allFiles.filter(f => f.startsWith(EXTRACTED_DIR));
@@ -148,6 +147,13 @@ export async function saveVpxFile(onProgress?: (message: string) => void): Promi
       onProgress?.(`Reading files... ${i + 1}/${totalFiles}`);
     }
   }
+  return files;
+}
+
+export async function saveVpxFile(onProgress?: (message: string) => void): Promise<Uint8Array> {
+  const events = getEvents();
+  const files = await collectVpxFiles(onProgress);
+  const totalFiles = Object.keys(files).length;
 
   const wasmProgress = (msg: string) => {
     events.emit('console-output', { type: 'info', text: msg });
@@ -155,9 +161,35 @@ export async function saveVpxFile(onProgress?: (message: string) => void): Promi
   };
 
   wasmProgress('Assembling VPX...');
-  const result = state.platform.vpxEngine.assemble(files, wasmProgress);
+  const result = state.platform!.vpxEngine.assemble(files, wasmProgress);
   events.emit('console-output', { type: 'success', text: `Assembled ${totalFiles} files` });
   return result;
+}
+
+export async function handleExportGlb(): Promise<void> {
+  if (!state.tableLoaded || !state.platform) return;
+
+  const events = getEvents();
+  const wasmProgress = (msg: string) => {
+    events.emit('console-output', { type: 'info', text: msg });
+  };
+
+  try {
+    const files = await collectVpxFiles(wasmProgress);
+    const bytes = state.platform.vpxEngine.exportGlb(files, false, wasmProgress);
+    const fileName = (state.currentFileName || 'table.vpx').replace(/\.vpx$/i, '') + '.glb';
+    const url = URL.createObjectURL(new Blob([new Uint8Array(bytes).buffer], { type: 'model/gltf-binary' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    events.emit('console-output', { type: 'success', text: `Exported ${fileName}` });
+  } catch (e: unknown) {
+    events.emit('console-output', { type: 'error', text: `GLB export failed: ${(e as Error).message}` });
+  }
 }
 
 async function saveToHandle(handle: FileSystemFileHandle, bytes: Uint8Array): Promise<void> {
