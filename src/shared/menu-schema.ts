@@ -139,6 +139,13 @@ export const menuSchema: MenuItemSchema[] = [
         requires: ['hasTable'],
         disabledWhen: ['dialogOpen'],
       },
+      {
+        id: 'export-glb',
+        label: 'Export GLB...',
+        action: 'export-glb',
+        requires: ['hasTable'],
+        disabledWhen: ['dialogOpen'],
+      },
       { id: 'file-sep-4', type: 'separator' },
       {
         id: 'close',

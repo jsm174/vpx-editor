@@ -130,6 +130,45 @@ async function runVpinExtract(
   sendConsoleOutput(ctx, 'success', `Extracted ${totalFiles} files`);
 }
 
+export async function exportGlbForWindow(ctx: WindowContext): Promise<void> {
+  if (!ctx.extractedDir) return;
+
+  const baseName = ctx.currentTablePath
+    ? path.basename(ctx.currentTablePath).replace(/\.vpx$/i, '')
+    : ctx.tableName || 'table';
+  const result = await dialog.showSaveDialog(ctx.window, {
+    title: 'Export GLB',
+    defaultPath: path.join(getLastFolder('Glb'), `${baseName}.glb`),
+    filters: [
+      { name: 'glTF Binary', extensions: ['glb'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+  });
+  if (result.canceled || !result.filePath) return;
+  setLastFolder('Glb', path.dirname(result.filePath));
+
+  try {
+    const vpin = await initVpinModule();
+    const workDir = ctx.extractedDir;
+
+    ctx.window.webContents.send('console-open');
+    const diskFiles = await getAllFilesRecursively(workDir);
+    const files: Record<string, Uint8Array> = {};
+    for (const relPath of diskFiles) {
+      const data = await fs.promises.readFile(path.join(workDir, relPath));
+      files['/vpx/' + relPath.replaceAll('\\', '/')] = data;
+    }
+
+    const wasmProgress = (msg: string) => sendConsoleOutput(ctx, 'info', msg);
+    wasmProgress('Exporting GLB...');
+    const bytes = vpin.export_glb(files, null, wasmProgress);
+    await fs.promises.writeFile(result.filePath, bytes);
+    sendConsoleOutput(ctx, 'success', `Exported ${result.filePath}`);
+  } catch (err: unknown) {
+    sendConsoleOutput(ctx, 'error', `GLB export failed: ${(err as Error).message}`);
+  }
+}
+
 async function runVpinAssemble(
   ctx: WindowContext,
   outputPath: string,

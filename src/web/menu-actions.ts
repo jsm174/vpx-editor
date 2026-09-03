@@ -6,6 +6,7 @@ import {
   openFilePicker,
   loadTemplate,
   isTableLoaded,
+  handleExportGlb,
 } from './vpx-file-operations';
 import { getEvents } from './state';
 
@@ -51,6 +52,9 @@ export function createMenuActionHandler(context: MenuActionContext) {
         import('../editor/obj-export.js').then(({ exportTableMeshAndSave }) => {
           exportTableMeshAndSave();
         });
+        break;
+      case 'export-glb':
+        handleExportGlb();
         break;
       case 'undo':
         events.emit('undo');

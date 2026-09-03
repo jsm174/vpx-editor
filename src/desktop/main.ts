@@ -502,7 +502,10 @@ ipcMain.handle('obj-to-mesh', async (_event, filePath: string, convertToLeftHand
   try {
     const buffer = await fs.promises.readFile(filePath);
     const vpin = await vpxOps.initVpinModule();
-    const mesh = vpin.obj_to_mesh(new Uint8Array(buffer), convertToLeftHanded ?? true);
+    const mesh = vpin.obj_to_mesh(
+      new Uint8Array(buffer),
+      (convertToLeftHanded ?? true) ? null : { axes: vpin.AxisConvention.ZUpLeftHanded }
+    );
     const result = {
       success: true,
       mesh: {
@@ -1875,7 +1878,10 @@ async function performMeshImport(ctx: WindowContext, args: { filePath: string; o
   try {
     const buffer = await fs.promises.readFile(filePath);
     const vpin = await vpxOps.initVpinModule();
-    const mesh = vpin.obj_to_mesh(new Uint8Array(buffer), options.convertCoords);
+    const mesh = vpin.obj_to_mesh(
+      new Uint8Array(buffer),
+      options.convertCoords ? null : { axes: vpin.AxisConvention.ZUpLeftHanded }
+    );
     const midpoint = mesh.midpoint;
 
     let positions = mesh.positions;
@@ -1889,7 +1895,7 @@ async function performMeshImport(ctx: WindowContext, args: { filePath: string; o
       positions = shifted;
     }
 
-    const processedBytes = vpin.mesh_to_obj('mesh', positions, mesh.texCoords, mesh.normals, mesh.indices, true);
+    const processedBytes = vpin.mesh_to_obj('mesh', positions, mesh.texCoords, mesh.normals, mesh.indices, null);
     mesh.free();
 
     await fs.promises.writeFile(destPath, Buffer.from(processedBytes));
@@ -2005,7 +2011,7 @@ ipcMain.handle('export-mesh', async (event, primitiveFileName: string, suggested
           mesh.texCoords,
           mesh.normals,
           mesh.indices,
-          true
+          null
         );
         mesh.free();
         generatedOBJ = Buffer.from(objBytes).toString('utf-8');

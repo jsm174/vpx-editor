@@ -32,11 +32,21 @@ export class VpinWasmEngine implements VpxEngine {
     return vpinModule.assemble(files, onProgress);
   }
 
+  exportGlb(files: VpxFiles, exportInvisibleItems: boolean = false, onProgress?: ProgressCallback): Uint8Array {
+    if (!this.initialized || !vpinModule) {
+      throw new Error('VpxEngine not initialized');
+    }
+    return vpinModule.export_glb(files, { exportInvisibleItems }, onProgress);
+  }
+
   objToMesh(data: Uint8Array, convertToLeftHanded: boolean = true): PrimitiveMeshData {
     if (!this.initialized || !vpinModule) {
       throw new Error('VpxEngine not initialized');
     }
-    const mesh = vpinModule.obj_to_mesh(data, convertToLeftHanded);
+    const mesh = vpinModule.obj_to_mesh(
+      data,
+      convertToLeftHanded ? null : { axes: vpinModule.AxisConvention.ZUpLeftHanded }
+    );
     const result: PrimitiveMeshData = {
       name: mesh.name,
       positions: mesh.positions,
@@ -60,7 +70,14 @@ export class VpinWasmEngine implements VpxEngine {
     if (!this.initialized || !vpinModule) {
       throw new Error('VpxEngine not initialized');
     }
-    return vpinModule.mesh_to_obj(name, positions, texCoords, normals, indices, convertToLeftHanded);
+    return vpinModule.mesh_to_obj(
+      name,
+      positions,
+      texCoords,
+      normals,
+      indices,
+      convertToLeftHanded ? null : { axes: vpinModule.AxisConvention.ZUpLeftHanded }
+    );
   }
 
   generateBuiltinPrimitive(sides: number, drawTexturesInside: boolean): PrimitiveMeshData {

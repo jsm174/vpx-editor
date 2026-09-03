@@ -337,6 +337,16 @@ function createActionHandler(
         ctx?.window.webContents.send('export-obj-mesh');
       };
 
+    case 'export-glb':
+      return () => {
+        const ctx = windowRegistry.getFocused();
+        if (ctx) {
+          import('../desktop/vpx-operations.js').then(({ exportGlbForWindow }) =>
+            exportGlbForWindow(ctx as Parameters<typeof exportGlbForWindow>[0])
+          );
+        }
+      };
+
     default:
       return undefined;
   }
