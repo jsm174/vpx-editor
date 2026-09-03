@@ -1181,7 +1181,7 @@ function pointInTriangle(
   const d3 = (px - ax) * (cy - ay) - (cx - ax) * (py - ay);
   const hasNeg = d1 < 0 || d2 < 0 || d3 < 0;
   const hasPos = d1 > 0 || d2 > 0 || d3 > 0;
-  return !(hasNeg && hasPos);
+  return (hasNeg || hasPos) && !(hasNeg && hasPos);
 }
 
 export function hitTestPrimitive(item: PrimitiveItem, worldX: number, worldY: number): boolean {
