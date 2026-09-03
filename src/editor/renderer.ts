@@ -463,6 +463,7 @@ elements.canvas!.addEventListener('pointerdown', e => {
               state.draggingNode = true;
               state.nodeMoved = false;
               state.dragStart = { x: world.x, y: world.y };
+              dragStartScreen = { x: e.offsetX, y: e.offsetY };
               elements.canvas!.setPointerCapture(e.pointerId);
             }
             updatePropertiesPanel();
@@ -523,6 +524,7 @@ elements.canvas!.addEventListener('pointerdown', e => {
             state.draggingObject = true;
             state.objectMoved = false;
             state.objectDragStart = { x: world.x, y: world.y };
+            dragStartScreen = { x: e.offsetX, y: e.offsetY };
             elements.canvas!.setPointerCapture(e.pointerId);
           }
         }
@@ -530,6 +532,13 @@ elements.canvas!.addEventListener('pointerdown', e => {
     }
   }
 });
+
+const DRAG_START_THRESHOLD_PX = 4;
+let dragStartScreen = { x: 0, y: 0 };
+
+function pastDragThreshold(e: PointerEvent): boolean {
+  return Math.hypot(e.offsetX - dragStartScreen.x, e.offsetY - dragStartScreen.y) >= DRAG_START_THRESHOLD_PX;
+}
 
 elements.canvas!.addEventListener('pointermove', e => {
   const world = toWorld(e.offsetX, e.offsetY);
@@ -564,7 +573,7 @@ elements.canvas!.addEventListener('pointermove', e => {
     render();
   } else if (state.draggingNode && state.selectedNode) {
     const item = getItem(state.selectedNode.itemName);
-    if (item && item.drag_points) {
+    if (item && item.drag_points && (state.nodeMoved || pastDragThreshold(e))) {
       const pt = item.drag_points[state.selectedNode.nodeIndex];
       if (pt.vertex) {
         pt.vertex.x = world.x;
@@ -580,7 +589,7 @@ elements.canvas!.addEventListener('pointermove', e => {
   } else if (state.draggingObject && state.selectedItems.length > 0) {
     const dx = world.x - state.objectDragStart.x;
     const dy = world.y - state.objectDragStart.y;
-    if (dx !== 0 || dy !== 0) {
+    if ((state.objectMoved || pastDragThreshold(e)) && (dx !== 0 || dy !== 0)) {
       state.objectMoved = true;
       for (const itemName of state.selectedItems) {
         if (!getItem(itemName)?.is_locked) {
