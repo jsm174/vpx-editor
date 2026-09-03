@@ -73,10 +73,6 @@ class UndoManager {
     this.transactionDepth++;
 
     if (this.transactionDepth === 1) {
-      if (this.undoStack.length >= this.maxUndoLevels) {
-        this.undoStack.shift();
-      }
-      this.redoStack = [];
       this.currentRecord = new UndoRecord(description);
     }
   }
@@ -339,6 +335,10 @@ class UndoManager {
       }
 
       if (this.currentRecord.hasChanges()) {
+        if (this.undoStack.length >= this.maxUndoLevels) {
+          this.undoStack.shift();
+        }
+        this.redoStack = [];
         this.undoStack.push(this.currentRecord);
         this._notifyChange();
         this._updateDirtyState();
