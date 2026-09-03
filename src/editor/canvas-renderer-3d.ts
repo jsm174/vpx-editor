@@ -12,6 +12,7 @@ import { computeCameraParams, VIEW_MODE_MASKS, getSpaceReferenceOffset, type Vie
 import { getItemBounds } from './utils.js';
 import { CAMERA_BASE_DISTANCE, CAMERA_ANIMATION_DURATION } from '../shared/constants.js';
 import { initLoadingIndicator, setLoadingIndicatorVisible } from './loading-indicator.js';
+import { resumeTextureLoading } from './texture-loader.js';
 import type { GameData } from '../types/data.js';
 
 import { getEditable } from './parts/index.js';
@@ -624,6 +625,7 @@ function animate(): void {
 export function render3D(resetView: boolean = false): void {
   if (!isInitialized || !state.gamedata) return;
   buildScene();
+  resumeTextureLoading();
   if (resetView) {
     resetCamera();
   }

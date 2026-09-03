@@ -17,7 +17,7 @@ const MAX_DECODE_WORKERS = Math.min(4, Math.max(2, (navigator.hardwareConcurrenc
 const decodeWorkers: Worker[] = [];
 let nextWorkerIndex = 0;
 let nextDecodeId = 0;
-const decodeCallbacks = new Map<number, (result: HDRDecodeResult) => void>();
+const decodeCallbacks = new Map<number, { worker: Worker; resolve: (result: HDRDecodeResult) => void }>();
 
 function getDecodeWorker(): Worker {
   if (decodeWorkers.length < MAX_DECODE_WORKERS) {
@@ -25,7 +25,18 @@ function getDecodeWorker(): Worker {
     worker.onmessage = (e: MessageEvent<HDRDecodeResult>): void => {
       const callback = decodeCallbacks.get(e.data.id);
       decodeCallbacks.delete(e.data.id);
-      callback?.(e.data);
+      callback?.resolve(e.data);
+    };
+    worker.onerror = (err: ErrorEvent): void => {
+      console.warn('[textures] HDR decode worker failed:', err.message);
+      const idx = decodeWorkers.indexOf(worker);
+      if (idx >= 0) decodeWorkers.splice(idx, 1);
+      for (const [id, callback] of decodeCallbacks) {
+        if (callback.worker === worker) {
+          decodeCallbacks.delete(id);
+          callback.resolve({ id, success: false, error: 'decode worker failed' });
+        }
+      }
     };
     decodeWorkers.push(worker);
     return worker;
@@ -38,7 +49,7 @@ function decodeHDRTexture(ext: string, data: Uint8Array, maxSize: number): Promi
   const worker = getDecodeWorker();
   return new Promise(resolve => {
     const id = nextDecodeId++;
-    decodeCallbacks.set(id, resolve);
+    decodeCallbacks.set(id, { worker, resolve });
     const buffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
     worker.postMessage({ id, ext, buffer, maxSize }, [buffer]);
   });
@@ -128,6 +139,10 @@ export async function loadTexture(imageName: string): Promise<THREE.Texture | nu
   });
 
   return promise;
+}
+
+export function resumeTextureLoading(): void {
+  scheduleProcessQueue();
 }
 
 function scheduleProcessQueue(): void {
