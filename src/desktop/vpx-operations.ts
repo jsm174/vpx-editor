@@ -4,7 +4,7 @@ import { spawn, ChildProcess } from 'node:child_process';
 import fs from 'fs-extra';
 import os from 'node:os';
 import { getLastFolder, setLastFolder, Settings } from './settings-manager.js';
-import type { ObjExportOptions } from '@francisdb/vpin-wasm';
+import type { TableObjExportOptions } from '../shared/obj-transform.js';
 import type { WindowContext, WindowRegistry } from './window-context.js';
 
 const MAX_RECENT_FILES = 10;
@@ -143,7 +143,7 @@ export async function readWorkDirFiles(workDir: string): Promise<Record<string, 
 
 export async function exportObjTable(
   ctx: WindowContext,
-  options: ObjExportOptions | null
+  options: TableObjExportOptions | null
 ): Promise<{ success: boolean; files?: Record<string, Uint8Array>; error?: string }> {
   if (!ctx.extractedDir) return { success: false, error: 'No table loaded' };
   try {
@@ -182,7 +182,11 @@ export async function exportGlbForWindow(ctx: WindowContext): Promise<void> {
     const files = await readWorkDirFiles(workDir);
 
     const wasmProgress = (msg: string) => sendConsoleOutput(ctx, 'info', msg);
-    const bytes = vpin.export_glb(files, null, wasmProgress);
+    const bytes = vpin.export_glb(
+      files,
+      { visibility: 'editor' } as import('@francisdb/vpin-wasm').GlbExportOptions,
+      wasmProgress
+    );
     await fs.promises.writeFile(result.filePath, bytes);
     sendConsoleOutput(ctx, 'success', `Exported ${result.filePath}`);
   } catch (err: unknown) {

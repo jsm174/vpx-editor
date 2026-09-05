@@ -768,11 +768,14 @@ ipcMain.handle('export-blueprint', async (event, data: ArrayBuffer, suggestedNam
   }
 });
 
-ipcMain.handle('export-obj-table', async (event, options: import('@francisdb/vpin-wasm').ObjExportOptions | null) => {
-  const ctx = getContextForManagerEvent(event);
-  if (!ctx) return { success: false, error: 'No window context' };
-  return vpxOps.exportObjTable(ctx, options);
-});
+ipcMain.handle(
+  'export-obj-table',
+  async (event, options: import('../shared/obj-transform.js').TableObjExportOptions | null) => {
+    const ctx = getContextForManagerEvent(event);
+    if (!ctx) return { success: false, error: 'No window context' };
+    return vpxOps.exportObjTable(ctx, options);
+  }
+);
 
 ipcMain.handle('export-obj-mesh-get-path', async (event, suggestedName: string) => {
   const ctx = getContextForManagerEvent(event);

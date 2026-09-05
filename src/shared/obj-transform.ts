@@ -35,11 +35,18 @@ export function exportMeshIoOptions(options: ObjExchangeOptions): MeshIoOptions 
   };
 }
 
-export function exportTableObjOptions(options: ObjExchangeOptions): ObjExportOptions {
+export type TableExportVisibility = 'render' | 'editor';
+
+export interface TableObjExportOptions extends ObjExportOptions {
+  visibility?: TableExportVisibility;
+}
+
+export function exportTableObjOptions(options: ObjExchangeOptions): TableObjExportOptions {
   return {
     axes: orientationAxes(options.orientation),
     units: options.unit === UNIT_CONVERSION_VPU ? EXPORT_UNITS_VPU : EXPORT_UNITS_M,
     extractTextures: false,
+    visibility: 'editor',
   };
 }
 

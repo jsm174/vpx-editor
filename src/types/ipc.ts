@@ -422,7 +422,7 @@ export interface VpxEditorAPI {
   onExportBlueprint?: (callback: IpcCallback<{ solid: boolean; isBackglass: boolean }>) => void;
   exportObjMeshGetPath?: (suggestedName: string) => Promise<string | null>;
   exportObjTable?: (
-    options: import('@francisdb/vpin-wasm').ObjExportOptions | null
+    options: import('../shared/obj-transform.js').TableObjExportOptions | null
   ) => Promise<{ success: boolean; files?: Record<string, Uint8Array>; error?: string }>;
   onExportObjMesh?: (callback: IpcCallback<void>) => void;
   onApplyTransform?: (callback: IpcCallback<TransformData>) => void;

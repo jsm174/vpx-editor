@@ -632,7 +632,7 @@ const vpxEditorAPI: VpxEditorAPI = {
   },
   exportObjMeshGetPath: (suggestedName: string): Promise<string | null> =>
     ipcRenderer.invoke('export-obj-mesh-get-path', suggestedName),
-  exportObjTable: (options: import('@francisdb/vpin-wasm').ObjExportOptions | null) =>
+  exportObjTable: (options: import('../shared/obj-transform.js').TableObjExportOptions | null) =>
     ipcRenderer.invoke('export-obj-table', options),
   onExportObjMesh: (callback: () => void): void => {
     ipcRenderer.on('export-obj-mesh', () => callback());

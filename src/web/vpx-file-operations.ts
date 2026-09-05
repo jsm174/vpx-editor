@@ -167,7 +167,7 @@ export async function saveVpxFile(onProgress?: (message: string) => void): Promi
 }
 
 export async function exportObjTableFiles(
-  options: import('@francisdb/vpin-wasm').ObjExportOptions | null
+  options: import('../shared/obj-transform.js').TableObjExportOptions | null
 ): Promise<Record<string, Uint8Array> | null> {
   if (!state.tableLoaded || !state.platform) return null;
 
