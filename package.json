@@ -18,7 +18,8 @@
     "format:check": "prettier --check \"src/**/*.{js,ts}\" \"*.{js,ts}\"",
     "dev:web": "vite --config vite.web.config.ts",
     "build:web": "vite build --config vite.web.config.ts",
-    "preview:web": "vite preview --config vite.web.config.ts"
+    "preview:web": "vite preview --config vite.web.config.ts",
+    "test:desktop": "electron scripts/test-mcp-desktop.cjs"
   },
   "keywords": [],
   "author": {

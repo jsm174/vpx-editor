@@ -34,6 +34,7 @@ export class ScriptEditorController {
   private saveTimeout: ReturnType<typeof setTimeout> | null = null;
   private updateTimeout: ReturnType<typeof setTimeout> | null = null;
   private isTableLocked = false;
+  private saveQueue: Promise<void> = Promise.resolve();
   private savedCursorPosition: { lineNumber: number; column: number } | null = null;
 
   constructor(
@@ -178,6 +179,19 @@ export class ScriptEditorController {
     };
   }
 
+  async flushForExternalEdit(): Promise<void> {
+    if (!this.editor) throw new Error('Script editor is not ready');
+    if (this.saveTimeout) clearTimeout(this.saveTimeout);
+    this.saveTimeout = null;
+    await this.queueSave(this.editor.getValue());
+  }
+
+  private queueSave(content: string): Promise<void> {
+    const save = this.saveQueue.catch(() => {}).then(() => this.callbacks.save(content));
+    this.saveQueue = save;
+    return save;
+  }
+
   async flushPendingSave(): Promise<void> {
     if (this.saveTimeout) {
       clearTimeout(this.saveTimeout);
@@ -278,7 +292,7 @@ export class ScriptEditorController {
     if (!this.editor) return;
     const content = this.editor.getValue();
     try {
-      await this.callbacks.save(content);
+      await this.queueSave(content);
       this.setStatus('Saved');
       this.callbacks.onSaveSuccess?.();
     } catch (error) {

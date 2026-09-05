@@ -31,6 +31,8 @@ export interface WindowContextChildWindows {
 }
 
 export class WindowContext implements WindowContextState, WindowContextChildWindows {
+  public mcpEditBusy = false;
+  public mcpEditWriting = false;
   public readonly id: string;
   public readonly window: BrowserWindow;
   public extractedDir: string | null;

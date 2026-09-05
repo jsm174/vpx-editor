@@ -1,3 +1,4 @@
+import { writeEditFile, unlinkEditFile } from './file-transaction.js';
 import fs from 'fs-extra';
 import path from 'node:path';
 import { generateUniqueFileName } from '../../shared/gameitem-utils.js';
@@ -37,7 +38,7 @@ async function readGameitems(workDir: string): Promise<GameItemRef[]> {
 }
 
 async function writeGameitems(workDir: string, items: GameItemRef[]): Promise<void> {
-  await fs.promises.writeFile(path.join(workDir, 'gameitems.json'), JSON.stringify(items, null, 2));
+  await writeEditFile(path.join(workDir, 'gameitems.json'), JSON.stringify(items, null, 2));
 }
 
 async function findGameItem(
@@ -71,7 +72,7 @@ async function writeGameItemFile(
 ): Promise<void> {
   const fullPath = path.join(workDir, 'gameitems', fileName);
   await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
-  await fs.promises.writeFile(fullPath, JSON.stringify({ [type]: data }, null, 2));
+  await writeEditFile(fullPath, JSON.stringify({ [type]: data }, null, 2));
 }
 
 // Direct-write part ops receive raw vpin-shaped data. The tool layer's `position`
@@ -134,7 +135,7 @@ async function applyDeletePart(workDir: string, payload: Record<string, unknown>
   const remaining = refs.filter(r => r.file_name !== found.ref.file_name);
   await writeGameitems(workDir, remaining);
   try {
-    await fs.promises.unlink(path.join(workDir, 'gameitems', found.ref.file_name));
+    await unlinkEditFile(path.join(workDir, 'gameitems', found.ref.file_name));
   } catch {
     // ignore unlink failure
   }
@@ -151,11 +152,28 @@ async function applyEditScript(workDir: string, payload: Record<string, unknown>
   } catch {
     // file may not exist; treat as empty
   }
+  if (typeof payload.expectedScript === 'string' && existing !== payload.expectedScript) {
+    throw new Error('Script changed while planning this edit. Read it again and retry.');
+  }
+  if (Array.isArray(payload.glfSwitches) && payload.glfSwitches.length) {
+    const file = path.join(workDir, 'collections.json');
+    const collections = JSON.parse(await fs.readFile(file, 'utf-8')) as { name: string; items?: string[] }[];
+    let target = collections.find(c => c.name.toLowerCase() === 'glf_switches');
+    if (!target) {
+      target = { name: 'glf_switches', items: [] };
+      collections.push(Object.assign(target, { fire_events: false, stop_single_events: false, group_elements: false }));
+    }
+    target.items ??= [];
+    for (const name of payload.glfSwitches as string[]) {
+      if (!target.items.some(n => n.toLowerCase() === name.toLowerCase())) target.items.push(name);
+    }
+    await writeEditFile(file, JSON.stringify(collections, null, 2));
+  }
   let next = existing;
   if (mode === 'replace') next = content;
   else if (mode === 'append') next = existing + (existing.endsWith('\n') ? '' : '\n') + content;
   else if (mode === 'prepend') next = content + (content.endsWith('\n') ? '' : '\n') + existing;
-  await fs.promises.writeFile(scriptPath, next);
+  await writeEditFile(scriptPath, next);
   const detail = mode === 'replace' ? '' : `: ${previewSnippet(content)}`;
   return { success: true, applied: true, description: `Script ${mode} (${content.length} chars)${detail}` };
 }
@@ -187,7 +205,7 @@ async function applyReplaceScriptString(workDir: string, payload: Record<string,
     };
   }
   const next = existing.split(oldString).join(newString);
-  await fs.promises.writeFile(scriptPath, next);
+  await writeEditFile(scriptPath, next);
   return {
     success: true,
     applied: true,
@@ -237,7 +255,7 @@ async function applyReplaceScriptRange(workDir: string, payload: Record<string, 
   const after = lines.slice(endLine);
   const replacement = content === '' ? [] : splitLines(content);
   const next = [...before, ...replacement, ...after].join(detectEol(existing));
-  await fs.promises.writeFile(scriptPath, next);
+  await writeEditFile(scriptPath, next);
   const removed = endLine - startLine + 1;
   return {
     success: true,
@@ -285,7 +303,7 @@ async function applyReplaceSub(workDir: string, payload: Record<string, unknown>
   const before = lines.slice(0, sub.startLine - 1);
   const after = lines.slice(sub.endLine);
   const next = [...before, ...splitLines(newBody), ...after].join(detectEol(existing));
-  await fs.promises.writeFile(scriptPath, next);
+  await writeEditFile(scriptPath, next);
   return {
     success: true,
     applied: true,
@@ -305,7 +323,7 @@ async function readMaterials(workDir: string): Promise<Record<string, unknown>[]
 }
 
 async function writeMaterials(workDir: string, materials: Record<string, unknown>[]): Promise<void> {
-  await fs.promises.writeFile(path.join(workDir, 'materials.json'), JSON.stringify(materials, null, 2));
+  await writeEditFile(path.join(workDir, 'materials.json'), JSON.stringify(materials, null, 2));
 }
 
 async function applyAddMaterial(workDir: string, payload: Record<string, unknown>): Promise<EditResult> {
@@ -391,12 +409,19 @@ async function readImagesJson(workDir: string): Promise<ImageEntry[]> {
   }
 }
 
+function imageAssetPath(workDir: string, fileName: string): string {
+  if (!fileName || fileName.includes('/') || fileName.includes('\\') || fileName === '.' || fileName === '..') {
+    throw new Error('Image filename must stay inside the images directory');
+  }
+  return path.join(workDir, 'images', fileName);
+}
+
 async function unlinkImageFiles(workDir: string, entry: ImageEntry): Promise<void> {
   for (const candidate of imageFileCandidates(entry)) {
     try {
-      await fs.promises.unlink(path.join(workDir, 'images', candidate));
-    } catch {
-      // best effort
+      await unlinkEditFile(imageAssetPath(workDir, candidate));
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
     }
   }
 }
@@ -421,13 +446,16 @@ async function applyAddImage(workDir: string, payload: Record<string, unknown>):
   const base = sanitizeImageFileBase(name);
   if (!base) return { success: false, applied: false, error: `Image name "${name}" has no filesystem-safe characters` };
   const fileName = `${base}${decoded.ext}`;
+  if (images.some(i => imageFileCandidates(i).some(f => f.toLowerCase() === fileName.toLowerCase()))) {
+    throw new Error('Image filename collides with another image');
+  }
   const imagesDir = path.join(workDir, 'images');
   await fs.promises.mkdir(imagesDir, { recursive: true });
-  await fs.promises.writeFile(path.join(imagesDir, fileName), decoded.bytes);
+  await writeEditFile(path.join(imagesDir, fileName), decoded.bytes);
   const entry: ImageEntry = { name, path: fileName };
   if (base !== name) entry.name_dedup = base;
   images.push(entry);
-  await fs.promises.writeFile(path.join(workDir, 'images.json'), JSON.stringify(images, null, 2));
+  await writeEditFile(path.join(workDir, 'images.json'), JSON.stringify(images, null, 2));
   return { success: true, applied: true, description: `Added image "${name}" (${decoded.bytes.length} bytes)` };
 }
 
@@ -456,14 +484,19 @@ async function applyModifyImage(workDir: string, payload: Record<string, unknown
   if (!base)
     return { success: false, applied: false, error: `Image name "${existing.name}" has no filesystem-safe characters` };
   const fileName = `${base}${decoded.ext}`;
+  if (
+    images.some((i, n) => n !== idx && imageFileCandidates(i).some(f => f.toLowerCase() === fileName.toLowerCase()))
+  ) {
+    throw new Error('Image filename collides with another image');
+  }
   await unlinkImageFiles(workDir, existing);
-  await fs.promises.writeFile(path.join(imagesDir, fileName), decoded.bytes);
+  await writeEditFile(path.join(imagesDir, fileName), decoded.bytes);
   const entry: ImageEntry = { ...existing, path: fileName };
   delete entry.internal_name;
   if (base !== existing.name) entry.name_dedup = base;
   else delete entry.name_dedup;
   images[idx] = entry;
-  await fs.promises.writeFile(path.join(workDir, 'images.json'), JSON.stringify(images, null, 2));
+  await writeEditFile(path.join(workDir, 'images.json'), JSON.stringify(images, null, 2));
   return { success: true, applied: true, description: `Replaced image "${name}" (${decoded.bytes.length} bytes)` };
 }
 
@@ -475,7 +508,7 @@ async function applyDeleteImage(workDir: string, payload: Record<string, unknown
   if (idx === -1) return { success: false, applied: false, error: `Image not found: ${name}` };
   const removed = images[idx];
   images.splice(idx, 1);
-  await fs.promises.writeFile(path.join(workDir, 'images.json'), JSON.stringify(images, null, 2));
+  await writeEditFile(path.join(workDir, 'images.json'), JSON.stringify(images, null, 2));
   await unlinkImageFiles(workDir, removed);
   return { success: true, applied: true, description: `Deleted image "${name}"` };
 }
@@ -530,10 +563,22 @@ async function readSoundsJson(workDir: string): Promise<SoundEntry[]> {
 }
 
 async function writeSoundsJson(workDir: string, sounds: SoundEntry[]): Promise<void> {
-  await fs.promises.writeFile(path.join(workDir, 'sounds.json'), JSON.stringify(sounds, null, 2));
+  await writeEditFile(path.join(workDir, 'sounds.json'), JSON.stringify(sounds, null, 2));
+}
+
+function validateSoundName(name: string): void {
+  if (
+    !name ||
+    /[/\\?<>:*|"\u0000-\u001f]/.test(name) ||
+    /[. ]$/.test(name) ||
+    /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name)
+  ) {
+    throw new Error('Sound name must be a portable filename without path separators or reserved characters');
+  }
 }
 
 function soundFileName(sound: SoundEntry): string {
+  validateSoundName(sound.name);
   const ext = path.extname(sound.path).toLowerCase() || '.wav';
   return `${sound.name}${ext}`;
 }
@@ -541,7 +586,7 @@ function soundFileName(sound: SoundEntry): string {
 async function applyAddSound(workDir: string, payload: Record<string, unknown>): Promise<EditResult> {
   const name = payload.name as string;
   const source = payload.source as Record<string, unknown>;
-  if (!name) return { success: false, applied: false, error: 'Sound must have a name' };
+  validateSoundName(name);
 
   const decoded = await decodeSoundSource(source);
   if ('error' in decoded) return { success: false, applied: false, error: decoded.error };
@@ -558,7 +603,7 @@ async function applyAddSound(workDir: string, payload: Record<string, unknown>):
   const props = payload.properties as Partial<SoundEntry> | undefined;
   const soundsDir = path.join(workDir, 'sounds');
   await fs.promises.mkdir(soundsDir, { recursive: true });
-  await fs.promises.writeFile(path.join(soundsDir, `${name}${decoded.ext}`), decoded.bytes);
+  await writeEditFile(path.join(soundsDir, `${name}${decoded.ext}`), decoded.bytes);
   sounds.push({
     name,
     path: `${name}${decoded.ext}`,
@@ -576,7 +621,7 @@ async function applyModifySound(workDir: string, payload: Record<string, unknown
   const name = payload.name as string;
   const source = payload.source as Record<string, unknown> | undefined;
   const patch = payload.patch as Record<string, unknown> | undefined;
-  if (!name) return { success: false, applied: false, error: 'Sound name required' };
+  validateSoundName(name);
 
   const sounds = await readSoundsJson(workDir);
   const idx = sounds.findIndex(s => s.name.toLowerCase() === name.toLowerCase());
@@ -595,12 +640,12 @@ async function applyModifySound(workDir: string, payload: Record<string, unknown
     const newFileName = `${existing.name}${decoded.ext}`;
     if (oldFileName !== newFileName) {
       try {
-        await fs.promises.unlink(path.join(soundsDir, oldFileName));
-      } catch {
-        // best effort
+        await unlinkEditFile(path.join(soundsDir, oldFileName));
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
       }
     }
-    await fs.promises.writeFile(path.join(soundsDir, newFileName), decoded.bytes);
+    await writeEditFile(path.join(soundsDir, newFileName), decoded.bytes);
     existing.path = newFileName;
     changes.push(`bytes (${decoded.bytes.length})`);
   }
@@ -624,7 +669,7 @@ async function applyModifySound(workDir: string, payload: Record<string, unknown
 
 async function applyDeleteSound(workDir: string, payload: Record<string, unknown>): Promise<EditResult> {
   const name = payload.name as string;
-  if (!name) return { success: false, applied: false, error: 'Sound name required' };
+  validateSoundName(name);
   const sounds = await readSoundsJson(workDir);
   const idx = sounds.findIndex(s => s.name.toLowerCase() === name.toLowerCase());
   if (idx === -1) return { success: false, applied: false, error: `Sound not found: ${name}` };
@@ -632,9 +677,9 @@ async function applyDeleteSound(workDir: string, payload: Record<string, unknown
   sounds.splice(idx, 1);
   await writeSoundsJson(workDir, sounds);
   try {
-    await fs.promises.unlink(path.join(workDir, 'sounds', soundFileName(removed)));
-  } catch {
-    // best effort
+    await unlinkEditFile(path.join(workDir, 'sounds', soundFileName(removed)));
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
   }
   return { success: true, applied: true, description: `Deleted sound "${name}"` };
 }
@@ -814,7 +859,7 @@ async function applyCloneBundle(deps: DirectEditDeps, payload: Record<string, un
       const added = await findGameItem(deps.workDir, renamedName);
       if (added?.ref.file_name) {
         const meshPath = path.join(deps.workDir, 'gameitems', added.ref.file_name.replace(/\.json$/, '.obj'));
-        await fs.promises.writeFile(meshPath, meshBytes);
+        await writeEditFile(meshPath, meshBytes);
         adds.push('mesh:1');
       }
     } else if (neededMesh && donorAssets) {

@@ -10,7 +10,7 @@ export interface RendererBridge {
   waitForTableReady(extractedDir: string, timeoutMs: number): Promise<boolean>;
 }
 
-const pending = new Map<string, (result: Record<string, unknown>) => void>();
+const pending = new Map<string, { senderId: number; finish: (result: Record<string, unknown>) => void }>();
 const readyWaiters = new Map<string, () => void>();
 const readyDirs = new Set<string>();
 
@@ -19,11 +19,11 @@ let installed = false;
 function install(): void {
   if (installed) return;
   installed = true;
-  ipcMain.on('mcp-request-result', (_event, result: { requestId: string; [key: string]: unknown }) => {
+  ipcMain.on('mcp-request-result', (event, result: { requestId: string; [key: string]: unknown }) => {
     const cb = pending.get(result.requestId);
-    if (cb) {
+    if (cb && cb.senderId === event.sender.id) {
       pending.delete(result.requestId);
-      cb(result);
+      cb.finish(result);
     }
   });
   ipcMain.on('renderer-table-ready', (_event, extractedDir: string) => {
@@ -51,9 +51,13 @@ export function createRendererBridge(): RendererBridge {
           () => finish({ success: false, error: `Renderer did not respond to mcp ${kind} request within timeout` }),
           timeoutMs
         );
-        pending.set(requestId, finish);
+        pending.set(requestId, { senderId: window.webContents.id, finish });
         window.once('closed', onClosed);
-        window.webContents.send('mcp-request', { requestId, kind, ...payload });
+        try {
+          window.webContents.send('mcp-request', { requestId, kind, expiresAt: Date.now() + timeoutMs, ...payload });
+        } catch (err) {
+          finish({ success: false, error: String(err) });
+        }
       });
     },
     waitForTableReady(extractedDir, timeoutMs) {

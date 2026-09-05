@@ -1,3 +1,4 @@
+import type { FileChange } from '../../shared/file-changes.js';
 import { UndoRecord, ItemSnapshot, RenameEntry, DeletedImageInfo, DeletedSoundInfo } from './undo-record.js';
 import { state, elements, getItem, setItem, deleteItem, setPartGroup, deletePartGroup } from '../state.js';
 import { readMeshCompanions, deleteMeshCompanions } from '../mesh-files.js';
@@ -255,6 +256,14 @@ class UndoManager {
     this.currentRecord.hiddenItemsBefore = state.hiddenItems ? Array.from(state.hiddenItems as Set<string>) : [];
   }
 
+  async recordFileChange(description: string, changes: FileChange[]): Promise<void> {
+    if (!this.enabled || this.isProcessing || this.transactionDepth) throw new Error('Editor undo is busy');
+    if (!changes.length) return;
+    this.beginUndo(description);
+    this.currentRecord!.fileChanges = changes;
+    await this.endUndo();
+  }
+
   async recordScriptChange(before: string, after: string): Promise<void> {
     this.beginUndo('Script edited');
     if (this.currentRecord) {
@@ -357,13 +366,17 @@ class UndoManager {
   }
 
   async undo(): Promise<UndoRedoResult | false> {
-    if (!this.canUndo() || this.isProcessing) return false;
+    if (!this.enabled || !this.canUndo() || this.isProcessing || this.transactionDepth) return false;
 
     this.isProcessing = true;
     this.enabled = false;
     const record = this.undoStack.pop()!;
 
     try {
+      if (record.fileChanges) {
+        const { restoreEditedFiles } = await import('../mcp-file-sync.js');
+        await restoreEditedFiles(record.fileChanges, 'before');
+      }
       for (const [, itemSnapshot] of record.deletedItems) {
         await this._restoreItem(itemSnapshot);
       }
@@ -532,6 +545,7 @@ class UndoManager {
 
       return { success: true, selectItems, imagesChanged, materialsChanged, soundsChanged };
     } catch (error: unknown) {
+      this.undoStack.push(record);
       console.error('Undo failed:', error);
       this._updateStatusBar(`Undo failed: ${(error as Error).message}`);
       return { success: false };
@@ -542,7 +556,7 @@ class UndoManager {
   }
 
   async redo(): Promise<UndoRedoResult | false> {
-    if (!this.canRedo() || this.isProcessing) return false;
+    if (!this.enabled || !this.canRedo() || this.isProcessing || this.transactionDepth) return false;
 
     this.isProcessing = true;
 
@@ -550,6 +564,10 @@ class UndoManager {
     const record = this.redoStack.pop()!;
 
     try {
+      if (record.fileChanges) {
+        const { restoreEditedFiles } = await import('../mcp-file-sync.js');
+        await restoreEditedFiles(record.fileChanges, 'after');
+      }
       for (const [deletedItemName] of record.deletedItems) {
         await this._removeItem(deletedItemName);
       }
@@ -681,6 +699,7 @@ class UndoManager {
 
       return { success: true, selectItems, imagesChanged, materialsChanged, soundsChanged };
     } catch (error: unknown) {
+      this.redoStack.push(record);
       console.error('Redo failed:', error);
       this._updateStatusBar(`Redo failed: ${(error as Error).message}`);
       return { success: false };

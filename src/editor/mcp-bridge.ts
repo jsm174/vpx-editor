@@ -1,32 +1,20 @@
-import { state, elements, undoManager, getItem, type GameItem } from './state.js';
+import { handleMcpTransaction, isMcpEditing } from './mcp-edit-transaction.js';
+import { state, undoManager, getItem, type GameItem } from './state.js';
 import { createObject, deleteObject, saveNewObject } from './object-factory.js';
 import { updateItemsList, selectItem } from './items-panel.js';
 import { updateLayersList } from './layers-panel.js';
 import { updatePropertiesPanel } from './properties-panel.js';
-import { loadTable, saveItemToFile } from './table-loader.js';
-import { invalidateItem, invalidateAllItems } from './canvas-renderer-3d.js';
-import { clearPrimitiveMeshCache } from './parts/primitive.js';
+import { saveItemToFile } from './table-loader.js';
+import { invalidateItem } from './canvas-renderer-3d.js';
 import { moveObjectTo, getItemAnchor } from './object-operations.js';
 import { applyGroupVisibilityToItem, syncIndexVisibility, saveGameitemsIndex } from './layer-operations.js';
 import { generateUniqueFileName } from '../shared/gameitem-utils.js';
-import { renderCurrentView, updateElementToolbarForBackglassView, updateToolboxForTableLock } from './view-manager.js';
-import { updateClipboardMenuState } from './clipboard.js';
+import { renderCurrentView } from './view-manager.js';
 import { handleMcpCaptureRequest } from './mcp-capture.js';
 
 export interface McpBridgeHooks {
   runUndoRedo: (direction: 'undo' | 'redo') => Promise<boolean>;
   updateUndoRedoButtons: () => void;
-}
-
-interface McpReloadRequest {
-  reason?: string;
-  undo?: {
-    domain?: string;
-    description?: string;
-    partName?: string;
-    scriptBefore?: string;
-    scriptAfter?: string;
-  };
 }
 
 interface McpPartRequest {
@@ -102,81 +90,6 @@ async function syncLayerFields(item: GameItem, overrides: Record<string, unknown
   undoManager.markGameitemsListForUndo();
   syncIndexVisibility(item);
   await saveGameitemsIndex();
-}
-
-async function reloadPartFromDisk(partName: string, description: string, withMaterials: boolean): Promise<void> {
-  const item = getItem(partName);
-  if (!item || !item._fileName || !state.extractedDir) return;
-  undoManager.beginUndo(description);
-  undoManager.markForUndo(item.name as string);
-  if (withMaterials) undoManager.markMaterialsForUndo();
-  const result = await window.vpxEditor.readFile(`${state.extractedDir}/${item._fileName}`);
-  if (result.success && result.content) {
-    const itemData = JSON.parse(result.content);
-    Object.assign(item, itemData[Object.keys(itemData)[0]]);
-  }
-  await undoManager.endUndo();
-  clearPrimitiveMeshCache();
-  invalidateItem(item.name as string);
-}
-
-async function recordMcpUndo(undo: McpReloadRequest['undo']): Promise<void> {
-  if (!undo) return;
-  const description = undo.description || 'MCP edit';
-  if ((undo.domain === 'part' || undo.domain === 'part-and-materials') && undo.partName) {
-    await reloadPartFromDisk(undo.partName, description, undo.domain === 'part-and-materials');
-    return;
-  }
-  if (undo.domain === 'script') {
-    if (
-      typeof undo.scriptBefore === 'string' &&
-      typeof undo.scriptAfter === 'string' &&
-      undo.scriptBefore !== undo.scriptAfter
-    ) {
-      await undoManager.recordScriptChange(undo.scriptBefore, undo.scriptAfter);
-    }
-    return;
-  }
-  if (undo.domain === 'materials' || undo.domain === 'images' || undo.domain === 'sounds') {
-    undoManager.beginUndo(description);
-    if (undo.domain === 'materials') undoManager.markMaterialsForUndo();
-    else if (undo.domain === 'images') undoManager.markImagesForUndo();
-    else undoManager.markSoundsForUndo();
-    await undoManager.endUndo();
-  }
-}
-
-async function applyReload(batch: McpReloadRequest[], hooks: McpBridgeHooks): Promise<void> {
-  const domains = new Set(batch.map(b => b.undo?.domain ?? 'none'));
-  for (const item of batch) await recordMcpUndo(item.undo);
-
-  if (domains.has('none')) {
-    await loadTable();
-    updateElementToolbarForBackglassView();
-    updateToolboxForTableLock();
-    updateClipboardMenuState();
-  } else {
-    if (domains.has('images')) {
-      for (const texture of state.textureCache.values()) texture.dispose();
-      state.textureCache.clear();
-    }
-    if (domains.has('images') || domains.has('materials') || domains.has('part-and-materials')) {
-      invalidateAllItems();
-    }
-    if (!domains.has('script') || domains.size > 1) {
-      renderCurrentView();
-      updatePropertiesPanel();
-    }
-  }
-  if (domains.has('images')) window.vpxEditor.refreshImageManager();
-  if (domains.has('materials') || domains.has('part-and-materials')) window.vpxEditor.refreshMaterialManager();
-  if (domains.has('sounds')) window.vpxEditor.refreshSoundManager();
-  hooks.updateUndoRedoButtons();
-
-  const current = batch[batch.length - 1];
-  if (elements.statusBar) {
-    elements.statusBar.textContent = `Updated after MCP edit${current.reason ? ` (${current.reason})` : ''}`;
-  }
 }
 
 async function handleMcpPartOp(data: McpPartRequest): Promise<McpPartResult> {
@@ -275,6 +188,16 @@ async function handleMcpUndoRedo(direction: 'undo' | 'redo', hooks: McpBridgeHoo
 }
 
 async function dispatch(data: { kind: string; [key: string]: unknown }, hooks: McpBridgeHooks) {
+  if (
+    typeof data.expiresAt === 'number' &&
+    Date.now() >= data.expiresAt &&
+    data.kind !== 'edit-end' &&
+    data.kind !== 'edit-abort'
+  )
+    return { success: false, error: 'Request expired before execution' };
+  if (data.kind.startsWith('edit-')) return handleMcpTransaction(data, hooks);
+  if (isMcpEditing()) return { success: false, error: 'An MCP edit is in progress' };
+  if (data.workDir && data.workDir !== state.extractedDir) return { success: false, error: 'Table changed' };
   if (data.kind === 'part-op') return handleMcpPartOp(data as unknown as McpPartRequest);
   if (data.kind === 'capture') return handleMcpCaptureRequest(data);
   if (data.kind === 'undo-redo') return handleMcpUndoRedo(data.direction === 'redo' ? 'redo' : 'undo', hooks);
@@ -290,19 +213,6 @@ async function dispatch(data: { kind: string; [key: string]: unknown }, hooks: M
 }
 
 export function initMcpBridge(hooks: McpBridgeHooks): void {
-  let pendingReloads: McpReloadRequest[] = [];
-
-  window.vpxEditor.onMcpReloadRequested?.((data: McpReloadRequest) => {
-    if (!state.extractedDir) return;
-    pendingReloads.push(data ?? {});
-    void runExclusive(async () => {
-      if (pendingReloads.length === 0 || !state.extractedDir) return;
-      const batch = pendingReloads;
-      pendingReloads = [];
-      await applyReload(batch, hooks);
-    });
-  });
-
   window.vpxEditor.onMcpRequest?.((raw: unknown) => {
     const data = raw as { requestId: string; kind: string; [key: string]: unknown };
     void runExclusive(async () => {

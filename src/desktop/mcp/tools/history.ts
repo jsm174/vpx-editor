@@ -13,7 +13,7 @@ const history: Tool<typeof historyInput> = {
   annotations: { destructiveHint: true },
   description:
     'Undo or redo the most recent edit in the editor, sharing one history with the user: part edits, script edits, ' +
-    'material/image/sound changes. Library clone-bundle imports are NOT undoable.',
+    'material/image/sound changes, mesh imports, and library imports.',
   inputSchema: historyInput,
   async execute(input, ctx) {
     return runEdit(ctx, { kind: input.action, payload: {}, description: input.action === 'undo' ? 'Undo' : 'Redo' });

@@ -245,7 +245,7 @@ const glf: Tool<typeof glfInput> = {
       }
       const res = await ctx.applyEdit({
         kind: 'edit-script',
-        payload: { mode: 'replace', content: plan.script },
+        payload: { mode: 'replace', content: plan.script, expectedScript: state.script },
         description: 'Merge GLF scaffold',
         preview: false,
       });
@@ -339,15 +339,9 @@ const glf: Tool<typeof glfInput> = {
       });
     }
 
-    if (switchesToRegister.length) {
-      const handle = await ctx.getActiveTable();
-      if (!handle) return errorResult(NO_ACTIVE_TABLE);
-      await addToGlfSwitches(handle.workDir, state.collections ?? [], switchesToRegister);
-    }
-
     const res = await ctx.applyEdit({
       kind: 'edit-script',
-      payload: { mode: 'replace', content: assembled },
+      payload: { mode: 'replace', content: assembled, expectedScript: state.script, glfSwitches: switchesToRegister },
       description: `Wire GLF ${input.device} "${input.name}"`,
       preview: false,
     });
@@ -380,17 +374,6 @@ function missingGlfSwitches(collections: Collection[], switches: string[]): stri
   const glfSwitches = collections.find(c => c.name.toLowerCase() === 'glf_switches');
   const members = new Set((glfSwitches?.items ?? []).map(m => m.toLowerCase()));
   return switches.filter(sw => !members.has(sw.toLowerCase()));
-}
-
-async function addToGlfSwitches(workDir: string, collections: Collection[], switches: string[]): Promise<void> {
-  const out = collections.map(c => ({ ...c, items: [...(c.items ?? [])] }));
-  let target = out.find(c => c.name.toLowerCase() === 'glf_switches');
-  if (!target) {
-    target = { name: 'glf_switches', items: [], fire_events: false, stop_single_events: false, group_elements: false };
-    out.push(target);
-  }
-  target.items!.push(...switches);
-  await fs.writeFile(path.join(workDir, 'collections.json'), JSON.stringify(out, null, 2));
 }
 
 export function buildGlfBuildTools(): Tool[] {

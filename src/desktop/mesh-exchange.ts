@@ -1,3 +1,4 @@
+import { writeEditFile } from './mcp/file-transaction.js';
 import fs from 'fs-extra';
 import path from 'node:path';
 import {
@@ -53,7 +54,7 @@ export async function importPrimitiveMesh(
     const processedBytes = vpin.mesh_to_obj('mesh', positions, mesh.texCoords, mesh.normals, mesh.indices, null);
     mesh.free();
 
-    await fs.promises.writeFile(destPath, Buffer.from(processedBytes));
+    await writeEditFile(destPath, Buffer.from(processedBytes));
 
     const primData = JSON.parse(await fs.promises.readFile(primitivePath, 'utf-8'));
     const primType = Object.keys(primData)[0];
@@ -69,19 +70,23 @@ export async function importPrimitiveMesh(
     let materialName: string | undefined;
     if (options.importMaterial) {
       const mtlPath = filePath.replace(/\.obj$/i, '.mtl');
+      let mtlContent: string | null = null;
       try {
-        const material = parseMtlContent(await fs.promises.readFile(mtlPath, 'utf-8'));
+        mtlContent = await fs.promises.readFile(mtlPath, 'utf-8');
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
+      }
+      if (mtlContent !== null) {
+        const material = parseMtlContent(mtlContent);
         if (material) {
           await addMaterialToTable(extractedDir, material);
           prim.material = material.name;
           materialName = material.name;
         }
-      } catch (mtlErr: unknown) {
-        console.warn('Could not load material file:', (mtlErr as Error).message);
       }
     }
 
-    await fs.promises.writeFile(primitivePath, JSON.stringify(primData, null, 2));
+    await writeEditFile(primitivePath, JSON.stringify(primData, null, 2));
     return { success: true, path: destPath, materialName, primitive: prim };
   } catch (err: unknown) {
     return { success: false, error: (err as Error).message };
@@ -98,7 +103,7 @@ async function addMaterialToTable(extractedDir: string, material: { name: string
   }
   if (!materials.some(m => m.name === material.name)) {
     materials.push(material);
-    await fs.promises.writeFile(materialsPath, JSON.stringify(materials, null, 2));
+    await writeEditFile(materialsPath, JSON.stringify(materials, null, 2));
   }
 }
 

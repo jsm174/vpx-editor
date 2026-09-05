@@ -596,6 +596,7 @@ export async function createNewTable(
 export async function saveVPX(deps: SaveDeps & AssembleDeps, targetCtx?: WindowContext): Promise<boolean> {
   const { windowRegistry } = deps;
   const ctx = targetCtx ?? windowRegistry.getFocused();
+  if (ctx?.mcpEditBusy) return false;
   if (!ctx || !ctx.extractedDir) {
     if (!targetCtx) dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
     return false;
@@ -611,6 +612,7 @@ export async function saveVPX(deps: SaveDeps & AssembleDeps, targetCtx?: WindowC
 export async function saveVPXAs(deps: SaveDeps & AssembleDeps, targetCtx?: WindowContext): Promise<boolean> {
   const { windowRegistry, createMenu, settings, saveSettings } = deps;
   const ctx = targetCtx ?? windowRegistry.getFocused();
+  if (ctx?.mcpEditBusy) return false;
   if (!ctx || !ctx.extractedDir) {
     if (!targetCtx) dialog.showErrorBox('No Table Open', 'Please open a VPX file first.');
     return false;

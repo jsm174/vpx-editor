@@ -108,6 +108,8 @@ export interface PlayTestResult {
 }
 
 export interface ToolContext {
+  /** Serialize planning and execution across this session and its attached table. */
+  runTool?<T>(fn: () => Promise<T>): Promise<T>;
   getActiveTable(): Promise<ActiveTableHandle | null>;
   loadActiveState(): Promise<TableState | null>;
   /** All open editor windows with a table. The session stays attached to one window at a time. */

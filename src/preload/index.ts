@@ -1,3 +1,4 @@
+import { isMcpInputLocked } from './mcp-input-lock.js';
 import type { ObjExchangeOptions } from '../shared/obj-transform.js';
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 import type {
@@ -23,6 +24,8 @@ import type { GameItemMeta } from '../types/state.js';
 import type { MeshImportOptions } from '../features/mesh-import/shared/component.js';
 
 const vpxEditorAPI: VpxEditorAPI = {
+  restoreMcpFiles: (workDir, changes, direction) =>
+    ipcRenderer.invoke('mcp-restore-files', workDir, changes, direction),
   onTableLoaded: (callback: (data: TableLoadedData) => void): void => {
     ipcRenderer.on('table-loaded', (_event: IpcRendererEvent, data: TableLoadedData) => callback(data));
   },
@@ -150,7 +153,9 @@ const vpxEditorAPI: VpxEditorAPI = {
     ipcRenderer.send('close-confirm-result', result);
   },
   onInsertItem: (callback: (itemType: string) => void): void => {
-    ipcRenderer.on('insert-item', (_event: IpcRendererEvent, itemType: string) => callback(itemType));
+    ipcRenderer.on('insert-item', (_event: IpcRendererEvent, itemType: string) => {
+      if (!isMcpInputLocked()) callback(itemType);
+    });
   },
   onShowInfoModal: (callback: (data: { title: string; message: string }) => void): void => {
     ipcRenderer.on('show-info-modal', (_event: IpcRendererEvent, data: { title: string; message: string }) =>
@@ -172,28 +177,42 @@ const vpxEditorAPI: VpxEditorAPI = {
     );
   },
   onUndo: (callback: () => void): void => {
-    ipcRenderer.on('undo', () => callback());
+    ipcRenderer.on('undo', () => {
+      if (!isMcpInputLocked()) callback();
+    });
   },
   onRedo: (callback: () => void): void => {
-    ipcRenderer.on('redo', () => callback());
+    ipcRenderer.on('redo', () => {
+      if (!isMcpInputLocked()) callback();
+    });
   },
   onCut: (callback: () => void): void => {
-    ipcRenderer.on('cut', () => callback());
+    ipcRenderer.on('cut', () => {
+      if (!isMcpInputLocked()) callback();
+    });
   },
   onCopy: (callback: () => void): void => {
     ipcRenderer.on('copy', () => callback());
   },
   onPaste: (callback: () => void): void => {
-    ipcRenderer.on('paste', () => callback());
+    ipcRenderer.on('paste', () => {
+      if (!isMcpInputLocked()) callback();
+    });
   },
   onPasteAtOriginal: (callback: () => void): void => {
-    ipcRenderer.on('paste-at-original', () => callback());
+    ipcRenderer.on('paste-at-original', () => {
+      if (!isMcpInputLocked()) callback();
+    });
   },
   onToggleLock: (callback: () => void): void => {
-    ipcRenderer.on('toggle-lock', () => callback());
+    ipcRenderer.on('toggle-lock', () => {
+      if (!isMcpInputLocked()) callback();
+    });
   },
   onDeleteSelected: (callback: () => void): void => {
-    ipcRenderer.on('delete-selected', () => callback());
+    ipcRenderer.on('delete-selected', () => {
+      if (!isMcpInputLocked()) callback();
+    });
   },
   onSelectAll: (callback: () => void): void => {
     ipcRenderer.on('select-all', () => callback());

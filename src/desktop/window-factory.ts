@@ -558,6 +558,10 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     });
 
     win.on('close', async (e: Event) => {
+      if (ctx.mcpEditBusy) {
+        e.preventDefault();
+        return;
+      }
       if (ctx.isTableDirty && !ctx.closeConfirmed) {
         e.preventDefault();
         const result = await deps.showCloseConfirm(ctx);
@@ -1151,6 +1155,10 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
 
     const localCtx = ctx;
     ctx.scriptEditorWindow.on('close', (e: Event) => {
+      if (localCtx.mcpEditBusy) {
+        e.preventDefault();
+        return;
+      }
       if (localCtx.scriptEditorClosePending) return;
       e.preventDefault();
       localCtx.scriptEditorClosePending = true;

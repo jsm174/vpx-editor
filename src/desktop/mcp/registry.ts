@@ -41,7 +41,8 @@ export class ToolRegistry {
           log(`${tool.name}(${argSummary})`);
           try {
             const parsed = tool.inputSchema.parse(rawInput ?? {});
-            const result = await tool.execute(parsed, ctx);
+            const execute = () => tool.execute(parsed, ctx);
+            const result = await (ctx.runTool ? ctx.runTool(execute) : execute());
             const ms = Date.now() - started;
             if (result.isError) {
               const firstText = result.content.find(c => c.type === 'text') as { text: string } | undefined;

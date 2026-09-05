@@ -1,3 +1,7 @@
+import { randomUUID } from 'node:crypto';
+import { serializeTable } from './edit-queue.js';
+import { fileTransaction } from './file-transaction.js';
+import type { FileChange } from '../../shared/file-changes.js';
 import path from 'node:path';
 import fs from 'fs-extra';
 import type { WindowRegistry, WindowContext } from '../window-context.js';
@@ -91,7 +95,12 @@ function sendRendererRequest(
   if (!ctx.window || ctx.window.isDestroyed()) {
     return Promise.resolve({ success: false, error: 'Editor window destroyed' });
   }
-  return deps.renderer.request(ctx.window, kind, payload, RENDERER_REQUEST_TIMEOUTS[kind] ?? 30_000);
+  return deps.renderer.request(
+    ctx.window,
+    kind,
+    { workDir: ctx.extractedDir, ...payload },
+    RENDERER_REQUEST_TIMEOUTS[kind] ?? 30_000
+  );
 }
 
 async function sendPartOpToRenderer(
@@ -112,17 +121,82 @@ async function sendPartOpToRenderer(
   return { success: false, applied: false, error: (result.error as string) ?? 'Unknown renderer error' };
 }
 
-const SCRIPT_EDIT_KINDS = new Set(['edit-script', 'replace-script-string', 'replace-sub', 'replace-script-range']);
-const MATERIAL_EDIT_KINDS = new Set(['add-material', 'modify-material']);
-const IMAGE_EDIT_KINDS = new Set(['add-image', 'modify-image', 'delete-image']);
-const SOUND_EDIT_KINDS = new Set(['add-sound', 'modify-sound', 'delete-sound']);
+function setEditorInput(ctx: WindowContext, busy: boolean): void {
+  for (const win of [
+    ctx.window,
+    ctx.scriptEditorWindow,
+    ctx.imageManagerWindow,
+    ctx.materialManagerWindow,
+    ctx.soundManagerWindow,
+    ctx.collectionManagerWindow,
+    ctx.dimensionsManagerWindow,
+    ctx.renderProbeManagerWindow,
+  ]) {
+    if (win && !win.isDestroyed()) win.webContents.send('mcp-edit-busy', busy);
+  }
+}
 
-function reloadUndoDomain(kind: string): 'script' | 'materials' | 'images' | 'sounds' | 'none' {
-  if (SCRIPT_EDIT_KINDS.has(kind)) return 'script';
-  if (MATERIAL_EDIT_KINDS.has(kind)) return 'materials';
-  if (IMAGE_EDIT_KINDS.has(kind)) return 'images';
-  if (SOUND_EDIT_KINDS.has(kind)) return 'sounds';
-  return 'none';
+async function directTransaction<T>(
+  ctx: WindowContext,
+  deps: ContextDeps,
+  description: string,
+  edit: () => Promise<T>,
+  succeeded: (result: T) => boolean
+): Promise<T> {
+  const workDir = ctx.extractedDir!;
+  const transactionId = randomUUID();
+  if (ctx.mcpEditBusy) throw new Error('Editor is busy');
+  ctx.mcpEditBusy = true;
+  let touched: FileChange[] = [];
+  try {
+    setEditorInput(ctx, true);
+    if (ctx.scriptEditorWindow && !ctx.scriptEditorWindow.isDestroyed()) {
+      const flushed = await deps.renderer.request(ctx.scriptEditorWindow, 'edit-flush', { workDir }, 30_000);
+      if (flushed.success !== true)
+        throw new Error(String(flushed.error ?? 'Script editor could not save pending changes'));
+    }
+    const prepared = await sendRendererRequest(deps, ctx, 'edit-begin', { transactionId, workDir });
+    if (prepared.success !== true) throw new Error(String(prepared.error ?? 'Editor is busy'));
+    ctx.mcpEditWriting = true;
+    return await fileTransaction(workDir, edit, async (result, changes) => {
+      touched = changes;
+      if (!succeeded(result)) throw new Error((result as { error?: string }).error ?? 'Edit failed');
+      if (ctx.extractedDir !== workDir || ctx.window.isDestroyed() || ctx.isTableLocked) {
+        throw new Error('Table changed or closed during the edit');
+      }
+      const synced = await sendRendererRequest(deps, ctx, 'edit-commit', {
+        transactionId,
+        workDir,
+        description,
+        changes,
+      });
+      if (synced.success !== true) throw new Error(String(synced.error ?? 'Renderer synchronization failed'));
+      ctx.markDirty();
+      if (
+        changes.some(c => c.path === 'script.vbs') &&
+        ctx.scriptEditorWindow &&
+        !ctx.scriptEditorWindow.isDestroyed()
+      ) {
+        ctx.scriptEditorWindow.webContents.send(
+          'script-undone',
+          await fs.readFile(path.join(workDir, 'script.vbs'), 'utf-8')
+        );
+      }
+      deps.log(description, ctx.id);
+    });
+  } catch (error) {
+    // fileTransaction has already restored the old files. Restore renderer state too.
+    await sendRendererRequest(deps, ctx, 'edit-abort', { transactionId, workDir, changes: touched });
+    throw error;
+  } finally {
+    try {
+      await sendRendererRequest(deps, ctx, 'edit-end', { transactionId, workDir });
+    } finally {
+      setEditorInput(ctx, false);
+      ctx.mcpEditWriting = false;
+      ctx.mcpEditBusy = false;
+    }
+  }
 }
 
 async function applyEditAndNotifyRenderer(
@@ -171,32 +245,13 @@ async function applyEditAndNotifyRenderer(
     return { success: false, applied: false, error: (result.error as string) ?? `${op.kind} failed` };
   }
 
-  const undoDomain = reloadUndoDomain(op.kind);
-  const scriptPath = path.join(ctx.extractedDir, 'script.vbs');
-  const scriptBefore = undoDomain === 'script' ? await fs.readFile(scriptPath, 'utf-8').catch(() => '') : null;
-
-  const result = await applyEditDirect({ workDir: ctx.extractedDir, vpx }, op);
-  if (result.applied && ctx.window && !ctx.window.isDestroyed()) {
-    const partKinds = new Set(['add-part', 'modify-part', 'delete-part']);
-    if (!partKinds.has(op.kind)) {
-      ctx.markDirty();
-      const undo: Record<string, unknown> = { domain: undoDomain, description: op.description };
-      if (undoDomain === 'script') {
-        undo.scriptBefore = scriptBefore;
-        undo.scriptAfter = await fs.readFile(scriptPath, 'utf-8').catch(() => '');
-        if (ctx.scriptEditorWindow && !ctx.scriptEditorWindow.isDestroyed()) {
-          ctx.scriptEditorWindow.webContents.send('script-undone', undo.scriptAfter);
-        }
-      }
-      if (undoDomain === 'none') {
-        ctx.hasExternalChanges = true;
-        result.note = 'This edit is not undoable via vpx_history.';
-      }
-      ctx.window.webContents.send('mcp-reload-requested', { reason: op.kind, undo });
-    }
-    deps.log(result.description ?? op.kind, ctx.id);
-  }
-  return result;
+  return directTransaction(
+    ctx,
+    deps,
+    op.description,
+    () => applyEditDirect({ workDir: ctx.extractedDir!, vpx }, op),
+    result => result.success
+  );
 }
 
 async function findPrimitive(
@@ -223,12 +278,13 @@ export function createToolContext(deps: ContextDeps): ToolContext {
   // Each ToolContext belongs to one MCP session and stays attached to one editor
   // window, so a user focusing another table mid-run never retargets the agent.
   let boundWindowId: string | null = null;
+  let boundWorkDir: string | null = null;
 
   function resolve(): { ctx: WindowContext | null; error?: string } {
     if (boundWindowId) {
       const ctx = deps.windowRegistry.get(boundWindowId);
-      if (ctx && ctx.window && !ctx.window.isDestroyed() && ctx.hasTable()) return { ctx };
-      boundWindowId = null;
+      if (ctx && ctx.window && !ctx.window.isDestroyed() && ctx.hasTable() && ctx.extractedDir === boundWorkDir)
+        return { ctx };
       return {
         ctx: null,
         error:
@@ -239,6 +295,7 @@ export function createToolContext(deps: ContextDeps): ToolContext {
     const ctx = activeContext(deps.windowRegistry);
     if (ctx) {
       boundWindowId = ctx.id;
+      boundWorkDir = ctx.extractedDir;
       return { ctx };
     }
     return { ctx: null };
@@ -254,7 +311,20 @@ export function createToolContext(deps: ContextDeps): ToolContext {
     };
   }
 
-  return {
+  const sessionKey = `session:${randomUUID()}`;
+  async function withTable<T>(fn: () => Promise<T>): Promise<T> {
+    const { ctx } = resolve();
+    if (!ctx?.extractedDir) return fn();
+    const workDir = ctx.extractedDir;
+    return serializeTable(workDir, async () => {
+      if (resolve().ctx !== ctx || ctx.extractedDir !== workDir)
+        throw new Error('Attached table changed while the request was queued. Reattach explicitly.');
+      return fn();
+    });
+  }
+
+  const context: ToolContext = {
+    runTool: fn => serializeTable(sessionKey, () => withTable(fn)),
     async getActiveTable(): Promise<ActiveTableHandle | null> {
       const { ctx } = resolve();
       if (!ctx || !ctx.extractedDir) return null;
@@ -287,6 +357,7 @@ export function createToolContext(deps: ContextDeps): ToolContext {
         return { ok: false, error: `Window "${windowId}" has no table open.` };
       }
       boundWindowId = ctx.id;
+      boundWorkDir = ctx.extractedDir;
       return { ok: true, handle: toHandle(ctx) };
     },
     async loadTable(vpxPath: string): Promise<TableState | null> {
@@ -322,8 +393,14 @@ export function createToolContext(deps: ContextDeps): ToolContext {
       if (!ctx || !ctx.extractedDir) {
         return { ok: false as const, error: 'Table was created but no active editor window could be found.' };
       }
-      await deps.renderer.waitForTableReady(ctx.extractedDir, 30_000);
+      if (!(await deps.renderer.waitForTableReady(ctx.extractedDir, 30_000))) {
+        return {
+          ok: false as const,
+          error: 'Editor did not become ready. List windows and attach after it finishes loading.',
+        };
+      }
       boundWindowId = ctx.id;
+      boundWorkDir = ctx.extractedDir;
       return { ok: true as const, workDir: ctx.extractedDir, tableName: ctx.tableName };
     },
     async applyEdit(op: EditOperation): Promise<EditResult> {
@@ -411,24 +488,21 @@ export function createToolContext(deps: ContextDeps): ToolContext {
       const found = await findPrimitive(ctx.extractedDir, req.partName);
       if ('error' in found) return { ok: false as const, error: found.error };
       const vpin = await deps.initVpinModule();
-      const result = await importPrimitiveMesh(vpin, ctx.extractedDir, found.fileName, req.filePath, {
-        unit: req.unit,
-        orientation: req.orientation as ObjExchangeOptions['orientation'],
-        centerMesh: req.centerMesh,
-        absolutePosition: req.absolutePosition,
-        importMaterial: req.importMaterial,
-      });
+      const result = await directTransaction(
+        ctx,
+        deps,
+        `Import mesh into ${found.name}`,
+        () =>
+          importPrimitiveMesh(vpin, ctx.extractedDir!, found.fileName, req.filePath, {
+            unit: req.unit,
+            orientation: req.orientation as ObjExchangeOptions['orientation'],
+            centerMesh: req.centerMesh,
+            absolutePosition: req.absolutePosition,
+            importMaterial: req.importMaterial,
+          }),
+        result => result.success
+      );
       if (!result.success) return { ok: false as const, error: result.error };
-      ctx.markDirty();
-      ctx.window.webContents.send('mcp-reload-requested', {
-        reason: 'import-mesh',
-        undo: {
-          domain: result.materialName ? 'part-and-materials' : 'part',
-          partName: found.name,
-          description: `Import mesh into ${found.name}`,
-        },
-      });
-      deps.log(`Imported ${path.basename(req.filePath)} into Primitive "${found.name}"`, ctx.id);
       return { ok: true as const, path: result.path, materialName: result.materialName, primitive: result.primitive };
     },
     async exportPrimitiveMesh(req: MeshExportRequest) {
@@ -500,4 +574,19 @@ export function createToolContext(deps: ContextDeps): ToolContext {
       },
     },
   };
+  for (const key of [
+    'applyEdit',
+    'importPrimitiveMesh',
+    'saveTable',
+    'playTest',
+    'loadActiveState',
+    'captureView',
+    'queryGeometry',
+    'exportObj',
+    'exportPrimitiveMesh',
+  ] as const) {
+    const method = context[key] as (...args: unknown[]) => Promise<unknown>;
+    Object.assign(context, { [key]: (...args: unknown[]) => withTable(() => method(...args)) });
+  }
+  return context;
 }

@@ -1,6 +1,8 @@
+import '../../../preload/mcp-input-lock.js';
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
 export interface ScriptEditorAPI {
+  onMcpFlush: (callback: () => Promise<void>) => void;
   onInit: (callback: (data: unknown) => void) => void;
   onThemeChanged: (callback: (theme: string) => void) => void;
   onTableLockChanged: (callback: (isLocked: boolean) => void) => void;
@@ -14,6 +16,18 @@ export interface ScriptEditorAPI {
 }
 
 const scriptEditorAPI: ScriptEditorAPI = {
+  onMcpFlush: callback => {
+    ipcRenderer.on('mcp-request', async (_event, data) => {
+      if (data.kind !== 'edit-flush') return;
+      try {
+        if (Date.now() >= data.expiresAt) throw new Error('Flush request expired');
+        await callback();
+        ipcRenderer.send('mcp-request-result', { requestId: data.requestId, success: true });
+      } catch (err) {
+        ipcRenderer.send('mcp-request-result', { requestId: data.requestId, success: false, error: String(err) });
+      }
+    });
+  },
   onInit: (callback: (data: unknown) => void): void => {
     ipcRenderer.on('init', (_event: IpcRendererEvent, data: unknown) => callback(data));
   },

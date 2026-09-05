@@ -1,3 +1,5 @@
+import { restoreFileChanges } from './mcp/file-transaction.js';
+import type { FileChange } from '../shared/file-changes.js';
 import { app, BrowserWindow, Menu, dialog, ipcMain, shell, nativeTheme } from 'electron';
 import path from 'node:path';
 import fs from 'fs-extra';
@@ -431,6 +433,7 @@ async function toggleTableLock(passedCtx?: WindowContext) {
   const ctx = passedCtx || windowRegistry.getFocused();
   if (!ctx || !ctx.extractedDir) return;
 
+  if (ctx.mcpEditBusy) return;
   const action = ctx.isTableLocked ? 'Unlock' : 'Lock';
   const message = ctx.isTableLocked ? 'This table is locked to avoid modification.' : 'Lock this table?';
   const detail = ctx.isTableLocked
@@ -495,6 +498,30 @@ ipcMain.handle('read-file', async (_event, filePath: string) => {
   }
 });
 
+ipcMain.handle(
+  'mcp-restore-files',
+  async (event, workDir: string, changes: FileChange[], direction: 'before' | 'after') => {
+    const ctx = windowRegistry.getContextFromEvent(event);
+    if (
+      !ctx ||
+      ctx.extractedDir !== workDir ||
+      ctx.mcpEditBusy ||
+      ctx.isTableLocked ||
+      (direction !== 'before' && direction !== 'after')
+    )
+      return { success: false, error: 'Table changed, busy, or locked' };
+    ctx.mcpEditBusy = true;
+    try {
+      await restoreFileChanges(workDir, changes, direction);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: String(err) };
+    } finally {
+      ctx.mcpEditBusy = false;
+    }
+  }
+);
+
 ipcMain.handle('read-binary-file', async (_event, filePath: string) => {
   try {
     const buffer = await fs.promises.readFile(filePath);
@@ -550,6 +577,7 @@ ipcMain.handle('generate-builtin-primitive', async (_event, sides: number, drawT
 });
 
 ipcMain.handle('write-file', async (event, filePath: string, content: string) => {
+  if (windowRegistry.getContextFromEvent(event)?.mcpEditBusy) return { success: false, error: 'MCP edit in progress' };
   try {
     await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
     await fs.promises.writeFile(filePath, content, 'utf-8');
@@ -815,6 +843,7 @@ ipcMain.handle('save-blueprint-direct', async (_event, data: ArrayBuffer, filePa
 });
 
 ipcMain.handle('delete-file', async (event, filePath: string) => {
+  if (windowRegistry.getContextFromEvent(event)?.mcpEditBusy) return { success: false, error: 'MCP edit in progress' };
   try {
     await fs.promises.unlink(filePath);
     const ctx = getContextForManagerEvent(event);
@@ -2157,6 +2186,7 @@ function showDrawingOrder(mode: string) {
 
 ipcMain.handle('save-script', async (event, content: string) => {
   const ctx = windowRegistry.getContextFromEvent(event);
+  if (ctx?.mcpEditWriting) return { success: false, error: 'MCP edit in progress' };
   if (!ctx?.extractedDir) return { success: false, error: 'No table open' };
   try {
     const scriptPath = `${ctx.extractedDir}${path.sep}script.vbs`;

@@ -1,3 +1,4 @@
+import type { FileChange } from '../shared/file-changes.js';
 import type { ObjExchangeOptions } from '../shared/obj-transform.js';
 import type { GameData, TableInfo, TableLoadedData, Collection, ClipboardData } from './data.js';
 import type { GameItemMeta } from './state.js';
@@ -234,6 +235,7 @@ export interface VpxEditorAPI {
   saveViewSettings: (settings: Partial<ViewSettings>) => Promise<void>;
   getPanelSettings: () => Promise<PanelSettings>;
   savePanelSettings: (settings: PanelSettings) => Promise<void>;
+  restoreMcpFiles: (workDir: string, changes: FileChange[], direction: 'before' | 'after') => Promise<WriteResult>;
   readFile: (filePath: string) => Promise<FileResult>;
   readBinaryFile: (
     filePath: string

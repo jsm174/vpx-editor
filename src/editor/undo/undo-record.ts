@@ -1,3 +1,4 @@
+import type { FileChange } from '../../shared/file-changes.js';
 export interface ItemSnapshot {
   itemName: string;
   fileName: string;
@@ -70,6 +71,7 @@ export interface UndoRecordJSON {
   hiddenItemsAfter: string[] | null;
   scriptBefore: string | null;
   scriptAfter: string | null;
+  fileChanges?: FileChange[];
 }
 
 export class UndoRecord {
@@ -109,6 +111,7 @@ export class UndoRecord {
   hiddenItemsAfter: string[] | null;
   scriptBefore: string | null;
   scriptAfter: string | null;
+  fileChanges?: FileChange[];
 
   constructor(description: string = '') {
     this.id = Date.now() + Math.random();
@@ -183,6 +186,7 @@ export class UndoRecord {
       this.gameitemsListBefore !== null ||
       this.collectionsBefore !== null ||
       this.hiddenItemsBefore !== null ||
+      !!this.fileChanges?.length ||
       this.scriptBefore !== null
     );
   }
@@ -225,6 +229,7 @@ export class UndoRecord {
       hiddenItemsAfter: this.hiddenItemsAfter,
       scriptBefore: this.scriptBefore,
       scriptAfter: this.scriptAfter,
+      fileChanges: this.fileChanges,
     };
   }
 
@@ -265,6 +270,7 @@ export class UndoRecord {
     record.hiddenItemsAfter = json.hiddenItemsAfter;
     record.scriptBefore = json.scriptBefore;
     record.scriptAfter = json.scriptAfter;
+    record.fileChanges = json.fileChanges;
     return record;
   }
 }
