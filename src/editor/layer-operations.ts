@@ -82,6 +82,18 @@ export function renameItem(itemName: string): void {
   showRenameModal(itemName, item._type);
 }
 
+export function syncIndexVisibility(item: GameItem): void {
+  const baseFileName = item._fileName?.replace('gameitems/', '');
+  const entry = state.gameitems.find((gi: GameItemEntry) => gi.file_name === baseFileName);
+  if (!entry) return;
+  if (item.editor_layer_visibility === false) entry.editor_layer_visibility = false;
+  else delete entry.editor_layer_visibility;
+}
+
+export async function saveGameitemsIndex(): Promise<void> {
+  await window.vpxEditor.writeFile(`${state.extractedDir}/gameitems.json`, JSON.stringify(state.gameitems, null, 2));
+}
+
 export function applyGroupVisibilityToItem(item: GameItem, groupName: string | null): void {
   if (!groupName) return;
   let show = false;
@@ -101,12 +113,15 @@ export async function assignItemToGroup(itemName: string, groupName: string | nu
   if (!item) return;
 
   undoManager.beginUndo('Group assignment changed');
+  undoManager.markGameitemsListForUndo();
   undoManager.markForUndo(itemName);
 
   item.part_group_name = groupName;
   applyGroupVisibilityToItem(item, groupName);
+  syncIndexVisibility(item);
 
   await saveItemToFile(itemName);
+  await saveGameitemsIndex();
 
   undoManager.endUndo();
   updateLayersList();

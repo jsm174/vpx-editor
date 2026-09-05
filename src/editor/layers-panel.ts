@@ -16,7 +16,7 @@ import { updatePropertiesPanel } from './properties-panel.js';
 import { TreeControl, TreeNode as BaseTreeNode } from './components/tree-control.js';
 import { registerCallback, invokeCallback, getCallback } from '../shared/callbacks.js';
 import { generateUniqueFileName, getPartGroupInsertIndex } from '../shared/gameitem-utils.js';
-import { applyGroupVisibilityToItem } from './layer-operations.js';
+import { applyGroupVisibilityToItem, saveGameitemsIndex, syncIndexVisibility } from './layer-operations.js';
 interface TreeNode {
   id: string;
   label: string;
@@ -332,12 +332,15 @@ async function toggleGroupVisibility(items: ItemEntry[]): Promise<void> {
   const action = allHidden ? 'Show' : 'Hide';
 
   undoManager.beginUndo(action === 'Show' ? 'Layer items shown' : 'Layer items hidden');
+  undoManager.markGameitemsListForUndo();
 
   for (const { name, item } of items) {
     undoManager.markForUndo(name);
     item.editor_layer_visibility = allHidden ? undefined : false;
+    syncIndexVisibility(item);
     await saveItemVisibility(item);
   }
+  await saveGameitemsIndex();
 
   undoManager.endUndo();
   updateLayersList();
@@ -352,10 +355,13 @@ async function toggleItemVisibility(name: string): Promise<void> {
   const action = isHidden ? 'Show' : 'Hide';
 
   undoManager.beginUndo(action === 'Show' ? `${item._type || 'Item'} shown` : `${item._type || 'Item'} hidden`);
+  undoManager.markGameitemsListForUndo();
   undoManager.markForUndo(name);
 
   item.editor_layer_visibility = isHidden ? undefined : false;
+  syncIndexVisibility(item);
   await saveItemVisibility(item);
+  await saveGameitemsIndex();
 
   undoManager.endUndo();
   updateLayersList();
@@ -384,10 +390,12 @@ async function reassignItemToGroup(itemName: string, groupName: string | null): 
   if (item.part_group_name === groupName) return;
 
   undoManager.beginUndo(`${item._type || 'Item'} moved to group`);
+  undoManager.markGameitemsListForUndo();
   undoManager.markForUndo(itemName);
 
   item.part_group_name = groupName ?? undefined;
   applyGroupVisibilityToItem(item, groupName);
+  syncIndexVisibility(item);
 
   const fileName = item._fileName;
   if (fileName) {
@@ -401,6 +409,7 @@ async function reassignItemToGroup(itemName: string, groupName: string | null): 
 
     await window.vpxEditor.writeFile(`${state.extractedDir}/${fileName}`, JSON.stringify(wrapper, null, 2));
   }
+  await saveGameitemsIndex();
 
   undoManager.endUndo();
 
