@@ -1,4 +1,5 @@
 import type { ObjExchangeOptions } from '../shared/obj-transform.js';
+import type { MeshExportKind, MeshExportOptions } from '../features/mesh-export/shared/component.js';
 import type { VpxEditorAPI } from '../types/ipc.js';
 import type { ClipboardData } from '../types/data.js';
 import { markDirty, markClean } from './state.js';
@@ -146,10 +147,18 @@ export const vpxEditorAPI = {
     }),
   exportMesh: (primitiveFileName: string, suggestedName?: string, options?: ObjExchangeOptions) =>
     events.emit('export-mesh', primitiveFileName, suggestedName, options),
-  promptMeshExportOptions: (): Promise<ObjExchangeOptions | null> =>
+  promptMeshExportOptions: (
+    kind: MeshExportKind = 'obj',
+    selectedItems: string[] = []
+  ): Promise<MeshExportOptions | null> =>
     new Promise(resolve => {
-      events.emit('show-mesh-export', resolve);
+      events.emit('show-mesh-export', kind, selectedItems, resolve);
     }),
+  onExportGlb: (cb: Function) => events.on('export-glb', cb),
+  onOpenTableAudit: (cb: Function) => events.on('open-table-audit', cb),
+  auditTable: () => import('./vpx-file-operations.js').then(({ auditTableFiles }) => auditTableFiles()),
+  scriptEditorGotoLine: (lineNumber: number, column: number = 1) =>
+    events.emit('script-editor-goto-line', { lineNumber, column }),
 
   getGamedata: async () => null,
   saveGamedata: async (_gamedata: Record<string, unknown>) => {},

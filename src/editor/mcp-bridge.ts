@@ -6,7 +6,16 @@ import { updateLayersList } from './layers-panel.js';
 import { updatePropertiesPanel } from './properties-panel.js';
 import { saveItemToFile } from './table-loader.js';
 import { invalidateItem } from './canvas-renderer-3d.js';
-import { moveObjectTo, getItemAnchor } from './object-operations.js';
+import {
+  moveObjectTo,
+  getItemAnchor,
+  getObjectCenter,
+  getMultiSelCenter,
+  applyRotation,
+  applyScale,
+  applyFlip,
+  applyTranslate,
+} from './object-operations.js';
 import { applyGroupVisibilityToItem, syncIndexVisibility, saveGameitemsIndex } from './layer-operations.js';
 import { generateUniqueFileName } from '../shared/gameitem-utils.js';
 import { renderCurrentView } from './view-manager.js';
@@ -18,12 +27,21 @@ interface McpBridgeHooks {
 }
 
 interface McpPartRequest {
-  operation: 'create' | 'modify' | 'delete';
+  operation: 'create' | 'modify' | 'delete' | 'transform';
   type?: string;
   position?: { x: number; y: number; z?: number };
   name?: string;
   overrides?: Record<string, unknown>;
   partName?: string;
+  partNames?: string[];
+  transform?: 'rotate' | 'scale' | 'flip_x' | 'flip_y' | 'translate';
+  angle?: number;
+  scaleX?: number;
+  scaleY?: number;
+  dx?: number;
+  dy?: number;
+  center?: { x: number; y: number };
+  aroundEachPart?: boolean;
 }
 
 interface McpPartResult {
@@ -32,6 +50,7 @@ interface McpPartResult {
   type?: string;
   fileName?: string;
   warning?: string;
+  centers?: Record<string, { x: number; y: number }>;
   error?: string;
   [key: string]: unknown;
 }
@@ -162,6 +181,67 @@ async function handleMcpPartOp(data: McpPartRequest): Promise<McpPartResult> {
     return { success: true, name: item.name as string, type: item._type };
   }
 
+  if (data.operation === 'transform') {
+    const names = (data.partNames ?? (data.partName ? [data.partName] : [])).filter(Boolean);
+    if (names.length === 0) return { success: false, error: 'transform requires partName or partNames' };
+    if (!data.transform) return { success: false, error: 'transform requires a transform kind' };
+    const items: GameItem[] = [];
+    for (const name of names) {
+      const item = getItem(name);
+      if (!item) return { success: false, error: `Part not found: ${name}` };
+      if (item.is_locked) return { success: false, error: `Part "${name}" is locked in the editor.` };
+      items.push(item);
+    }
+    const resolvedNames = items.map(item => item.name as string);
+    const center = data.center ?? (items.length === 1 ? getObjectCenter(items[0]) : getMultiSelCenter(resolvedNames));
+    const useElementCenter = data.aroundEachPart ?? items.length === 1;
+    const label: Record<string, string> = {
+      rotate: 'Rotated',
+      scale: 'Scaled',
+      flip_x: 'Flipped horizontal',
+      flip_y: 'Flipped vertical',
+      translate: 'Translated',
+    };
+    undoManager.beginUndo(`${label[data.transform]} (MCP)`);
+    for (const item of items) {
+      const name = item.name as string;
+      undoManager.markForUndo(name);
+      switch (data.transform) {
+        case 'rotate':
+          applyRotation(item, data.angle ?? 0, center, useElementCenter);
+          break;
+        case 'scale':
+          applyScale(item, data.scaleX ?? 1, data.scaleY ?? data.scaleX ?? 1, center, useElementCenter);
+          break;
+        case 'flip_x':
+          applyFlip(item, 'x', center);
+          break;
+        case 'flip_y':
+          applyFlip(item, 'y', center);
+          break;
+        case 'translate':
+          applyTranslate(item, data.dx ?? 0, data.dy ?? 0);
+          break;
+      }
+      const ok = await saveItemToFile(name);
+      if (!ok) {
+        undoManager.cancelUndo();
+        return { success: false, error: `saveItemToFile failed for ${name}` };
+      }
+      invalidateItem(name);
+    }
+    await undoManager.endUndo();
+    updatePropertiesPanel();
+    renderCurrentView();
+    const centers = Object.fromEntries(items.map(item => [item.name as string, getObjectCenter(item)]));
+    return {
+      success: true,
+      name: resolvedNames.join(', '),
+      type: items.length === 1 ? items[0]._type : `${items.length} parts`,
+      centers,
+    };
+  }
+
   if (data.operation === 'delete') {
     if (!data.partName) return { success: false, error: 'delete requires partName' };
     const item = getItem(data.partName);
@@ -208,6 +288,22 @@ async function dispatch(data: { kind: string; [key: string]: unknown }, hooks: M
   if (data.kind === 'export-obj') {
     const { handleMcpExportObjRequest } = await import('./mcp-geometry.js');
     return handleMcpExportObjRequest(data);
+  }
+  if (data.kind === 'audit') {
+    const { runTableAuditForMcp } = await import('./table-audit.js');
+    const rows = await runTableAuditForMcp();
+    if (!rows) return { success: false, error: 'Audit failed' };
+    return {
+      success: true,
+      findings: rows.map(({ severity, code, message, item, line, column }) => ({
+        severity,
+        code,
+        message,
+        item,
+        line,
+        column,
+      })),
+    };
   }
   return { success: false, error: `Unknown mcp request kind: ${data.kind}` };
 }

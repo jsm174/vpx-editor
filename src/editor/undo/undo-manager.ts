@@ -75,6 +75,7 @@ class UndoManager {
 
     if (this.transactionDepth === 1) {
       this.currentRecord = new UndoRecord(description);
+      this.currentRecord.selectionBefore = Array.isArray(state.selectedItems) ? [...state.selectedItems] : [];
     }
   }
 
@@ -519,7 +520,9 @@ class UndoManager {
 
       let selectItems: string[] | undefined = undefined;
 
-      if (record.deletedItems.size > 0) {
+      if (record.selectionBefore !== null) {
+        selectItems = record.selectionBefore.filter(name => getItem(name));
+      } else if (record.deletedItems.size > 0) {
         selectItems = [...record.deletedItems.keys()];
       } else if (record.renamedItems.length > 0) {
         selectItems = [record.renamedItems[0].oldName];

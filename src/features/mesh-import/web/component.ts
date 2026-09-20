@@ -15,7 +15,7 @@ import {
   importMeshIoOptions,
   type ObjExchangeOptions,
 } from '../../../shared/obj-transform';
-import { UNIT_CONVERSION_VPU } from '../../../shared/constants';
+import { UNIT_CONVERSION_M, UNIT_CONVERSION_VPU } from '../../../shared/constants';
 import templateHtml from './template.html?raw';
 
 let templateInjected = false;
@@ -191,6 +191,10 @@ export function initWebMeshImport(deps: WebMeshImportDeps): void {
             const prim = primData[primType];
 
             prim.use_3d_mesh = true;
+
+            if (exchange.unit === UNIT_CONVERSION_M) {
+              prim.size = { x: 1, y: 1, z: 1 };
+            }
 
             if (options.absolutePosition) {
               prim.position = { x: midpoint[0], y: midpoint[1], z: midpoint[2] };

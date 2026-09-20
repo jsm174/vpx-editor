@@ -1,4 +1,5 @@
 import { state } from '../editor/state.js';
+import type { Material } from '../types/data.js';
 
 export interface RGB {
   r: number;
@@ -79,11 +80,19 @@ export function blendColorsToRgba(
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+export function findMaterial(materialName: string | null | undefined): Material | undefined {
+  if (!materialName || !state.materials) return undefined;
+  const direct = state.materials[materialName];
+  if (direct) return direct;
+  const lower = materialName.toLowerCase();
+  const key = Object.keys(state.materials).find(k => k.toLowerCase() === lower);
+  return key !== undefined ? state.materials[key] : undefined;
+}
+
 export function getMaterialColor(materialName: string | null | undefined, fallback: string): string {
-  if (!materialName || !state.materials) return fallback;
-  const mat = state.materials[materialName];
+  const mat = findMaterial(materialName);
   if (!mat || !mat.base_color) return fallback;
-  const c = mat.base_color;
+  const c = mat.base_color as number | string;
   if (typeof c === 'string' && c.startsWith('#')) {
     return c;
   }

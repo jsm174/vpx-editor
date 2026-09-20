@@ -351,11 +351,13 @@ function createActionHandler(
     case 'export-glb':
       return () => {
         const ctx = windowRegistry.getFocused();
-        if (ctx) {
-          import('../desktop/vpx-operations.js').then(({ exportGlbForWindow }) =>
-            exportGlbForWindow(ctx as Parameters<typeof exportGlbForWindow>[0])
-          );
-        }
+        ctx?.window.webContents.send('export-glb');
+      };
+
+    case 'open-table-audit':
+      return () => {
+        const ctx = windowRegistry.getFocused();
+        ctx?.window.webContents.send('open-table-audit');
       };
 
     default:

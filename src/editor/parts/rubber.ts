@@ -8,6 +8,7 @@ import {
   getFillColorWithAlpha,
   pointInPolygon,
   normalize,
+  getSmoothedPathCenter,
 } from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
@@ -545,18 +546,7 @@ function getCenter(item: unknown): Point | null {
   const rubberItem = item as { drag_points?: Array<{ vertex?: { x: number; y: number }; x?: number; y?: number }> };
   const points = rubberItem.drag_points;
   if (!points || points.length === 0) return null;
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
-  for (const p of points) {
-    const { x, y } = getDragPointCoords(p);
-    minX = Math.min(minX, x);
-    minY = Math.min(minY, y);
-    maxX = Math.max(maxX, x);
-    maxY = Math.max(maxY, y);
-  }
-  return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+  return getSmoothedPathCenter(points, true);
 }
 
 function putCenter(item: unknown, center: Point): void {

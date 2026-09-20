@@ -9,6 +9,7 @@ import {
   type SoundData,
 } from './core';
 import { addLongPressContextMenu } from '../../../shared/long-press';
+import { nameEquals } from '../../../shared/gameitem-utils';
 
 export interface SoundManagerCallbacks {
   readFile: (path: string) => Promise<string>;
@@ -449,7 +450,7 @@ export function initSoundManagerComponent(
       const name = file.name.replace(/\.[^.]+$/, '');
       const ext = file.name.match(/\.[^.]+$/)?.[0]?.toLowerCase() || '.wav';
 
-      const existingSound = sounds.find(s => s.name === name);
+      const existingSound = sounds.find(s => nameEquals(s.name, name));
       if (existingSound) {
         setStatus(`Sound "${name}" already exists, skipping...`);
         continue;
@@ -510,7 +511,7 @@ export function initSoundManagerComponent(
     callbacks.undoBegin?.(`Import sound: ${result.name}`);
     callbacks.undoMarkSounds?.();
 
-    const existingIndex = sounds.findIndex(s => s.name === result.name);
+    const existingIndex = sounds.findIndex(s => nameEquals(s.name, result.name!));
     if (existingIndex >= 0) {
       sounds[existingIndex].path = result.originalPath || '';
     } else {
@@ -526,7 +527,7 @@ export function initSoundManagerComponent(
     }
 
     await saveSounds();
-    selectedSound = sounds.find(s => s.name === result.name) || null;
+    selectedSound = sounds.find(s => nameEquals(s.name, result.name!)) || null;
     await renderList(filterInput.value);
     await selectSoundByName(result.name);
     setStatus(`Imported: ${result.name}`);
@@ -554,7 +555,7 @@ export function initSoundManagerComponent(
       return false;
     }
 
-    const exists = sounds.some(s => s.name === newName);
+    const exists = sounds.some(s => s.name !== renameCurrentName && nameEquals(s.name, newName));
     if (exists) {
       okBtn.disabled = true;
       if (renameError) renameError.textContent = 'Sound already exists';
@@ -623,7 +624,7 @@ export function initSoundManagerComponent(
     const sound = sounds.find(s => s.name === oldName);
     if (!sound) return;
 
-    if (sounds.some(s => s.name === newName)) {
+    if (sounds.some(s => s.name !== oldName && nameEquals(s.name, newName))) {
       setStatus(`Sound "${newName}" already exists`);
       return;
     }

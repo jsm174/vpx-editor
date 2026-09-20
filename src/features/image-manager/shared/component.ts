@@ -10,6 +10,7 @@ import {
   TABLE_IMAGE_PROPERTIES,
 } from './core';
 import { addLongPressContextMenu } from '../../../shared/long-press';
+import { nameEquals } from '../../../shared/gameitem-utils';
 
 export interface ImageManagerCallbacks {
   readFile: (path: string) => Promise<string>;
@@ -412,6 +413,11 @@ export function initImageManagerComponent(
     await callbacks.writeFile(`${extractedDir}/images.json`, JSON.stringify(Object.values(images), null, 2));
   }
 
+  function findImageKey(name: string): string | undefined {
+    if (images[name] !== undefined) return name;
+    return Object.keys(images).find(key => nameEquals(key, name));
+  }
+
   async function importImages(files: FileList): Promise<void> {
     let imported = 0;
     let lastName: string | null = null;
@@ -420,7 +426,7 @@ export function initImageManagerComponent(
       const name = file.name.replace(/\.[^.]+$/, '');
       const ext = file.name.match(/\.[^.]+$/)?.[0]?.toLowerCase() || '.png';
 
-      if (images[name]) {
+      if (findImageKey(name) !== undefined) {
         setStatus(`Image "${name}" already exists, skipping...`);
         continue;
       }
@@ -522,8 +528,8 @@ export function initImageManagerComponent(
       return false;
     }
 
-    const exists = images[newName] !== undefined;
-    if (exists) {
+    const existingKey = findImageKey(newName);
+    if (existingKey !== undefined && existingKey !== renameCurrentName) {
       okBtn.disabled = true;
       if (renameError) renameError.textContent = 'Image already exists';
       return false;
@@ -554,7 +560,8 @@ export function initImageManagerComponent(
 
     const newName = renameInput.value.trim();
 
-    if (images[newName]) {
+    const existingKey = findImageKey(newName);
+    if (existingKey !== undefined && existingKey !== selectedImage) {
       setStatus(`Image "${newName}" already exists`);
       return;
     }
@@ -680,7 +687,8 @@ export function initImageManagerComponent(
   async function performRename(oldName: string, newName: string): Promise<void> {
     if (!oldName || !newName || oldName === newName) return;
 
-    if (images[newName]) {
+    const existingKey = findImageKey(newName);
+    if (existingKey !== undefined && existingKey !== oldName) {
       setStatus(`Image "${newName}" already exists`);
       return;
     }

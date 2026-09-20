@@ -161,6 +161,15 @@ export class ScriptEditorController {
     return this.editor;
   }
 
+  gotoLine(lineNumber: number, column: number = 1): void {
+    if (!this.editor) return;
+    const model = this.editor.getModel();
+    const line = Math.max(1, Math.min(lineNumber, model?.getLineCount() ?? lineNumber));
+    this.editor.revealLineInCenter(line);
+    this.editor.setPosition({ lineNumber: line, column: Math.max(1, column) });
+    this.editor.focus();
+  }
+
   getCursorPosition(): { lineNumber: number; column: number } | null {
     const pos = this.editor?.getPosition();
     if (!pos) return null;

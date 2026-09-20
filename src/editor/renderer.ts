@@ -55,13 +55,15 @@ import { addLongPressContextMenu } from '../shared/long-press.js';
 import { setCanvasCursor } from './cursor-utils.js';
 import { loadTable, saveItemToFile } from './table-loader.js';
 import { toggleNodeSmooth, deleteNode, toggleNodeSlingshot, addPointToObject, addNode } from './node-operations.js';
+import { openTableAudit, runTableAuditAfterLoad, resetTableAudit } from './table-audit.js';
 import {
   transformItemName,
-  originalDragPoints,
+  transformTargets,
   setTransformItemName,
   setOriginalDragPoints,
-  backupDragPoints,
-  restoreDragPoints,
+  snapshotTransformState,
+  restoreTransformState,
+  restoreTransformTargets,
   applyRotation,
   applyScale,
   applyTranslate,
@@ -250,12 +252,14 @@ window.vpxEditor.onTableLoaded(data => {
     updateUndoRedoButtons();
     updateClipboardMenuState();
     window.vpxEditor.notifyTableReady?.(data.extractedDir);
+    void runTableAuditAfterLoad();
   });
 });
 
 initMcpBridge({ runUndoRedo, updateUndoRedoButtons });
 
 window.vpxEditor.onTableClosed?.(() => {
+  resetTableAudit();
   state.extractedDir = null;
   state.tableName = null;
   state.isTableLocked = false;
@@ -904,17 +908,17 @@ window.vpxEditor.onExportBlueprint?.(async data => {
 });
 
 window.vpxEditor.onExportObjMesh?.(async () => {
-  const options = await window.vpxEditor.promptMeshExportOptions();
-  if (!options) {
-    if (elements.statusBar) elements.statusBar.textContent = 'OBJ export cancelled';
-    return;
-  }
-  const { exportTableMeshAndSave } = await import('./obj-export.js');
-  if (elements.statusBar) elements.statusBar.textContent = 'Exporting OBJ mesh...';
-  const objPath = await exportTableMeshAndSave(options);
-  if (elements.statusBar) {
-    elements.statusBar.textContent = objPath ? `Exported mesh: ${objPath}` : 'OBJ export cancelled';
-  }
+  const { promptAndExportTableObj } = await import('./obj-export.js');
+  await promptAndExportTableObj();
+});
+
+window.vpxEditor.onExportGlb?.(async () => {
+  const { promptAndExportTableGlb } = await import('./obj-export.js');
+  await promptAndExportTableGlb();
+});
+
+window.vpxEditor.onOpenTableAudit?.(() => {
+  void openTableAudit();
 });
 
 document.getElementById('toggle-wireframe')?.addEventListener('click', () => {
@@ -1860,51 +1864,58 @@ initConsole();
 
 window.vpxEditor.onApplyTransform?.(data => {
   if (!transformItemName) return;
-  const item = getItem(transformItemName!);
-  if (!item) return;
 
-  restoreDragPoints(item, originalDragPoints);
+  restoreTransformTargets();
 
-  if (data.type === 'rotate') {
-    applyRotation(item, data.angle ?? 0, data.useOrigin ?? false, data.centerX ?? 0, data.centerY ?? 0);
-  } else if (data.type === 'scale') {
-    applyScale(item, data.scaleX ?? 1, data.scaleY ?? 1, data.useOrigin ?? false, data.centerX ?? 0, data.centerY ?? 0);
-  } else if (data.type === 'translate') {
-    applyTranslate(item, data.offsetX ?? 0, data.offsetY ?? 0);
+  const center = { x: data.centerX ?? 0, y: data.centerY ?? 0 };
+  const useElementCenter = data.useOrigin ?? false;
+  for (const name of transformTargets) {
+    const item = getItem(name);
+    if (!item) continue;
+    if (data.type === 'rotate') {
+      applyRotation(item, data.angle ?? 0, center, useElementCenter);
+    } else if (data.type === 'scale') {
+      applyScale(item, data.scaleX ?? 1, data.scaleY ?? 1, center, useElementCenter);
+    } else if (data.type === 'translate') {
+      applyTranslate(item, data.offsetX ?? 0, data.offsetY ?? 0);
+    }
+    invalidateItem(name);
   }
-
-  invalidateItem(transformItemName);
   renderCurrentView();
 });
 
 window.vpxEditor.onUndoTransform?.(() => {
   if (!transformItemName) return;
-  const item = getItem(transformItemName!);
-  if (!item) return;
 
-  restoreDragPoints(item, originalDragPoints);
-  invalidateItem(transformItemName);
+  restoreTransformTargets();
+  for (const name of transformTargets) invalidateItem(name);
   renderCurrentView();
 });
 
 window.vpxEditor.onSaveTransform?.(data => {
   if (!transformItemName) return;
-  const item = getItem(transformItemName!);
-  if (!item) return;
 
-  const currentTransform = backupDragPoints(item);
-  restoreDragPoints(item, originalDragPoints);
+  const applied = new Map<string, Record<string, unknown>>();
+  for (const name of transformTargets) {
+    const item = getItem(name);
+    if (item) applied.set(name, snapshotTransformState(item));
+  }
+  restoreTransformTargets();
 
   const typeMap: Record<string, string> = { rotate: 'Rotated', scale: 'Scaled', translate: 'Translated' };
   undoManager.beginUndo(typeMap[data.type] || data.type);
-  undoManager.markForUndo(transformItemName);
-
-  restoreDragPoints(item, currentTransform);
-  saveItemToFile(transformItemName);
+  for (const [name, snap] of applied) {
+    const item = getItem(name);
+    if (!item) continue;
+    undoManager.markForUndo(name);
+    restoreTransformState(item, snap);
+    saveItemToFile(name);
+    invalidateItem(name);
+  }
   undoManager.endUndo();
 
-  invalidateItem(transformItemName);
   renderCurrentView();
+  updatePropertiesPanel();
 
   setTransformItemName(null);
   setOriginalDragPoints(null);
@@ -1912,11 +1923,9 @@ window.vpxEditor.onSaveTransform?.(data => {
 
 window.vpxEditor.onCancelTransform?.(() => {
   if (!transformItemName) return;
-  const item = getItem(transformItemName!);
-  if (!item) return;
 
-  restoreDragPoints(item, originalDragPoints);
-  invalidateItem(transformItemName);
+  restoreTransformTargets();
+  for (const name of transformTargets) invalidateItem(name);
   renderCurrentView();
 
   setTransformItemName(null);

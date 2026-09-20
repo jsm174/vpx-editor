@@ -556,6 +556,15 @@ export interface Decal extends GameObject {
   vertical_text?: boolean;
 }
 
+export type FlasherAddBlend = 'none' | 'add' | 'absorb';
+
+export function getFlasherAddBlend(item: { add_blend?: unknown; is_add_blend?: unknown }): FlasherAddBlend {
+  const value = item.add_blend ?? item.is_add_blend;
+  if (value === 'absorb' || value === 2) return 'absorb';
+  if (value === 'add' || value === true || value === 1) return 'add';
+  return 'none';
+}
+
 export interface Flasher extends GameObject {
   center: Point;
   height: number;
@@ -581,8 +590,8 @@ export interface Flasher extends GameObject {
   glass_pad_right?: number;
   drag_points?: DragPoint[];
   is_visible: boolean;
-  is_add_blend: boolean;
-  add_blend?: boolean;
+  is_add_blend?: boolean;
+  add_blend?: FlasherAddBlend | boolean | number;
   is_dmd: boolean;
   display_texture: boolean;
   pos_x?: number;

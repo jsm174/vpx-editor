@@ -72,6 +72,7 @@ export interface UndoRecordJSON {
   scriptBefore: string | null;
   scriptAfter: string | null;
   fileChanges?: FileChange[];
+  selectionBefore?: string[] | null;
 }
 
 export class UndoRecord {
@@ -112,6 +113,7 @@ export class UndoRecord {
   scriptBefore: string | null;
   scriptAfter: string | null;
   fileChanges?: FileChange[];
+  selectionBefore: string[] | null;
 
   constructor(description: string = '') {
     this.id = Date.now() + Math.random();
@@ -160,6 +162,7 @@ export class UndoRecord {
     this.hiddenItemsAfter = null;
 
     this.scriptBefore = null;
+    this.selectionBefore = null;
     this.scriptAfter = null;
   }
 
@@ -228,6 +231,7 @@ export class UndoRecord {
       hiddenItemsBefore: this.hiddenItemsBefore,
       hiddenItemsAfter: this.hiddenItemsAfter,
       scriptBefore: this.scriptBefore,
+      selectionBefore: this.selectionBefore,
       scriptAfter: this.scriptAfter,
       fileChanges: this.fileChanges,
     };
@@ -259,6 +263,7 @@ export class UndoRecord {
     record.createdSounds = json.createdSounds || [];
     record.deletedSounds = new Map(json.deletedSounds || []);
     record.renderProbesBefore = json.renderProbesBefore;
+    record.selectionBefore = json.selectionBefore ?? null;
     record.renderProbesAfter = json.renderProbesAfter;
     record.createdRenderProbes = json.createdRenderProbes || [];
     record.deletedRenderProbes = new Map(json.deletedRenderProbes || []);

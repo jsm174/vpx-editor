@@ -3,18 +3,31 @@ import {
   createMeshExportHTML,
   initMeshExportComponent,
   DEFAULT_MESH_EXPORT_OPTIONS,
-  type MeshExportOptions,
+  type MeshExportInit,
+  type MeshExportKind,
 } from '../shared/component.js';
-import type { ObjOrientation } from '../../../shared/obj-transform.js';
+import { normalizeItemFilter, type ObjOrientation } from '../../../shared/obj-transform.js';
 
 const params = new URLSearchParams(window.location.search);
-const initialOptions: MeshExportOptions = {
-  unit: params.get('unit') || DEFAULT_MESH_EXPORT_OPTIONS.unit,
-  orientation: (params.get('orientation') as ObjOrientation) || DEFAULT_MESH_EXPORT_OPTIONS.orientation,
+let selectedItems: string[] = [];
+try {
+  selectedItems = JSON.parse(params.get('selection') || '[]') as string[];
+} catch {
+  selectedItems = [];
+}
+const init: MeshExportInit = {
+  kind: (params.get('kind') as MeshExportKind) === 'glb' ? 'glb' : 'obj',
+  options: {
+    unit: params.get('unit') || DEFAULT_MESH_EXPORT_OPTIONS.unit,
+    orientation: (params.get('orientation') as ObjOrientation) || DEFAULT_MESH_EXPORT_OPTIONS.orientation,
+    itemFilter: normalizeItemFilter(params.get('itemFilter')),
+    skipEditorHiddenItems: params.get('skipHidden') === '1',
+  },
+  selectedItems,
 };
 
 const root = document.getElementById('mesh-export-root') as HTMLElement;
-root.innerHTML = createMeshExportHTML(initialOptions);
+root.innerHTML = createMeshExportHTML(init);
 
 initMeshExportComponent(root, {
   onExport: options => window.vpxEditor.meshExportResult(options),

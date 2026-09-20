@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { state } from './state.js';
+import { findMaterial } from '../shared/color-utils.js';
 import { VIEW_MODE_3D } from '../shared/constants.js';
 import { getMetalEnvMap, request3DRender } from './canvas-renderer-3d.js';
 import { loadingStarted, loadingFinished } from './loading-indicator.js';
@@ -297,7 +298,7 @@ export function createMaterialFromVPX(
   imageName: string | null,
   defaultColor: number = 0x888888
 ): THREE.MeshStandardMaterial {
-  const vpxMaterial = state.materials[materialName] as VPXMaterial | undefined;
+  const vpxMaterial = findMaterial(materialName) as VPXMaterial | undefined;
 
   const matOptions: THREE.MeshStandardMaterialParameters = {
     side: THREE.DoubleSide,

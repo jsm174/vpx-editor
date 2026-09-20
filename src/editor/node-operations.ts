@@ -39,9 +39,13 @@ export function toggleNodeSmooth(itemName: string, nodeIndex: number): void {
   render();
 }
 
+export function getMinDragPoints(type: string): number {
+  return type === 'Flasher' || type === 'Ramp' || type === 'Rubber' ? 2 : 3;
+}
+
 export function deleteNode(itemName: string, nodeIndex: number): void {
   const item = getItem(itemName);
-  if (!item || !item.drag_points || item.drag_points.length <= 3) return;
+  if (!item || !item.drag_points || item.drag_points.length <= getMinDragPoints(item._type)) return;
 
   undoManager.beginUndo('Control point deleted');
   undoManager.markForUndo(itemName);

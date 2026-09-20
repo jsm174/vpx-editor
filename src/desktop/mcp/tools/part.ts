@@ -55,9 +55,10 @@ const PART_HINTS: Record<string, string[]> = {
 
 const partInput = z.object({
   action: z
-    .enum(['add', 'modify', 'delete', 'template', 'export'])
+    .enum(['add', 'modify', 'delete', 'transform', 'template', 'export'])
     .describe(
       '"add" creates a new part, "modify" patches/moves an existing one, "delete" removes one, ' +
+        '"transform" rotates/scales/flips/translates one or more parts like the editor does (drag points, stored centers and rotation fields all follow), ' +
         '"template" returns a valid JSON skeleton + gotchas for a type (call BEFORE add), ' +
         '"export" writes a part\'s raw JSON to disk.'
     ),
@@ -68,7 +69,34 @@ const partInput = z.object({
         'Type-specific fields are validated on submit — call action="template" to see them all.'
     ),
   type: z.string().optional().describe('For action="template": VPX item type, e.g. "Primitive", "Bumper", "Ramp".'),
-  name: z.string().optional().describe('For action="delete"/"export": name of the part.'),
+  name: z.string().optional().describe('For action="delete"/"export"/"transform": name of the part.'),
+  names: z
+    .array(z.string())
+    .optional()
+    .describe('For action="transform": several parts at once; the default pivot is the center of the group.'),
+  transform: z
+    .enum(['rotate', 'scale', 'flip_x', 'flip_y', 'translate'])
+    .optional()
+    .describe('For action="transform": which operation to apply.'),
+  angle: z
+    .number()
+    .optional()
+    .describe('For transform="rotate": degrees, positive rotates the same way as the editor dialog.'),
+  scaleX: z.number().positive().optional().describe('For transform="scale": X factor (default 1).'),
+  scaleY: z.number().positive().optional().describe('For transform="scale": Y factor (defaults to scaleX).'),
+  dx: z.number().optional().describe('For transform="translate": X offset in VPX units.'),
+  dy: z.number().optional().describe('For transform="translate": Y offset in VPX units.'),
+  center: position2
+    .optional()
+    .describe(
+      "For transform rotate/scale/flip: pivot point. Default: the part's own center for one part, the group bbox center for several."
+    ),
+  aroundEachPart: z
+    .boolean()
+    .optional()
+    .describe(
+      'For transform rotate/scale with several parts: true rotates/scales each part around its own center instead of the shared pivot (default false for several parts, true for one).'
+    ),
   outputPath: z.string().optional().describe('For action="export": absolute path to write the JSON file to.'),
   preview: z
     .boolean()
@@ -142,9 +170,10 @@ const part: Tool<typeof partInput> = {
     'Create, change, inspect-by-template, or export parts in the active table. Dispatch by `action`: ' +
     '"add" (pass `part` with `type` + `position`), "modify" (pass `part` with `type` + `partName` plus fields to change — ' +
     'set a new `position` to MOVE it, no delete/re-add needed), "delete" (pass `name`), ' +
+    '"transform" (pass `name` or `names` + `transform` with angle/scaleX/dx…; rotate, scale, flip and translate whole parts including their drag points), ' +
     '"template" (pass `type` — ALWAYS call before "add" to learn the snake_case JSON shape + type gotchas), ' +
     '"export" (pass `name` + `outputPath`). ' +
-    'add/modify apply immediately (pass preview:true to inspect first); delete is a preview until confirm:true. ' +
+    'add/modify/transform apply immediately (pass preview:true to inspect first); delete is a preview until confirm:true. ' +
     "Writes route through the editor's native create/modify/delete flow so undo, canvas, and panels all update. " +
     'Use vpx_history to undo/redo.',
   inputSchema: partInput,
@@ -246,6 +275,30 @@ const part: Tool<typeof partInput> = {
         },
         warnings
       );
+    }
+
+    if (input.action === 'transform') {
+      const names = input.names ?? (input.name ? [input.name] : []);
+      if (names.length === 0) return errorResult('action="transform" requires `name` or `names`.');
+      if (!input.transform)
+        return errorResult('action="transform" requires `transform` (rotate, scale, flip_x, flip_y or translate).');
+      if (input.transform === 'rotate' && input.angle === undefined)
+        return errorResult('transform="rotate" requires `angle`.');
+      if (input.transform === 'scale' && input.scaleX === undefined)
+        return errorResult('transform="scale" requires `scaleX`.');
+      if (input.transform === 'translate' && input.dx === undefined && input.dy === undefined) {
+        return errorResult('transform="translate" requires `dx` and/or `dy`.');
+      }
+      const payload: Record<string, unknown> = { partNames: names, transform: input.transform };
+      for (const key of ['angle', 'scaleX', 'scaleY', 'dx', 'dy', 'center', 'aroundEachPart'] as const) {
+        if (input[key] !== undefined) payload[key] = input[key];
+      }
+      return runEdit(ctx, {
+        kind: 'transform-part',
+        payload,
+        description: `${input.transform} ${names.join(', ')}`,
+        preview: !!input.preview,
+      });
     }
 
     if (!input.name) return errorResult('action="delete" requires `name`.');

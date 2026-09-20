@@ -7,6 +7,7 @@
 @import './components/modal.css';
 @import './components/context-menu.css';
 @import './components/console-panel.css';
+@import './components/audit-panel.css';
 
 button:focus {
   outline: none;

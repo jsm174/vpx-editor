@@ -958,6 +958,7 @@ export async function applyEditDirect(deps: DirectEditDeps, op: EditOperation): 
         return applyCloneBundle(deps, op.payload);
       case 'undo':
       case 'redo':
+      case 'transform-part':
         return {
           success: false,
           applied: false,

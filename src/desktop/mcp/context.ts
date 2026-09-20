@@ -10,9 +10,10 @@ import { loadTableFromVpx } from './library/load-table.js';
 import { applyEditDirect } from './edit-handler.js';
 import type { RendererBridge } from './renderer-bridge.js';
 import { buildPrimitiveObjExport, importPrimitiveMesh } from '../mesh-exchange.js';
-import type { ObjExchangeOptions } from '../../shared/obj-transform.js';
+import { exportTableGlbOptions, type ObjExchangeOptions, type TableExportFilter } from '../../shared/obj-transform.js';
+import type { AuditFinding } from '@francisdb/vpin-wasm';
 import { failPlayTest, runPlayTest } from './play-test.js';
-import { isRunningInFlatpak } from '../vpx-operations.js';
+import { isRunningInFlatpak, readWorkDirFiles } from '../vpx-operations.js';
 import type {
   ActiveTableHandle,
   CaptureRequest,
@@ -68,6 +69,7 @@ const RENDERER_REQUEST_TIMEOUTS: Record<string, number> = {
   'undo-redo': 30_000,
   geometry: 45_000,
   'export-obj': 60_000,
+  audit: 90_000,
   'edit-commit': 120_000,
 };
 
@@ -221,6 +223,9 @@ async function applyEditAndNotifyRenderer(
       operation: 'delete',
       partName: op.payload.name,
     });
+  }
+  if (op.kind === 'transform-part') {
+    return sendPartOpToRenderer(deps, ctx, { operation: 'transform', ...op.payload });
   }
   if (op.kind === 'undo' || op.kind === 'redo') {
     const result = await sendRendererRequest(deps, ctx, 'undo-redo', { direction: op.kind });
@@ -479,12 +484,38 @@ export function createToolContext(deps: ContextDeps): ToolContext {
       }
       return sendRendererRequest(deps, ctx, 'geometry', { parts: req.parts, region: req.region });
     },
-    async exportObj(mtlFileName: string, exchange?: ObjExchangeOptions): Promise<Record<string, unknown>> {
+    async exportObj(
+      mtlFileName: string,
+      exchange?: ObjExchangeOptions & Partial<TableExportFilter>
+    ): Promise<Record<string, unknown>> {
       const { ctx, error } = resolve();
       if (!ctx || !ctx.window || ctx.window.isDestroyed()) {
         return { success: false, error: error ?? 'No active table window' };
       }
       return sendRendererRequest(deps, ctx, 'export-obj', { mtlFileName, exchange });
+    },
+    async exportGlb(filter?: Partial<TableExportFilter>) {
+      const { ctx, error } = resolve();
+      if (!ctx || !ctx.extractedDir) return { success: false as const, error: error ?? 'No active table' };
+      try {
+        const vpin = await deps.initVpinModule();
+        const files = await readWorkDirFiles(ctx.extractedDir);
+        const bytes = vpin.export_glb(files, exportTableGlbOptions(filter ?? {}), null);
+        return { success: true as const, bytes };
+      } catch (err) {
+        return { success: false as const, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+    async auditTable() {
+      const { ctx, error } = resolve();
+      if (!ctx || !ctx.window || ctx.window.isDestroyed()) {
+        return { success: false as const, error: error ?? 'No active table window' };
+      }
+      const result = await sendRendererRequest(deps, ctx, 'audit', {});
+      if (result.success === true && Array.isArray(result.findings)) {
+        return { success: true as const, findings: result.findings as AuditFinding[] };
+      }
+      return { success: false as const, error: (result.error as string) ?? 'Audit failed' };
     },
     async importPrimitiveMesh(req: MeshImportRequest) {
       const { ctx, error } = resolve();
@@ -584,6 +615,8 @@ export function createToolContext(deps: ContextDeps): ToolContext {
     'captureView',
     'queryGeometry',
     'exportObj',
+    'exportGlb',
+    'auditTable',
     'exportPrimitiveMesh',
   ] as const) {
     const method = context[key] as (...args: unknown[]) => Promise<unknown>;

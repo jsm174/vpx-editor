@@ -1,4 +1,4 @@
-import type { MeshIoOptions, ObjExportOptions } from '@francisdb/vpin-wasm';
+import type { AuditFinding, GlbExportOptions, MeshIoOptions, ObjExportOptions } from '@francisdb/vpin-wasm';
 import type { VpxEngine, VpxFiles, ProgressCallback, PrimitiveMeshData } from './types.js';
 
 let vpinModule: typeof import('@francisdb/vpin-wasm') | null = null;
@@ -33,11 +33,18 @@ export class VpinWasmEngine implements VpxEngine {
     return vpinModule.assemble(files, onProgress);
   }
 
-  exportGlb(files: VpxFiles, exportInvisibleItems: boolean = false, onProgress?: ProgressCallback): Uint8Array {
+  exportGlb(files: VpxFiles, options: GlbExportOptions | null = null, onProgress?: ProgressCallback): Uint8Array {
     if (!this.initialized || !vpinModule) {
       throw new Error('VpxEngine not initialized');
     }
-    return vpinModule.export_glb(files, { exportInvisibleItems }, onProgress);
+    return vpinModule.export_glb(files, options, onProgress);
+  }
+
+  audit(files: VpxFiles, onProgress?: ProgressCallback): AuditFinding[] {
+    if (!this.initialized || !vpinModule) {
+      throw new Error('VpxEngine not initialized');
+    }
+    return vpinModule.audit(files, onProgress);
   }
 
   exportObj(files: VpxFiles, options?: ObjExportOptions | null, onProgress?: ProgressCallback): VpxFiles {

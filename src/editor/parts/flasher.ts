@@ -11,6 +11,7 @@ import {
   convertToUnit,
   getUnitSuffixHtml,
   colorrefToHex,
+  getSmoothedPathCenter,
 } from '../utils.js';
 import { loadTexture } from '../texture-loader.js';
 import { imageOptions, lightOptions } from '../../shared/options-generators.js';
@@ -19,7 +20,7 @@ import { FLASHER_DEFAULTS } from '../../shared/object-defaults.js';
 import { PATH_SMOOTHING_ACCURACY } from '../../shared/constants.js';
 import { registerEditable, IEditable, Point } from './registry.js';
 import type { Flasher, DragPoint } from '../../types/game-objects.js';
-import { getDragPointCoords } from '../../types/game-objects.js';
+import { getDragPointCoords, getFlasherAddBlend } from '../../types/game-objects.js';
 
 interface FlasherVertex {
   x: number;
@@ -28,7 +29,7 @@ interface FlasherVertex {
 
 export function createFlasher3DMesh(item: Flasher): THREE.Mesh | null {
   if (item.is_visible === false) return null;
-  if (item.add_blend ?? item.is_add_blend) return null;
+  if (getFlasherAddBlend(item) !== 'none') return null;
 
   const points = item.drag_points;
   if (!points || points.length < 3) return null;
@@ -269,6 +270,13 @@ function getStyleOptions(mode: string, selectedStyle: number | undefined): strin
     .join('');
 }
 
+function canAbsorbBlend(item: Flasher): boolean {
+  const mode = item.render_mode || 'flasher';
+  if (mode === 'alpha_seg' || mode === 'ext_render') return false;
+  if (mode === 'dmd') return Math.min(Math.max(item.render_style ?? 0, 0), 6) !== 0;
+  return true;
+}
+
 export function flasherProperties(item: Flasher): string {
   const mode = item.render_mode || 'flasher';
   const isFlasher = mode === 'flasher';
@@ -283,6 +291,10 @@ export function flasherProperties(item: Flasher): string {
         ? 'Display Style'
         : 'Alpha Seg. Style';
   const opacityLabel = isFlasher ? 'Opacity' : 'Brightness';
+  const center = getCenter(item) ?? { x: 0, y: 0 };
+  const canAbsorb = canAbsorbBlend(item);
+  let addBlend = getFlasherAddBlend(item);
+  if (addBlend === 'absorb' && !canAbsorb) addBlend = 'add';
 
   return `
     <div class="prop-tabs">
@@ -390,7 +402,11 @@ export function flasherProperties(item: Flasher): string {
         </div>
         <div class="prop-row" style="${isAlphaSeg ? 'display:none' : ''}">
           <label class="prop-label">Additive Blend</label>
-          <input type="checkbox" class="prop-input" data-prop="add_blend" ${item.add_blend ? 'checked' : ''}>
+          <select class="prop-select" data-prop="add_blend">
+            <option value="none"${addBlend === 'none' ? ' selected' : ''}>Off</option>
+            <option value="add"${addBlend === 'add' ? ' selected' : ''}>On, amplify</option>
+            ${canAbsorb ? `<option value="absorb"${addBlend === 'absorb' ? ' selected' : ''}>On, absorb</option>` : ''}
+          </select>
         </div>
         <div class="prop-row" style="${isAlphaSeg ? 'display:none' : ''}">
           <label class="prop-label">Modulate (0..1)</label>
@@ -401,11 +417,11 @@ export function flasherProperties(item: Flasher): string {
         <div class="prop-group-title">Position</div>
         <div class="prop-row">
           <label class="prop-label">X</label>
-          <input type="number" class="prop-input" data-prop="pos_x" data-convert-units value="${convertToUnit(item.pos_x || 0).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
+          <input type="number" class="prop-input" data-prop="flasher_center_x" data-convert-units value="${convertToUnit(center.x).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Y</label>
-          <input type="number" class="prop-input" data-prop="pos_y" data-convert-units value="${convertToUnit(item.pos_y || 0).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
+          <input type="number" class="prop-input" data-prop="flasher_center_y" data-convert-units value="${convertToUnit(center.y).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Height</label>
@@ -449,21 +465,7 @@ function getCenter(item: Flasher): Point | null {
     }
     return null;
   }
-  let vertices: FlasherVertex[] = getFlasherVertices(item);
-  if (vertices.length === 0) {
-    vertices = points.map(p => getDragPointCoords(p));
-  }
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
-  for (const { x, y } of vertices) {
-    minX = Math.min(minX, x);
-    minY = Math.min(minY, y);
-    maxX = Math.max(maxX, x);
-    maxY = Math.max(maxY, y);
-  }
-  return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+  return getSmoothedPathCenter(points, true);
 }
 
 function putCenter(item: Flasher, center: Point): void {

@@ -185,7 +185,23 @@ export async function exportObjTableFiles(
   }
 }
 
-export async function handleExportGlb(): Promise<void> {
+export async function auditTableFiles(): Promise<{
+  success: boolean;
+  findings?: import('@francisdb/vpin-wasm').AuditFinding[];
+  error?: string;
+}> {
+  if (!state.tableLoaded || !state.platform) return { success: false, error: 'No table loaded' };
+  try {
+    const files = await collectVpxFiles();
+    return { success: true, findings: state.platform.vpxEngine.audit(files) };
+  } catch (e: unknown) {
+    return { success: false, error: (e as Error).message };
+  }
+}
+
+export async function handleExportGlb(
+  options: import('@francisdb/vpin-wasm').GlbExportOptions | null = null
+): Promise<void> {
   if (!state.tableLoaded || !state.platform) return;
 
   const events = getEvents();
@@ -195,7 +211,7 @@ export async function handleExportGlb(): Promise<void> {
 
   try {
     const files = await collectVpxFiles(wasmProgress);
-    const bytes = state.platform.vpxEngine.exportGlb(files, false, wasmProgress);
+    const bytes = state.platform.vpxEngine.exportGlb(files, options, wasmProgress);
     const fileName = (state.currentFileName || 'table.vpx').replace(/\.vpx$/i, '') + '.glb';
     const url = URL.createObjectURL(new Blob([new Uint8Array(bytes).buffer], { type: 'model/gltf-binary' }));
     const a = document.createElement('a');

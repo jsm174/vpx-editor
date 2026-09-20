@@ -15,7 +15,7 @@ import {
   isIdentityExchange,
   type ObjExchangeOptions,
 } from '../shared/obj-transform.js';
-import { UNIT_CONVERSION_VPU } from '../shared/constants.js';
+import { UNIT_CONVERSION_M, UNIT_CONVERSION_VPU } from '../shared/constants.js';
 
 type Vpin = typeof import('@francisdb/vpin-wasm');
 
@@ -61,6 +61,10 @@ export async function importPrimitiveMesh(
     const prim = primData[primType] as Record<string, unknown>;
 
     prim.use_3d_mesh = true;
+
+    if (exchange.unit === UNIT_CONVERSION_M) {
+      prim.size = { x: 1, y: 1, z: 1 };
+    }
 
     if (options.absolutePosition) {
       prim.position = { x: midpoint[0], y: midpoint[1], z: midpoint[2] };

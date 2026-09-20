@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { state, getItemByFileName, getItemSpaceReference, isItemVisibleForExport, type GameItem } from './state.js';
-import { exportTableMesh } from './obj-export.js';
-import type { ObjExchangeOptions } from '../shared/obj-transform.js';
+import { exportTableMesh, type TableObjExchange } from './obj-export.js';
 import { getEditable } from './parts/index.js';
 import { buildPrimitiveFullMatrix, buildPrimitiveExportGeometry } from './parts/primitive.js';
 import { getSpaceReferenceOffset, type SpaceReference } from './view-setup.js';
@@ -158,7 +157,7 @@ export async function handleMcpGeometryRequest(raw: unknown): Promise<Record<str
 }
 
 export async function handleMcpExportObjRequest(raw: unknown): Promise<Record<string, unknown>> {
-  const data = raw as { mtlFileName?: string; exchange?: ObjExchangeOptions };
+  const data = raw as { mtlFileName?: string; exchange?: TableObjExchange };
   if (!state.extractedDir || !state.gamedata) {
     return { success: false, error: 'No active table' };
   }

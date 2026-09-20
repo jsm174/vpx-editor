@@ -375,7 +375,7 @@ interface FlasherDefaults {
   filter: string;
   filter_amount: number;
   alpha: number;
-  add_blend: boolean;
+  add_blend: 'none' | 'add' | 'absorb';
   is_dmd: boolean;
   display_texture: boolean;
   depth_bias: number;
@@ -1050,7 +1050,7 @@ export const objectTypes: ObjectTypes = {
       filter: 'overlay',
       filter_amount: 100,
       alpha: 100,
-      add_blend: false,
+      add_blend: 'none',
       is_dmd: false,
       display_texture: false,
       depth_bias: 0.0,

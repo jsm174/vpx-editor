@@ -6,7 +6,6 @@ import {
   openFilePicker,
   loadTemplate,
   isTableLoaded,
-  handleExportGlb,
 } from './vpx-file-operations';
 import { getEvents } from './state';
 
@@ -54,15 +53,13 @@ export function createMenuActionHandler(context: MenuActionContext) {
         context.showBlueprintModal();
         break;
       case 'export-obj-mesh':
-        window.vpxEditor.promptMeshExportOptions().then(options => {
-          if (!options) return;
-          import('../editor/obj-export.js').then(({ exportTableMeshAndSave }) => {
-            exportTableMeshAndSave(options);
-          });
-        });
+        import('../editor/obj-export.js').then(({ promptAndExportTableObj }) => promptAndExportTableObj());
         break;
       case 'export-glb':
-        handleExportGlb();
+        import('../editor/obj-export.js').then(({ promptAndExportTableGlb }) => promptAndExportTableGlb());
+        break;
+      case 'open-table-audit':
+        events.emit('open-table-audit');
         break;
       case 'undo':
         events.emit('undo');

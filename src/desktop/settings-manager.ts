@@ -76,6 +76,8 @@ export interface Settings {
   objExportOrientation?: string;
   objImportUnit?: string;
   objImportOrientation?: string;
+  objExportItemFilter?: string;
+  objExportSkipHidden?: boolean;
   mcp: McpSettings;
   [key: `last${string}Folder`]: string | null;
 }
@@ -117,6 +119,8 @@ let settings: Settings = {
   objExportOrientation: DEFAULT_OBJ_ORIENTATION,
   objImportUnit: DEFAULT_OBJ_UNIT,
   objImportOrientation: DEFAULT_OBJ_ORIENTATION,
+  objExportItemFilter: 'everything',
+  objExportSkipHidden: false,
   mcp: { ...DEFAULT_MCP_SETTINGS },
 };
 
