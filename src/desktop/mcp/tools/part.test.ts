@@ -35,6 +35,8 @@ function fakeCtx(): ToolContext {
     captureView: async () => ({ ok: false }),
     queryGeometry: async () => ({ success: false, error: 'nope' }),
     exportObj: async () => ({ success: false, error: 'nope' }),
+    exportGlb: async () => ({ success: false as const, error: 'nope' }),
+    auditTable: async () => ({ success: false as const, error: 'nope' }),
     playTest: async () => ({
       ok: false,
       ranSeconds: 0,
@@ -89,5 +91,41 @@ describe('vpx_part unknown field warnings', () => {
     const warnings = out.warnings as string[];
     expect(warnings).toBeDefined();
     expect(warnings[0]).toContain('strengthh');
+  });
+});
+
+describe('vpx_part transform', () => {
+  const tool = buildPartTools()[0];
+
+  it('builds a transform-part edit for several parts', async () => {
+    let op: Record<string, unknown> | undefined;
+    const ctx = fakeCtx();
+    ctx.applyEdit = async edit => {
+      op = edit as unknown as Record<string, unknown>;
+      return { success: true, applied: false, preview: {} };
+    };
+    await tool.execute(
+      {
+        action: 'transform',
+        names: ['Wall1', 'Wall2'],
+        transform: 'rotate',
+        angle: 90,
+        center: { x: 10, y: 20 },
+        preview: true,
+      },
+      ctx
+    );
+    expect(op?.kind).toBe('transform-part');
+    expect(op?.payload).toEqual({
+      partNames: ['Wall1', 'Wall2'],
+      transform: 'rotate',
+      angle: 90,
+      center: { x: 10, y: 20 },
+    });
+  });
+
+  it('rejects a rotate without an angle', async () => {
+    const result = await tool.execute({ action: 'transform', name: 'Wall1', transform: 'rotate' }, fakeCtx());
+    expect(result.isError).toBe(true);
   });
 });

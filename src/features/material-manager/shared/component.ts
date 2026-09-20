@@ -3,6 +3,7 @@ import { colorToHexString } from '../../../shared/color-utils';
 import { getDefaultMaterial } from '../../../shared/material-defaults';
 import { escapeHtml } from '../../../shared/window-utils';
 import { addLongPressContextMenu } from '../../../shared/long-press';
+import { nameEquals } from '../../../shared/gameitem-utils';
 
 export interface MaterialManagerCallbacks {
   readFile: (path: string) => Promise<string>;
@@ -177,20 +178,29 @@ export function initMaterialManagerComponent(
     elements.statusEl.textContent = msg;
   }
 
+  function findMaterialKey(name: string): string | undefined {
+    if (materials[name] !== undefined) return name;
+    return Object.keys(materials).find(key => nameEquals(key, name));
+  }
+
+  function isMaterialRef(value: unknown, name: string): boolean {
+    return typeof value === 'string' && nameEquals(value, name);
+  }
+
   function findMaterialUsage(materialName: string): { name: string; type: string; property: string }[] {
     const usedBy: { name: string; type: string; property: string }[] = [];
     for (const [itemName, item] of Object.entries(items)) {
       const typeDef = MATERIAL_PROPERTIES.find(p => p.type === item._type);
       if (!typeDef) continue;
       for (const prop of typeDef.props) {
-        if ((item as Record<string, unknown>)[prop] === materialName) {
+        if (isMaterialRef((item as Record<string, unknown>)[prop], materialName)) {
           usedBy.push({ name: itemName, type: item._type, property: prop });
         }
       }
     }
     if (gamedata) {
       for (const prop of TABLE_MATERIAL_PROPERTIES) {
-        if (gamedata[prop] === materialName) {
+        if (isMaterialRef(gamedata[prop], materialName)) {
           usedBy.push({ name: 'Table', type: 'Table', property: prop });
         }
       }
@@ -612,7 +622,7 @@ export function initMaterialManagerComponent(
       return;
     }
 
-    if (materials[result.name as string]) {
+    if (findMaterialKey(result.name as string) !== undefined) {
       setStatus(`Material "${result.name}" already exists`);
       pendingEditMaterial = null;
       pendingEditMode = null;
@@ -658,8 +668,8 @@ export function initMaterialManagerComponent(
       return false;
     }
 
-    const exists = materials[newName] !== undefined;
-    if (exists) {
+    const existingKey = findMaterialKey(newName);
+    if (existingKey !== undefined && existingKey !== renameCurrentName) {
       okBtn.disabled = true;
       elements.renameError.textContent = 'Material already exists';
       return false;
@@ -698,7 +708,7 @@ export function initMaterialManagerComponent(
       const typeDef = MATERIAL_PROPERTIES.find(p => p.type === item._type);
       if (!typeDef) continue;
       for (const prop of typeDef.props) {
-        if ((item as Record<string, unknown>)[prop] === oldName) {
+        if (isMaterialRef((item as Record<string, unknown>)[prop], oldName)) {
           callbacks.undoMarkForUndo?.(itemName);
           break;
         }
@@ -717,7 +727,7 @@ export function initMaterialManagerComponent(
 
       let itemModified = false;
       for (const prop of typeDef.props) {
-        if ((item as Record<string, unknown>)[prop] === oldName) {
+        if (isMaterialRef((item as Record<string, unknown>)[prop], oldName)) {
           (item as Record<string, unknown>)[prop] = newName;
           itemModified = true;
         }
@@ -756,7 +766,8 @@ export function initMaterialManagerComponent(
   async function performRename(oldName: string, newName: string): Promise<void> {
     if (!oldName || !newName || oldName === newName) return;
 
-    if (materials[newName]) {
+    const existingKey = findMaterialKey(newName);
+    if (existingKey !== undefined && existingKey !== oldName) {
       setStatus(`Material "${newName}" already exists`);
       return;
     }
@@ -768,7 +779,7 @@ export function initMaterialManagerComponent(
       const typeDef = MATERIAL_PROPERTIES.find(p => p.type === item._type);
       if (!typeDef) continue;
       for (const prop of typeDef.props) {
-        if ((item as Record<string, unknown>)[prop] === oldName) {
+        if (isMaterialRef((item as Record<string, unknown>)[prop], oldName)) {
           callbacks.undoMarkForUndo?.(itemName);
           break;
         }
@@ -787,7 +798,7 @@ export function initMaterialManagerComponent(
 
       let itemModified = false;
       for (const prop of typeDef.props) {
-        if ((item as Record<string, unknown>)[prop] === oldName) {
+        if (isMaterialRef((item as Record<string, unknown>)[prop], oldName)) {
           (item as Record<string, unknown>)[prop] = newName;
           itemModified = true;
         }

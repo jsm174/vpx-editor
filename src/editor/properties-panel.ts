@@ -17,6 +17,7 @@ import { getCollectionNameForItem, renameItemInAllCollections, saveCollections }
 import { render } from './canvas-renderer.js';
 import { refresh3DScene, render3D, is3DInitialized, invalidateItem } from './canvas-renderer-3d.js';
 import { loadBackdropImage, saveItemToFile } from './table-loader.js';
+import { getObjectCenter, applyTranslate } from './object-operations.js';
 import { objectTypeLabels } from './toolbar-init.js';
 import { selectItem, updateItemsList } from './items-panel.js';
 import { updateLayersList } from './layers-panel.js';
@@ -81,6 +82,8 @@ const POSITION_PROPS: string[] = [
   'vPosition.x',
   'vPosition.y',
   'vPosition.z',
+  'flasher_center_x',
+  'flasher_center_y',
 ];
 
 function isPositionProp(prop: string): boolean {
@@ -304,7 +307,7 @@ function tableProperties(gamedata: GameData): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Top Glass Height</label>
-          <input type="number" class="prop-input" data-prop="glass_top_height" data-convert-units value="${convertToUnit(gamedata.glass_top_height ?? 400).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
+          <input type="number" class="prop-input" data-prop="glass_top_height" data-convert-units value="${convertToUnit(gamedata.glass_top_height ?? 210).toFixed(2)}" step="${convertToUnit(1).toFixed(4)}">${getUnitSuffixHtml()}
         </div>
         <div class="prop-row">
           <label class="prop-label">Bottom Glass Height</label>
@@ -808,6 +811,8 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
             value = parseInt(value, 10);
           } else if (target.dataset.type === 'float') {
             value = parseFloat(value);
+          } else if (target.dataset.type === 'bool') {
+            value = value === 'true';
           }
         } else {
           value = parseFloat(target.value);
@@ -1080,7 +1085,13 @@ async function updateItemProperty(itemName: string, prop: string, value: string 
   undoManager.beginUndo(`${prop} updated`);
   undoManager.markForUndo(itemName);
 
-  if (prop.startsWith('textbox_')) {
+  if (prop === 'flasher_center_x' || prop === 'flasher_center_y') {
+    if (typeof value === 'number') {
+      const center = getObjectCenter(item);
+      if (prop === 'flasher_center_x') applyTranslate(item, value - center.x, 0);
+      else applyTranslate(item, 0, value - center.y);
+    }
+  } else if (prop.startsWith('textbox_')) {
     const tb = item as unknown as { ver1?: { x: number; y: number }; ver2?: { x: number; y: number } };
     if (item._type === 'TextBox' && tb.ver1 && tb.ver2 && typeof value === 'number') {
       switch (prop) {
@@ -1752,8 +1763,8 @@ export async function renameObject(oldName: string, newName: string): Promise<vo
     }
   }
 
+  undoManager.markCollectionsForUndo();
   if (renameItemInAllCollections(oldName, newName)) {
-    undoManager.markCollectionsForUndo();
     await saveCollections();
   }
 

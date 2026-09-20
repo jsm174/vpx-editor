@@ -1,5 +1,6 @@
 import { state, Collection, DragPoint, getItem } from './state.js';
 import { hasClipboard } from './clipboard.js';
+import { getMinDragPoints } from './node-operations.js';
 import { toggleItemInCollection, isItemInCollection } from './collections.js';
 import '../types/ipc.js';
 
@@ -233,7 +234,7 @@ export function showNodeContextMenu(
   const pt = item.drag_points[nodeIndex] as DragPoint;
   const isSmooth = pt.smooth === true;
   const isSlingshot = (pt as { is_slingshot?: boolean }).is_slingshot === true;
-  const canDelete = item.drag_points.length > 3;
+  const canDelete = item.drag_points.length > getMinDragPoints(item._type);
   const isWall = item._type === 'Wall';
   const isLocked = item.is_locked === true;
   const isTableLocked = state.isTableLocked === true;
@@ -303,19 +304,19 @@ export async function showObjectContextMenu(
     menu.appendChild(
       createMenuItem('Add Point', () => callbacks.onAddPoint?.(itemName, worldX, worldY), isEditDisabled)
     );
-
-    menu.appendChild(createMenuItem('Flip X', () => callbacks.onFlipX?.(itemName), isEditDisabled));
-
-    menu.appendChild(createMenuItem('Flip Y', () => callbacks.onFlipY?.(itemName), isEditDisabled));
-
-    menu.appendChild(createMenuItem('Rotate', () => callbacks.onRotate?.(itemName, worldX, worldY), isEditDisabled));
-
-    menu.appendChild(createMenuItem('Scale', () => callbacks.onScale?.(itemName, worldX, worldY), isEditDisabled));
-
-    menu.appendChild(createMenuItem('Translate', () => callbacks.onTranslate?.(itemName), isEditDisabled));
-
-    menu.appendChild(createSeparator());
   }
+
+  menu.appendChild(createMenuItem('Flip X', () => callbacks.onFlipX?.(itemName), isEditDisabled));
+
+  menu.appendChild(createMenuItem('Flip Y', () => callbacks.onFlipY?.(itemName), isEditDisabled));
+
+  menu.appendChild(createMenuItem('Rotate', () => callbacks.onRotate?.(itemName, worldX, worldY), isEditDisabled));
+
+  menu.appendChild(createMenuItem('Scale', () => callbacks.onScale?.(itemName, worldX, worldY), isEditDisabled));
+
+  menu.appendChild(createMenuItem('Translate', () => callbacks.onTranslate?.(itemName), isEditDisabled));
+
+  menu.appendChild(createSeparator());
 
   menu.appendChild(createMenuItem('Copy', () => callbacks.onCopy?.(itemName), isTableLocked));
 
@@ -483,7 +484,6 @@ export async function showItemsPanelContextMenu(
   const item = getItem(itemName);
   if (!item) return;
 
-  const canEditPoints = item.drag_points && EDITABLE_DRAG_POINT_TYPES.includes(item._type);
   const isLocked = item.is_locked === true;
   const isTableLocked = state.isTableLocked === true;
   const isEditDisabled = isLocked || isTableLocked;
@@ -492,19 +492,17 @@ export async function showItemsPanelContextMenu(
   const menu = document.createElement('div');
   menu.className = 'context-menu';
 
-  if (canEditPoints) {
-    menu.appendChild(createMenuItem('Flip X', () => callbacks.onFlipX?.(itemName), isEditDisabled));
+  menu.appendChild(createMenuItem('Flip X', () => callbacks.onFlipX?.(itemName), isEditDisabled));
 
-    menu.appendChild(createMenuItem('Flip Y', () => callbacks.onFlipY?.(itemName), isEditDisabled));
+  menu.appendChild(createMenuItem('Flip Y', () => callbacks.onFlipY?.(itemName), isEditDisabled));
 
-    menu.appendChild(createMenuItem('Rotate', () => callbacks.onRotate?.(itemName), isEditDisabled));
+  menu.appendChild(createMenuItem('Rotate', () => callbacks.onRotate?.(itemName), isEditDisabled));
 
-    menu.appendChild(createMenuItem('Scale', () => callbacks.onScale?.(itemName), isEditDisabled));
+  menu.appendChild(createMenuItem('Scale', () => callbacks.onScale?.(itemName), isEditDisabled));
 
-    menu.appendChild(createMenuItem('Translate', () => callbacks.onTranslate?.(itemName), isEditDisabled));
+  menu.appendChild(createMenuItem('Translate', () => callbacks.onTranslate?.(itemName), isEditDisabled));
 
-    menu.appendChild(createSeparator());
-  }
+  menu.appendChild(createSeparator());
 
   menu.appendChild(createMenuItem('Copy', () => callbacks.onCopy?.(itemName), isTableLocked));
 

@@ -21,6 +21,7 @@ import { buildViewTools } from './tools/view.js';
 import { buildGeometryTools } from './tools/geometry.js';
 import { buildMeshTools } from './tools/mesh.js';
 import { buildTestTools } from './tools/test.js';
+import { buildAuditTools } from './tools/audit.js';
 import { buildSaveTools } from './tools/save.js';
 
 const SERVER_NAME = 'vpx-editor';
@@ -71,6 +72,7 @@ export function buildAllTools(): Tool[] {
     ...buildViewTools(),
     ...buildGeometryTools(),
     ...buildMeshTools(),
+    ...buildAuditTools(),
     ...buildTestTools(),
     ...buildSaveTools(),
   ];

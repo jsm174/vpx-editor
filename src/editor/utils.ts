@@ -6,6 +6,7 @@ import {
   ANIMATION_DURATION_MS,
   VIEW_MARGIN_PX,
   BOUNDS_PADDING,
+  PATH_SMOOTHING_ACCURACY,
 } from '../shared/constants.js';
 import { getItemCenter } from '../shared/position-utils.js';
 import { getDragPointCoords } from '../types/game-objects.js';
@@ -392,6 +393,35 @@ export function generateSmoothedPath(
   }
 
   return trackControlPoints ? { vertices, controlPointIndices } : vertices;
+}
+
+export function getSmoothedPathBounds(
+  points: DragPoint[],
+  loop: boolean = true
+): { minX: number; minY: number; maxX: number; maxY: number } | null {
+  if (!points || points.length === 0) return null;
+  let vertices: Vertex[] = points.map(p => getDragPointCoords(p));
+  if (points.length >= 2) {
+    const result = generateSmoothedPath(points, loop, PATH_SMOOTHING_ACCURACY);
+    if (Array.isArray(result) && result.length > 0) vertices = result;
+  }
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+  for (const v of vertices) {
+    minX = Math.min(minX, v.x);
+    minY = Math.min(minY, v.y);
+    maxX = Math.max(maxX, v.x);
+    maxY = Math.max(maxY, v.y);
+  }
+  return { minX, minY, maxX, maxY };
+}
+
+export function getSmoothedPathCenter(points: DragPoint[], loop: boolean = true): Point | null {
+  const b = getSmoothedPathBounds(points, loop);
+  if (!b) return null;
+  return { x: (b.minX + b.maxX) * 0.5, y: (b.minY + b.maxY) * 0.5 };
 }
 
 function flatWithAccuracy3D(v1: Vertex3D, v2: Vertex3D, vMid: Vertex3D, accuracy: number): boolean {

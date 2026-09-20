@@ -9,6 +9,11 @@ import type { GameItemBase as GameItem } from '../types/game-objects.js';
 import type { GameData } from '../types/data.js';
 import { parseTableSizesCSV, type PredefinedTable } from '../features/dimensions-manager/shared/table-sizes.js';
 import type { MeshImportOptions } from '../features/mesh-import/shared/component.js';
+import {
+  MESH_EXPORT_TITLES,
+  type MeshExportInit,
+  type MeshExportOptions,
+} from '../features/mesh-export/shared/component.js';
 
 interface VersionInfo {
   sha: string;
@@ -156,7 +161,7 @@ export interface WindowFactory {
   openMcpSettingsWindow(getMcpSettingsData: () => Promise<unknown>): void;
   openTransformWindow(type: string, data: TransformData, ctx: WindowContext): void;
   openMeshImportWindow(ctx: WindowContext, initial: ObjExchangeOptions): Promise<MeshImportResult | null>;
-  openMeshExportWindow(ctx: WindowContext, initial: ObjExchangeOptions): Promise<ObjExchangeOptions | null>;
+  openMeshExportWindow(ctx: WindowContext, initial: MeshExportInit): Promise<MeshExportOptions | null>;
   openDrawingOrderWindow(ctx: WindowContext, mode: string, items: DrawingOrderItem[]): Promise<string[] | null>;
   showSearchSelect(): Promise<void>;
   setupDialogEditMenu(browserWindow: BrowserWindow): void;
@@ -166,7 +171,7 @@ export interface WindowFactory {
   getMeshImportWindowContext(): WindowContext | null;
   getDrawingOrderWindowContext(): WindowContext | null;
   resolveMeshImport(result: MeshImportResult | null): void;
-  resolveMeshExport(result: ObjExchangeOptions | null): void;
+  resolveMeshExport(result: MeshExportOptions | null): void;
   resolveDrawingOrder(result: string[] | null): void;
   openCollectionEditorWindow(ctx: WindowContext, collectionName: string): Promise<void>;
   openCollectionPromptWindow(ctx: WindowContext, mode: string, currentName?: string): Promise<void>;
@@ -213,7 +218,7 @@ let meshImportWindow: BrowserWindow | null = null;
 let meshImportResolve: ((value: MeshImportResult | null) => void) | null = null;
 let meshImportWindowContext: WindowContext | null = null;
 let meshExportWindow: BrowserWindow | null = null;
-let meshExportResolve: ((value: ObjExchangeOptions | null) => void) | null = null;
+let meshExportResolve: ((value: MeshExportOptions | null) => void) | null = null;
 let drawingOrderWindow: BrowserWindow | null = null;
 let drawingOrderResolve: ((value: string[] | null) => void) | null = null;
 let drawingOrderWindowContext: WindowContext | null = null;
@@ -1492,7 +1497,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     });
   }
 
-  function openMeshExportWindow(ctx: WindowContext, initial: ObjExchangeOptions): Promise<ObjExchangeOptions | null> {
+  function openMeshExportWindow(ctx: WindowContext, initial: MeshExportInit): Promise<MeshExportOptions | null> {
     return new Promise(resolve => {
       if (meshExportWindow) {
         meshExportWindow.focus();
@@ -1508,8 +1513,8 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
 
       meshExportWindow = new BrowserWindow({
         width: 460,
-        height: 248,
-        title: 'Wavefront OBJ Exporter',
+        height: initial.kind === 'glb' ? 330 : 470,
+        title: MESH_EXPORT_TITLES[initial.kind],
         parent: ctx.window,
         show: false,
         resizable: false,
@@ -1532,8 +1537,12 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
 
       const query = {
         theme: getActualTheme(settings.theme),
-        unit: initial.unit,
-        orientation: initial.orientation,
+        kind: initial.kind,
+        unit: initial.options.unit,
+        orientation: initial.options.orientation,
+        itemFilter: initial.options.itemFilter,
+        skipHidden: initial.options.skipEditorHiddenItems ? '1' : '0',
+        selection: JSON.stringify(initial.selectedItems),
       };
       if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
         const url = new URL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
@@ -2133,7 +2142,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     getTableInfoWindowContext: (): WindowContext | null => tableInfoWindowContext,
     getMeshImportWindowContext: (): WindowContext | null => meshImportWindowContext,
     getDrawingOrderWindowContext: (): WindowContext | null => drawingOrderWindowContext,
-    resolveMeshExport: (result: ObjExchangeOptions | null): void => {
+    resolveMeshExport: (result: MeshExportOptions | null): void => {
       if (meshExportResolve) {
         meshExportResolve(result);
         meshExportResolve = null;

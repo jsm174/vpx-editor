@@ -35,6 +35,8 @@ http_headers = { Authorization = "Bearer <token>" }
 
 Start with `vpx_guide`. To create a table, call `vpx_new(action:"create", start:"glf", name:"MyMachine", dir:"/path/to/project")`, or use `start:"blank"`. The `dir` argument saves the table straight into that folder as `MyMachine.vpx` with no Save dialog. Assistants are told to pass their working directory, so a table created from a Claude Code or Codex session lands next to the files you are working on. Inspect it with `vpx_table(action:"overview")` and `vpx_view()`.
 
+Run `vpx_audit` after a batch of edits: it returns the same findings as the editor's Table Audit panel, each with a severity, a code, the part it is about, or the script line. `vpx_part(action:"transform")` rotates, scales, flips or translates parts the way the editor does, and `vpx_geometry` exports OBJ or GLB with the same item filters as the export dialogs.
+
 Script, material, image, sound, and part-delete edits preview by default; repeat with `confirm:true` to apply. `vpx_part` add and modify apply immediately unless `preview:true` is passed, as do `vpx_history`, mesh imports, MPF generation, and new-table creation. Check each result for errors. Save with `vpx_save`. Pass `path` (a folder or a full `.vpx` path) to save somewhere specific without a dialog; the editor keeps using that location afterwards. Without `path`, a table that has never been saved opens the native Save dialog. Unsaved tables live in a temporary folder.
 
 A session attaches to one table. Focusing a different window does not change its target. After closing or unloading the attached table, explicitly select another with `vpx_table(action:"windows")` followed by `vpx_table(action:"attach", windowId:"...")`.

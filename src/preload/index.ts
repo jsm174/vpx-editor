@@ -22,6 +22,7 @@ import type {
 import type { GameData, TableInfo, Collection, ClipboardData, TableLoadedData } from '../types/data.js';
 import type { GameItemMeta } from '../types/state.js';
 import type { MeshImportOptions } from '../features/mesh-import/shared/component.js';
+import type { MeshExportKind, MeshExportOptions } from '../features/mesh-export/shared/component.js';
 
 const vpxEditorAPI: VpxEditorAPI = {
   restoreMcpFiles: (workDir, changes, direction) =>
@@ -319,9 +320,24 @@ const vpxEditorAPI: VpxEditorAPI = {
   meshImportResult: (result: { meshData: string; options: MeshImportOptions } | null): void => {
     ipcRenderer.send('mesh-import-result', result);
   },
-  promptMeshExportOptions: (): Promise<ObjExchangeOptions | null> => ipcRenderer.invoke('prompt-mesh-export-options'),
-  meshExportResult: (result: ObjExchangeOptions | null): void => {
+  promptMeshExportOptions: (
+    kind: MeshExportKind = 'obj',
+    selectedItems: string[] = []
+  ): Promise<MeshExportOptions | null> => ipcRenderer.invoke('prompt-mesh-export-options', kind, selectedItems),
+  meshExportResult: (result: MeshExportOptions | null): void => {
     ipcRenderer.send('mesh-export-result', result);
+  },
+  exportGlbTable: (options: import('@francisdb/vpin-wasm').GlbExportOptions | null) =>
+    ipcRenderer.invoke('export-glb-table', options),
+  onExportGlb: (callback: () => void): void => {
+    ipcRenderer.on('export-glb', () => callback());
+  },
+  auditTable: () => ipcRenderer.invoke('audit-table'),
+  onOpenTableAudit: (callback: () => void): void => {
+    ipcRenderer.on('open-table-audit', () => callback());
+  },
+  scriptEditorGotoLine: (lineNumber: number, column: number = 1): void => {
+    ipcRenderer.send('script-editor-goto-line', { lineNumber, column });
   },
   onShowAbout: (callback: (data: AboutData) => void): void => {
     ipcRenderer.on('show-about', (_event: IpcRendererEvent, data: AboutData) => callback(data));

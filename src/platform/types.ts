@@ -1,4 +1,4 @@
-import type { MeshIoOptions, ObjExportOptions } from '@francisdb/vpin-wasm';
+import type { AuditFinding, GlbExportOptions, MeshIoOptions, ObjExportOptions } from '@francisdb/vpin-wasm';
 export interface FileSystemProvider {
   readFile(path: string): Promise<string>;
   readBinaryFile(path: string): Promise<Uint8Array>;
@@ -31,7 +31,8 @@ export interface VpxEngine {
   init(): Promise<void>;
   extract(vpxData: Uint8Array, onProgress?: ProgressCallback): Promise<VpxFiles>;
   assemble(files: VpxFiles, onProgress?: ProgressCallback): Uint8Array;
-  exportGlb(files: VpxFiles, exportInvisibleItems?: boolean, onProgress?: ProgressCallback): Uint8Array;
+  exportGlb(files: VpxFiles, options?: GlbExportOptions | null, onProgress?: ProgressCallback): Uint8Array;
+  audit(files: VpxFiles, onProgress?: ProgressCallback): AuditFinding[];
   exportObj(files: VpxFiles, options?: ObjExportOptions | null, onProgress?: ProgressCallback): VpxFiles;
   objToMesh(data: Uint8Array, options?: MeshIoOptions | null): PrimitiveMeshData;
   meshToObj(

@@ -27,7 +27,8 @@ import {
   DEFAULT_OBJ_UNIT,
   DEFAULT_OBJ_ORIENTATION,
 } from '../shared/constants.js';
-import { defaultExchange, type ObjExchangeOptions } from '../shared/obj-transform.js';
+import { defaultExchange, normalizeItemFilter, type ObjExchangeOptions } from '../shared/obj-transform.js';
+import type { MeshExportInit, MeshExportKind, MeshExportOptions } from '../features/mesh-export/shared/component.js';
 import { reorderGameitems } from '../features/drawing-order/shared/component.js';
 import {
   settings,
@@ -1893,27 +1894,66 @@ ipcMain.handle('import-mesh', async (event, primitiveFileName: string) => {
   return await performMeshImport(ctx, { filePath: result.meshData, options: result.options });
 });
 
-ipcMain.handle('prompt-mesh-export-options', async event => {
-  const ctx = windowRegistry.getContextFromEvent(event);
-  if (!ctx) return null;
+ipcMain.handle(
+  'prompt-mesh-export-options',
+  async (event, kind: MeshExportKind = 'obj', selectedItems: string[] = []) => {
+    const ctx = windowRegistry.getContextFromEvent(event);
+    if (!ctx) return null;
 
-  const initial = defaultExchange(
-    settings.objExportUnit ?? DEFAULT_OBJ_UNIT,
-    settings.objExportOrientation ?? DEFAULT_OBJ_ORIENTATION
-  );
+    const initial: MeshExportInit = {
+      kind: kind === 'glb' ? 'glb' : 'obj',
+      options: {
+        ...defaultExchange(
+          settings.objExportUnit ?? DEFAULT_OBJ_UNIT,
+          settings.objExportOrientation ?? DEFAULT_OBJ_ORIENTATION
+        ),
+        itemFilter: normalizeItemFilter(settings.objExportItemFilter),
+        skipEditorHiddenItems: settings.objExportSkipHidden === true,
+      },
+      selectedItems: Array.isArray(selectedItems) ? selectedItems : [],
+    };
 
-  const result = await windowFactory.openMeshExportWindow(ctx, initial);
-  if (!result) return null;
+    const result = await windowFactory.openMeshExportWindow(ctx, initial);
+    if (!result) return null;
 
-  settings.objExportUnit = result.unit;
-  settings.objExportOrientation = result.orientation;
-  saveSettings();
+    if (initial.kind === 'obj') {
+      settings.objExportUnit = result.unit;
+      settings.objExportOrientation = result.orientation;
+    }
+    settings.objExportItemFilter = result.itemFilter;
+    settings.objExportSkipHidden = result.skipEditorHiddenItems;
+    saveSettings();
 
-  return result;
+    return result;
+  }
+);
+
+ipcMain.on('mesh-export-result', (_event, result: MeshExportOptions | null) => {
+  windowFactory.resolveMeshExport(result);
 });
 
-ipcMain.on('mesh-export-result', (_event, result: ObjExchangeOptions | null) => {
-  windowFactory.resolveMeshExport(result);
+ipcMain.handle('export-glb-table', async (event, options: import('@francisdb/vpin-wasm').GlbExportOptions | null) => {
+  const ctx = windowRegistry.getContextFromEvent(event);
+  if (!ctx) return { success: false, error: 'No window' };
+  return vpxOps.exportGlbForWindow(ctx, options);
+});
+
+ipcMain.handle('audit-table', async event => {
+  const ctx = windowRegistry.getContextFromEvent(event);
+  if (!ctx) return { success: false, error: 'No window' };
+  return vpxOps.auditTable(ctx);
+});
+
+ipcMain.on('script-editor-goto-line', (event, position: { lineNumber: number; column: number }) => {
+  const ctx = windowRegistry.getContextFromEvent(event);
+  if (!ctx) return;
+  if (ctx.scriptEditorWindow) {
+    ctx.scriptEditorWindow.webContents.send('goto-line', position);
+    ctx.scriptEditorWindow.focus();
+  } else {
+    ctx.scriptEditorCursorPosition = position;
+    windowFactory.openScriptEditorWindow(ctx);
+  }
 });
 
 ipcMain.handle('read-obj-header', async (_event, filePath: string) => {

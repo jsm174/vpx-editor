@@ -67,7 +67,15 @@ export function createSpinner3DMesh(item: SpinnerItem): THREE.Group | null {
     group.add(bracketMesh);
   }
 
-  const plateGeom = createMeshGeometry(spinnerPlateMesh, { scale: length, rotation, offsetZ: height });
+  const angleMin = ((item.angle_min ?? SPINNER_DEFAULTS.angle_min) * Math.PI) / 180;
+  const angleMax = ((item.angle_max ?? SPINNER_DEFAULTS.angle_max) * Math.PI) / 180;
+  const plateAngle = Math.min(Math.max(0, Math.min(angleMin, angleMax)), Math.max(angleMin, angleMax));
+  const plateGeom = createMeshGeometry(spinnerPlateMesh, {
+    scale: length,
+    rotation,
+    rotationX: -plateAngle,
+    offsetZ: height,
+  });
   const plateMat = createMaterial(item.material, item.image);
   const plateMesh = new THREE.Mesh(plateGeom, plateMat);
   plateMesh.name = 'Plate';

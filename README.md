@@ -68,9 +68,16 @@ Port of the Windows VPX 2D editor:
 - Image, Sound, and Material managers with usage counts
 - Dimension, Collection, and Render Probe managers
 
+### Table Audit
+
+- Checks the table for missing images, materials, surfaces and sounds, duplicate or reserved names, unused assets, timer and script problems, and more (powered by [vpin](https://github.com/francisdb/vpin))
+- Runs automatically when a table opens and from Table > Table Audit
+- Click a finding to select the element or jump to the script line
+
 ### Import and Export
 
-- Import and export meshes as OBJ, and export the whole table as GLB for Blender
+- Import and export meshes as OBJ, and export the whole table as OBJ or GLB for Blender
+- Export filters: everything, Visual Pinball's own OBJ export set, skip hidden layers, or only the selected items
 - Export a playfield blueprint image
 
 ### Quick Play

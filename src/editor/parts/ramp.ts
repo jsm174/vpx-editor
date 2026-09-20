@@ -11,6 +11,7 @@ import {
   pointInPolygon,
   convertToUnit,
   getUnitSuffixHtml,
+  getSmoothedPathCenter,
 } from '../utils.js';
 import { createMaterial } from '../../shared/3d-material-helpers.js';
 import { materialOptions, imageOptions } from '../../shared/options-generators.js';
@@ -879,18 +880,7 @@ export function rampProperties(item: RampItem): string {
 function getCenter(item: RampItem): Point | null {
   const points = item.drag_points;
   if (!points || points.length === 0) return null;
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
-  for (const p of points) {
-    const { x, y } = getDragPointCoords(p);
-    minX = Math.min(minX, x);
-    minY = Math.min(minY, y);
-    maxX = Math.max(maxX, x);
-    maxY = Math.max(maxY, y);
-  }
-  return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+  return getSmoothedPathCenter(points, true);
 }
 
 function putCenter(item: RampItem, center: Point): void {

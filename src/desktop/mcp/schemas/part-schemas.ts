@@ -312,6 +312,7 @@ const flasherBranch = z.object({
   image_a: z.string().optional(),
   image_b: z.string().optional(),
   filter_amount: z.number().int().optional(),
+  add_blend: z.union([z.enum(['none', 'add', 'absorb']), z.boolean()]).optional(),
   ...timerFields,
   ...morePass,
 });

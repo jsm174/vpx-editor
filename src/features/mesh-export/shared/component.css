@@ -53,3 +53,29 @@
   color: var(--text-secondary);
   white-space: pre-line;
 }
+
+.mesh-export-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+}
+
+.mesh-export-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.mesh-export-check input:disabled + span {
+  color: var(--text-secondary);
+}
+
+.mesh-export-note {
+  margin: 0 0 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}

@@ -11,6 +11,7 @@ declare global {
       onTableLockChanged: (callback: (isLocked: boolean) => void) => void;
       onCheckCanClose: (callback: () => void) => void;
       onScriptUndone: (callback: (content: string) => void) => void;
+      onGotoLine: (callback: (position: { lineNumber: number; column: number }) => void) => void;
       saveScript: (content: string) => Promise<{ success: boolean; error?: string }>;
       notifyScriptChanged: () => void;
       respondCanClose: (canClose: boolean) => void;
@@ -92,6 +93,10 @@ window.require(['vs/editor/editor.main'], () => {
 
   window.scriptEditor.onScriptUndone((content: string) => {
     controller.setContent(content);
+  });
+
+  window.scriptEditor.onGotoLine(position => {
+    controller.gotoLine(position.lineNumber, position.column);
   });
 });
 

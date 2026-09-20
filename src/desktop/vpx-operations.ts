@@ -4,7 +4,7 @@ import { spawn, ChildProcess } from 'node:child_process';
 import fs from 'fs-extra';
 import os from 'node:os';
 import { getLastFolder, setLastFolder, Settings } from './settings-manager.js';
-import type { ObjExportOptions } from '@francisdb/vpin-wasm';
+import type { AuditFinding, GlbExportOptions, ObjExportOptions } from '@francisdb/vpin-wasm';
 import type { WindowContext, WindowRegistry } from './window-context.js';
 import { bundledGlfDir } from './bundled-resources.js';
 import { prepareGlfStarterWorkDir } from './mcp/library/glf/starter.js';
@@ -159,8 +159,11 @@ export async function exportObjTable(
   }
 }
 
-export async function exportGlbForWindow(ctx: WindowContext): Promise<void> {
-  if (!ctx.extractedDir) return;
+export async function exportGlbForWindow(
+  ctx: WindowContext,
+  options: GlbExportOptions | null = null
+): Promise<{ success: boolean; path?: string; cancelled?: boolean; error?: string }> {
+  if (!ctx.extractedDir) return { success: false, error: 'No table loaded' };
 
   const baseName = ctx.currentTablePath
     ? path.basename(ctx.currentTablePath).replace(/\.vpx$/i, '')
@@ -173,7 +176,7 @@ export async function exportGlbForWindow(ctx: WindowContext): Promise<void> {
       { name: 'All Files', extensions: ['*'] },
     ],
   });
-  if (result.canceled || !result.filePath) return;
+  if (result.canceled || !result.filePath) return { success: false, cancelled: true };
   setLastFolder('Glb', path.dirname(result.filePath));
 
   try {
@@ -184,11 +187,28 @@ export async function exportGlbForWindow(ctx: WindowContext): Promise<void> {
     const files = await readWorkDirFiles(workDir);
 
     const wasmProgress = (msg: string) => sendConsoleOutput(ctx, 'info', msg);
-    const bytes = vpin.export_glb(files, null, wasmProgress);
+    const bytes = vpin.export_glb(files, options, wasmProgress);
     await fs.promises.writeFile(result.filePath, bytes);
     sendConsoleOutput(ctx, 'success', `Exported ${result.filePath}`);
+    return { success: true, path: result.filePath };
   } catch (err: unknown) {
-    sendConsoleOutput(ctx, 'error', `GLB export failed: ${(err as Error).message}`);
+    const message = (err as Error).message;
+    sendConsoleOutput(ctx, 'error', `GLB export failed: ${message}`);
+    return { success: false, error: message };
+  }
+}
+
+export async function auditTable(
+  ctx: WindowContext
+): Promise<{ success: boolean; findings?: AuditFinding[]; error?: string }> {
+  if (!ctx.extractedDir) return { success: false, error: 'No table loaded' };
+  try {
+    const vpin = await initVpinModule();
+    const files = await readWorkDirFiles(ctx.extractedDir);
+    const findings = vpin.audit(files, null);
+    return { success: true, findings };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error).message };
   }
 }
 

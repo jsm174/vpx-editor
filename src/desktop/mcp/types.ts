@@ -1,6 +1,7 @@
 import type { z, ZodTypeAny } from 'zod';
 import type { TableState } from '../../shared/table-state.js';
-import type { ObjExchangeOptions } from '../../shared/obj-transform.js';
+import type { ObjExchangeOptions, TableExportFilter } from '../../shared/obj-transform.js';
+import type { AuditFinding } from '@francisdb/vpin-wasm';
 
 export interface ActiveTableHandle {
   workDir: string;
@@ -24,6 +25,7 @@ export interface EditOperation {
     | 'modify-part'
     | 'add-part'
     | 'delete-part'
+    | 'transform-part'
     | 'edit-script'
     | 'replace-script-string'
     | 'replace-sub'
@@ -127,8 +129,17 @@ export interface ToolContext {
   captureView(req: CaptureRequest): Promise<CaptureResult>;
   /** World-space mesh summaries (bbox, centroid, shape scores) for parts on the active table. */
   queryGeometry(req: GeometryRequest): Promise<Record<string, unknown>>;
-  /** Render the active table's visible geometry to OBJ+MTL text. */
-  exportObj(mtlFileName: string, exchange?: ObjExchangeOptions): Promise<Record<string, unknown>>;
+  /** Render the active table's visible geometry to OBJ+MTL text, optionally filtered to a subset of items. */
+  exportObj(
+    mtlFileName: string,
+    exchange?: ObjExchangeOptions & Partial<TableExportFilter>
+  ): Promise<Record<string, unknown>>;
+  /** Render the active table to GLB bytes (glTF conventions), optionally filtered to a subset of items. */
+  exportGlb(
+    filter?: Partial<TableExportFilter>
+  ): Promise<{ success: true; bytes: Uint8Array } | { success: false; error: string }>;
+  /** Run vpin's table audit on the active table; also refreshes the editor's audit panel when it is open. */
+  auditTable(): Promise<{ success: true; findings: AuditFinding[] } | { success: false; error: string }>;
   /** Replace a Primitive's mesh with an external OBJ (units/orientation converted on the way in). */
   importPrimitiveMesh(
     req: MeshImportRequest

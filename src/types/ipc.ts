@@ -3,6 +3,8 @@ import type { ObjExchangeOptions } from '../shared/obj-transform.js';
 import type { GameData, TableInfo, TableLoadedData, Collection, ClipboardData } from './data.js';
 import type { GameItemMeta } from './state.js';
 import type { MeshImportOptions } from '../features/mesh-import/shared/component.js';
+import type { MeshExportKind, MeshExportOptions } from '../features/mesh-export/shared/component.js';
+import type { AuditFinding } from '@francisdb/vpin-wasm';
 
 export type IpcCallback<T = void> = (data: T) => void;
 
@@ -252,8 +254,15 @@ export interface VpxEditorAPI {
   browseObjFile: () => Promise<string | null>;
   readObjHeader: (filePath: string) => Promise<string | null>;
   meshImportResult: (result: { meshData: string; options: MeshImportOptions } | null) => void;
-  promptMeshExportOptions: () => Promise<ObjExchangeOptions | null>;
-  meshExportResult: (result: ObjExchangeOptions | null) => void;
+  promptMeshExportOptions: (kind?: MeshExportKind, selectedItems?: string[]) => Promise<MeshExportOptions | null>;
+  meshExportResult: (result: MeshExportOptions | null) => void;
+  exportGlbTable?: (
+    options: import('@francisdb/vpin-wasm').GlbExportOptions | null
+  ) => Promise<{ success: boolean; path?: string; cancelled?: boolean; error?: string }>;
+  onExportGlb?: (callback: IpcCallback<void>) => void;
+  auditTable: () => Promise<{ success: boolean; findings?: AuditFinding[]; error?: string }>;
+  onOpenTableAudit?: (callback: IpcCallback<void>) => void;
+  scriptEditorGotoLine: (lineNumber: number, column?: number) => void;
   onShowAbout: (callback: IpcCallback<AboutData>) => void;
   onInitSettings: (callback: IpcCallback<EditorSettings>) => void;
   onThemeChanged: (callback: IpcCallback<string>) => void;

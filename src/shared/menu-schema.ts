@@ -572,6 +572,13 @@ export const menuSchema: MenuItemSchema[] = [
         disabledWhen: ['dialogOpen'],
       },
       {
+        id: 'table-audit',
+        label: 'Table Audit...',
+        action: 'open-table-audit',
+        requires: ['hasTable'],
+        disabledWhen: ['dialogOpen'],
+      },
+      {
         id: 'sound-manager',
         label: 'Sound Manager...',
         accelerator: 'F2',

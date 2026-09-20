@@ -1,4 +1,10 @@
-import type { AxisConvention, ExportUnits, MeshIoOptions, ObjExportOptions } from '@francisdb/vpin-wasm';
+import type {
+  AxisConvention,
+  ExportUnits,
+  GlbExportOptions,
+  MeshIoOptions,
+  ObjExportOptions,
+} from '@francisdb/vpin-wasm';
 import { OBJ_ORIENTATION_VPX, OBJ_ORIENTATION_Y_UP_RH, UNIT_CONVERSION_VPU } from './constants.js';
 import { vpUnitsToUnit } from './unit-conversion.js';
 
@@ -12,6 +18,40 @@ export type ObjOrientation = typeof OBJ_ORIENTATION_VPX | typeof OBJ_ORIENTATION
 export interface ObjExchangeOptions {
   unit: string;
   orientation: ObjOrientation;
+}
+
+export type TableExportItemFilter = 'everything' | 'vpinball';
+
+export interface TableExportFilter {
+  itemFilter: TableExportItemFilter;
+  skipEditorHiddenItems: boolean;
+  onlyItems?: string[];
+}
+
+export const DEFAULT_TABLE_EXPORT_FILTER: TableExportFilter = {
+  itemFilter: 'everything',
+  skipEditorHiddenItems: false,
+};
+
+export type TableObjExportOptions = ObjExchangeOptions & TableExportFilter;
+
+export function normalizeItemFilter(value: unknown): TableExportItemFilter {
+  return value === 'vpinball' ? 'vpinball' : 'everything';
+}
+
+function filterOptions(
+  filter: Partial<TableExportFilter>
+): Pick<ObjExportOptions, 'itemFilter' | 'skipEditorHiddenItems' | 'onlyItems'> {
+  const out: Pick<ObjExportOptions, 'itemFilter' | 'skipEditorHiddenItems' | 'onlyItems'> = {
+    itemFilter: normalizeItemFilter(filter.itemFilter),
+    skipEditorHiddenItems: filter.skipEditorHiddenItems === true,
+  };
+  if (filter.onlyItems && filter.onlyItems.length > 0) out.onlyItems = [...filter.onlyItems];
+  return out;
+}
+
+export function exportTableGlbOptions(filter: Partial<TableExportFilter>): GlbExportOptions {
+  return { ...filterOptions(filter) };
 }
 
 const OBJ_HEADER_PREFIX = '# vpx-editor';
@@ -35,11 +75,12 @@ export function exportMeshIoOptions(options: ObjExchangeOptions): MeshIoOptions 
   };
 }
 
-export function exportTableObjOptions(options: ObjExchangeOptions): ObjExportOptions {
+export function exportTableObjOptions(options: ObjExchangeOptions & Partial<TableExportFilter>): ObjExportOptions {
   return {
     axes: orientationAxes(options.orientation),
     units: options.unit === UNIT_CONVERSION_VPU ? EXPORT_UNITS_VPU : EXPORT_UNITS_M,
     extractTextures: false,
+    ...filterOptions(options),
   };
 }
 

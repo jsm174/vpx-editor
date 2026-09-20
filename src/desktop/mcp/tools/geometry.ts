@@ -2,7 +2,7 @@ import path from 'node:path';
 import fs from 'fs-extra';
 import { z } from 'zod';
 import { errorResult, jsonResult, type Tool, type ToolContext } from '../types.js';
-import type { ObjExchangeOptions } from '../../../shared/obj-transform.js';
+import type { ObjExchangeOptions, TableExportFilter } from '../../../shared/obj-transform.js';
 import { NO_ACTIVE_TABLE, resolveOutputDir } from './edit-util.js';
 import { objOrientation, objUnit } from './mesh.js';
 import { OBJ_ORIENTATION_VPX, UNIT_CONVERSION_VPU } from '../../../shared/constants.js';
@@ -71,16 +71,30 @@ function findOverlaps(parts: PartSummary[]): { pairs: Record<string, unknown>[];
 
 const geometryInput = z.object({
   action: z
-    .enum(['summary', 'overlaps', 'export_obj'])
+    .enum(['summary', 'overlaps', 'export_obj', 'export_glb'])
     .describe(
       '"summary": world-space mesh measurements per part (bbox, centroid, triangle count; `detail:true` adds shape scores). ' +
         '"overlaps": pairs of parts whose bounding boxes intersect — placement collision candidates. ' +
-        '"export_obj": write the visible geometry as OBJ+MTL files (same as File > Export OBJ, with `unit`/`orientation` for Blender) and return their paths.'
+        '"export_obj": write the geometry as OBJ+MTL files (same as File > Export OBJ, with `unit`/`orientation` for Blender) and return their paths. ' +
+        '"export_glb": write a binary glTF (.glb, meters, Y up, textures embedded) that opens in Blender with default settings. ' +
+        'Both exports honor `parts`, `itemFilter` and `skipHiddenLayers`.'
     ),
   parts: z
     .array(z.string())
     .optional()
-    .describe('For "summary"/"overlaps": limit to these part names (default: all parts with geometry).'),
+    .describe(
+      'For "summary"/"overlaps": limit to these part names (default: all parts with geometry). For exports: export only these parts (the playfield is always included).'
+    ),
+  itemFilter: z
+    .enum(['everything', 'vpinball'])
+    .optional()
+    .describe(
+      'For exports: "everything" (default) writes every item with geometry that is visible at play time; "vpinball" matches Visual Pinball\'s own OBJ export (no lights, flashers, decals, plungers or balls).'
+    ),
+  skipHiddenLayers: z
+    .boolean()
+    .optional()
+    .describe('For exports: skip items whose editor layer is hidden (default false).'),
   region: z
     .object({ x: z.number(), y: z.number(), width: z.number(), height: z.number() })
     .optional()
@@ -116,11 +130,20 @@ const geometry: Tool<typeof geometryInput> = {
     "Parts hidden by the user's layer/view state are still measured, marked visible:false.",
   inputSchema: geometryInput,
   async execute(input, ctx) {
+    const filter: Partial<TableExportFilter> = {
+      itemFilter: input.itemFilter ?? 'everything',
+      skipEditorHiddenItems: input.skipHiddenLayers ?? false,
+    };
+    if (input.parts && input.parts.length > 0) filter.onlyItems = input.parts;
     if (input.action === 'export_obj') {
       return exportObj(ctx, input.outputDir, {
         unit: input.unit ?? UNIT_CONVERSION_VPU,
         orientation: input.orientation ?? OBJ_ORIENTATION_VPX,
+        ...filter,
       });
+    }
+    if (input.action === 'export_glb') {
+      return exportGlb(ctx, input.outputDir, filter);
     }
     const result = await ctx.queryGeometry({ parts: input.parts, region: input.region });
     if (result.success !== true) return errorResult((result.error as string) ?? NO_ACTIVE_TABLE);
@@ -157,7 +180,11 @@ const geometry: Tool<typeof geometryInput> = {
   },
 };
 
-async function exportObj(ctx: ToolContext, outputDir: string | undefined, exchange: ObjExchangeOptions) {
+async function exportObj(
+  ctx: ToolContext,
+  outputDir: string | undefined,
+  exchange: ObjExchangeOptions & Partial<TableExportFilter>
+) {
   const handle = await ctx.getActiveTable();
   if (!handle) return errorResult(NO_ACTIVE_TABLE);
   const dir = resolveOutputDir(handle, outputDir);
@@ -180,7 +207,33 @@ async function exportObj(ctx: ToolContext, outputDir: string | undefined, exchan
     objBytes: Buffer.byteLength(result.obj as string),
     unit: exchange.unit,
     orientation: exchange.orientation,
-    note: 'Visible geometry only (lights/flashers/plungers have no mesh). Files are overwritten on re-export. For Blender pass unit:"mm" (or "m"), orientation:"y-up-rh".',
+    itemFilter: exchange.itemFilter ?? 'everything',
+    skipHiddenLayers: exchange.skipEditorHiddenItems ?? false,
+    onlyItems: exchange.onlyItems,
+    note: 'Files are overwritten on re-export. For Blender pass unit:"mm" (or "m"), orientation:"y-up-rh", or use export_glb.',
+  });
+}
+
+async function exportGlb(ctx: ToolContext, outputDir: string | undefined, filter: Partial<TableExportFilter>) {
+  const handle = await ctx.getActiveTable();
+  if (!handle) return errorResult(NO_ACTIVE_TABLE);
+  const dir = resolveOutputDir(handle, outputDir);
+  if (typeof dir !== 'string') return errorResult(dir.error);
+
+  const result = await ctx.exportGlb(filter);
+  if (!result.success) return errorResult(result.error);
+
+  await fs.ensureDir(dir);
+  const glbPath = path.join(dir, `${handle.tableName ?? 'table'}.glb`);
+  await fs.writeFile(glbPath, result.bytes);
+
+  return jsonResult({
+    glbPath,
+    glbBytes: result.bytes.byteLength,
+    itemFilter: filter.itemFilter ?? 'everything',
+    skipHiddenLayers: filter.skipEditorHiddenItems ?? false,
+    onlyItems: filter.onlyItems,
+    note: 'glTF conventions: meters, Y up, right handed; opens in Blender with default import settings. Overwritten on re-export.',
   });
 }
 

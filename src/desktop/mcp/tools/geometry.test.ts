@@ -64,4 +64,31 @@ describe('vpx_geometry overlaps', () => {
     const result = await tool.execute({ action: 'summary' }, ctx);
     expect(result.isError).toBe(true);
   });
+
+  it('export_obj and export_glb pass the item filters through', async () => {
+    let objExchange: Record<string, unknown> | undefined;
+    let glbFilter: Record<string, unknown> | undefined;
+    const ctx = {
+      getActiveTable: async () => ({
+        workDir: '/tmp/fake',
+        vpxPath: null,
+        tableName: 'Fake',
+        windowId: 'w1',
+        isLocked: false,
+      }),
+      exportObj: async (_mtl: string, exchange: Record<string, unknown>) => {
+        objExchange = exchange;
+        return { success: false, error: 'stop' };
+      },
+      exportGlb: async (filter: Record<string, unknown>) => {
+        glbFilter = filter;
+        return { success: false as const, error: 'stop' };
+      },
+    } as unknown as ToolContext;
+    const filters = { parts: ['Wall1'], itemFilter: 'vpinball' as const, skipHiddenLayers: true };
+    await tool.execute({ action: 'export_obj', ...filters }, ctx);
+    expect(objExchange).toMatchObject({ itemFilter: 'vpinball', skipEditorHiddenItems: true, onlyItems: ['Wall1'] });
+    await tool.execute({ action: 'export_glb', ...filters }, ctx);
+    expect(glbFilter).toEqual({ itemFilter: 'vpinball', skipEditorHiddenItems: true, onlyItems: ['Wall1'] });
+  });
 });

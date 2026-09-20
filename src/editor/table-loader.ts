@@ -3,6 +3,7 @@ import {
   elements,
   GameItem,
   GameItemEntry,
+  DragPoint,
   Material,
   ImageData,
   SoundData,
@@ -19,8 +20,20 @@ import { updateLayersList, updateCollectionsList } from './layers-panel.js';
 import { getItem, setItem, setPartGroup, getPartGroup, clearFileNameMap, hasItem } from './state.js';
 import { nameEquals } from '../shared/gameitem-utils.js';
 import { generateUniqueName } from './object-factory.js';
+import { getObjectDefaults } from './object-types.js';
 import { upgradeBackglassPrimitives } from './backglass-upgrade.js';
 import { appendConsoleLine } from './console-panel.js';
+
+function seedTriggerShape(item: GameItem): void {
+  const center = (item.center || item.vCenter || { x: 0, y: 0 }) as { x: number; y: number };
+  const defaults = getObjectDefaults('Trigger') as { drag_points?: DragPoint[] } | null;
+  const template = defaults?.drag_points ?? [];
+  item.drag_points = template.map(pt => ({
+    ...pt,
+    x: (pt.x ?? 0) + center.x,
+    y: (pt.y ?? 0) + center.y,
+  }));
+}
 
 interface MimeTypes {
   [key: string]: string;
@@ -86,6 +99,11 @@ export async function loadTable(): Promise<void> {
     const materialsArray = JSON.parse(materialsResult.content!) as Material[];
     state.materials = {};
     for (const material of materialsArray) {
+      const duplicate = Object.keys(state.materials).find(k => nameEquals(k, material.name));
+      if (duplicate !== undefined) {
+        console.warn(`Duplicate material name found: ${duplicate}, dropping it`);
+        delete state.materials[duplicate];
+      }
       state.materials[material.name] = material;
     }
     state.materialNames = Object.keys(state.materials).sort((a, b) =>
@@ -102,6 +120,10 @@ export async function loadTable(): Promise<void> {
     const imagesArray = JSON.parse(imagesResult.content!) as ImageData[];
     state.images = {};
     for (const image of imagesArray) {
+      if (Object.keys(state.images).some(k => nameEquals(k, image.name))) {
+        console.warn(`Duplicate image name found: ${image.name}, dropping it`);
+        continue;
+      }
       state.images[image.name] = image;
     }
     state.imageNames = Object.keys(state.images).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
@@ -113,7 +135,12 @@ export async function loadTable(): Promise<void> {
 
   const soundsResult = await window.vpxEditor.readFile(`${state.extractedDir}/sounds.json`);
   if (soundsResult.success) {
-    state.sounds = JSON.parse(soundsResult.content!) as SoundData[];
+    const soundsArray = JSON.parse(soundsResult.content!) as SoundData[];
+    state.sounds = soundsArray.filter((sound, index) => {
+      const duplicate = soundsArray.findIndex(other => nameEquals(other.name, sound.name)) !== index;
+      if (duplicate) console.warn(`Duplicate sound name found: ${sound.name}, dropping it`);
+      return !duplicate;
+    });
     state.soundNames = state.sounds
       .map((s: SoundData) => s.name)
       .sort((a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
@@ -194,8 +221,13 @@ export async function loadTable(): Promise<void> {
     if (renamed) {
       item.name = itemName;
     }
+    let needsSave = renamed;
+    if (type === 'Trigger' && (!item.drag_points || item.drag_points.length === 0)) {
+      seedTriggerShape(item);
+      needsSave = true;
+    }
     setItem(itemName, item, itemInfo.file_name);
-    if (renamed) {
+    if (needsSave) {
       await saveItemToFile(itemName);
     }
 

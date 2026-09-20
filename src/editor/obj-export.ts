@@ -1,17 +1,62 @@
-import { state } from './state.js';
+import { state, elements, getItem } from './state.js';
 import { appendConsoleLine } from './console-panel.js';
 import {
+  exportTableGlbOptions,
   exportTableObjOptions,
   insertObjHeaderComment,
   renameObjMtlReference,
   type ObjExchangeOptions,
+  type TableExportFilter,
 } from '../shared/obj-transform.js';
 import { DEFAULT_OBJ_ORIENTATION, DEFAULT_OBJ_UNIT } from '../shared/constants.js';
+import type { MeshExportKind, MeshExportOptions } from '../features/mesh-export/shared/component.js';
+
+export type TableObjExchange = ObjExchangeOptions & Partial<TableExportFilter>;
 
 const DEFAULT_EXCHANGE: ObjExchangeOptions = {
   unit: DEFAULT_OBJ_UNIT,
   orientation: DEFAULT_OBJ_ORIENTATION,
 };
+
+export function promptTableExportOptions(kind: MeshExportKind): Promise<MeshExportOptions | null> {
+  const selected = state.selectedItems.filter(name => !!getItem(name));
+  return window.vpxEditor.promptMeshExportOptions(kind, selected);
+}
+
+function setStatus(text: string): void {
+  if (elements.statusBar) elements.statusBar.textContent = text;
+}
+
+export async function promptAndExportTableObj(): Promise<void> {
+  const options = await promptTableExportOptions('obj');
+  if (!options) {
+    setStatus('OBJ export cancelled');
+    return;
+  }
+  setStatus('Exporting OBJ mesh...');
+  const objPath = await exportTableMeshAndSave(options);
+  setStatus(objPath ? `Exported mesh: ${objPath}` : 'OBJ export cancelled');
+}
+
+export async function promptAndExportTableGlb(): Promise<void> {
+  const options = await promptTableExportOptions('glb');
+  if (!options) {
+    setStatus('GLB export cancelled');
+    return;
+  }
+  setStatus('Exporting GLB...');
+  const glbOptions = exportTableGlbOptions(options);
+  if (window.vpxEditor?.exportGlbTable) {
+    const result = await window.vpxEditor.exportGlbTable(glbOptions);
+    if (result.success) setStatus(`Exported GLB: ${result.path}`);
+    else if (result.cancelled) setStatus('GLB export cancelled');
+    else setStatus(`GLB export failed: ${result.error}`);
+    return;
+  }
+  const { handleExportGlb } = await import('../web/vpx-file-operations.js');
+  await handleExportGlb(glbOptions);
+  setStatus('Exported GLB');
+}
 
 function downloadFile(content: string, fileName: string): void {
   const url = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
@@ -28,7 +73,7 @@ function finishObjText(objBytes: Uint8Array, mtlFileName: string, options: ObjEx
   return insertObjHeaderComment(renameObjMtlReference(new TextDecoder().decode(objBytes), mtlFileName), options);
 }
 
-async function exportTableMeshFiles(options: ObjExchangeOptions): Promise<Record<string, Uint8Array> | null> {
+async function exportTableMeshFiles(options: TableObjExchange): Promise<Record<string, Uint8Array> | null> {
   if (window.vpxEditor?.exportObjTable) {
     const result = await window.vpxEditor.exportObjTable(exportTableObjOptions(options));
     if (!result?.success || !result.files) {
@@ -43,7 +88,7 @@ async function exportTableMeshFiles(options: ObjExchangeOptions): Promise<Record
 
 export async function exportTableMesh(
   mtlFileName: string,
-  options: ObjExchangeOptions = DEFAULT_EXCHANGE
+  options: TableObjExchange = DEFAULT_EXCHANGE
 ): Promise<{ obj: string; mtl: string } | null> {
   const files = await exportTableMeshFiles(options);
   const objBytes = files?.['table.obj'];
@@ -52,7 +97,7 @@ export async function exportTableMesh(
   return { obj: finishObjText(objBytes, mtlFileName, options), mtl: new TextDecoder().decode(mtlBytes) };
 }
 
-export async function exportTableMeshAndSave(options: ObjExchangeOptions = DEFAULT_EXCHANGE): Promise<string | null> {
+export async function exportTableMeshAndSave(options: TableObjExchange = DEFAULT_EXCHANGE): Promise<string | null> {
   const tableName = state.tableName || 'table';
   const isDesktop = !!(window.vpxEditor?.exportObjMeshGetPath && window.vpxEditor?.exportObjTable);
 
