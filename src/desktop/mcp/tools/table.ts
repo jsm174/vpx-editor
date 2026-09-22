@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { findItem, itemsByType, summarizeCounts, getPlayfieldBounds } from '../../../shared/table-state.js';
 import { errorResult, jsonResult, type Tool } from '../types.js';
 import { NO_ACTIVE_TABLE, filterByNameRegex } from './edit-util.js';
+import { getItemCenter, type PositionableItem } from '../../../shared/position-utils.js';
 
 const tableInput = z.object({
   action: z
@@ -97,7 +98,7 @@ const table: Tool<typeof tableInput> = {
           partGroup: i.data.part_group_name ?? null,
           layer: i.ref.editor_layer ?? null,
           isLocked: i.ref.is_locked ?? false,
-          center: i.data.center ?? i.data.position ?? null,
+          center: getItemCenter(i.data as PositionableItem),
         })),
       });
     }

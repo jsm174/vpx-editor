@@ -673,7 +673,7 @@
     {
       "name": "vpw-basic-example",
       "repo": "jsm174/vpw-example-tables",
-      "commit": "cec26087229e6d39008cf3e768490d1e82283473",
+      "commit": "977143d063315eb81884a43cf04f39458588298d",
       "dest": "public/templates",
       "assembleVpx": {
         "subdir": "Basic Example Table VPW 1.7.1",
@@ -683,7 +683,7 @@
     {
       "name": "vpw-example",
       "repo": "jsm174/vpw-example-tables",
-      "commit": "cec26087229e6d39008cf3e768490d1e82283473",
+      "commit": "977143d063315eb81884a43cf04f39458588298d",
       "dest": "public/templates",
       "assembleVpx": {
         "subdir": "Example Table VPW 1.7",
@@ -693,7 +693,7 @@
     {
       "name": "vpw-rom-example",
       "repo": "jsm174/vpw-example-tables",
-      "commit": "cec26087229e6d39008cf3e768490d1e82283473",
+      "commit": "977143d063315eb81884a43cf04f39458588298d",
       "dest": "public/templates",
       "assembleVpx": {
         "subdir": "ROM Example Table VPW 1.7",

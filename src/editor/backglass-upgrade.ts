@@ -139,8 +139,6 @@ export async function upgradeBackglassPrimitives(): Promise<void> {
         pt.y = center.y + cornersY[i];
       });
     }
-    flasher.pos_x = center.x;
-    flasher.pos_y = center.y;
     flasher.height = center.z;
     flasher.rot_x = -180 - (Math.atan2(planeNormal.y, planeNormal.z) * 180) / Math.PI;
     flasher.render_mode = 'ext_render';

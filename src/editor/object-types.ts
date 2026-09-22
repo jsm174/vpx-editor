@@ -362,8 +362,6 @@ interface PlungerDefaults {
 
 interface FlasherDefaults {
   height: number;
-  pos_x: number;
-  pos_y: number;
   rot_x: number;
   rot_y: number;
   rot_z: number;
@@ -1037,8 +1035,6 @@ export const objectTypes: ObjectTypes = {
     dragPointColor: '#ff0000',
     defaults: {
       height: 50.0,
-      pos_x: 0.0,
-      pos_y: 0.0,
       rot_x: 0.0,
       rot_y: 0.0,
       rot_z: 0.0,
