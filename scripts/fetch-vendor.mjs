@@ -58,16 +58,20 @@ function concatScript(root, spec) {
   return chunks.join('\n');
 }
 
+const wasmDir = join(root, 'node_modules', '@francisdb', 'vpin-wasm');
+const vpinVersion = JSON.parse(readFileSync(join(wasmDir, 'package.json'), 'utf-8')).version;
+
 async function assembleVpxSource(source) {
   const spec = source.assembleVpx;
   const outPath = join(root, source.dest, spec.output);
   const stampPath = `${outPath}.commit`;
-  if (existsSync(outPath) && existsSync(stampPath) && readFileSync(stampPath, 'utf-8').trim() === source.commit) {
+  const stamp = `${source.commit} vpin-wasm@${vpinVersion}`;
+  if (existsSync(outPath) && existsSync(stampPath) && readFileSync(stampPath, 'utf-8').trim() === stamp) {
     verified++;
     return;
   }
   if (checkOnly) {
-    failures.push(`${source.dest}/${spec.output}: missing or built from a different commit`);
+    failures.push(`${source.dest}/${spec.output}: missing or built from a different commit or vpin-wasm version`);
     return;
   }
   const tmp = mkdtempSync(join(tmpdir(), 'vendor-vpx-'));
@@ -94,15 +98,14 @@ async function assembleVpxSource(source) {
       console.log(`vendor: inlined tablescript for ${spec.output}`);
     }
 
-    console.log(`vendor: assembling ${spec.output} from ${Object.keys(files).length} files…`);
-    const wasmDir = join(root, 'node_modules', '@francisdb', 'vpin-wasm');
+    console.log(`vendor: assembling ${spec.output} from ${Object.keys(files).length} files with vpin-wasm ${vpinVersion}…`);
     const { initSync, assemble } = await import(pathToFileURL(join(wasmDir, 'vpin.js')).href);
     initSync({ module: new WebAssembly.Module(readFileSync(join(wasmDir, 'vpin_bg.wasm'))) });
     const bytes = assemble(files, null);
 
     mkdirSync(dirname(outPath), { recursive: true });
     writeFileSync(outPath, bytes);
-    writeFileSync(stampPath, source.commit + '\n');
+    writeFileSync(stampPath, stamp + '\n');
     fetched++;
   } catch (err) {
     failures.push(`${source.dest}/${spec.output}: ${err.message}`);

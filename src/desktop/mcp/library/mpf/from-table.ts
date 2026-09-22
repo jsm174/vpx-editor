@@ -6,6 +6,7 @@
 // darkchaos/glf_mpf/config, so the design drives VPX and real hardware alike.
 import { getPlayfieldBounds, type GameItem, type TableState } from '../../../../shared/table-state.js';
 import { findConstants, stripAllComments } from '../../../../shared/vbs-analysis.js';
+import { getItemCenter, type PositionableItem } from '../../../../shared/position-utils.js';
 
 export interface MpfSwitch {
   name: string;
@@ -45,10 +46,8 @@ export interface MpfConfig {
 
 function getCenter(item: GameItem): { x: number; y: number } | null {
   const d = item.data;
-  const c = d.center as { x?: number; y?: number } | undefined;
-  if (c && typeof c.x === 'number' && typeof c.y === 'number') return { x: c.x, y: c.y };
-  const p = d.position as { x?: number; y?: number } | undefined;
-  if (p && typeof p.x === 'number' && typeof p.y === 'number') return { x: p.x, y: p.y };
+  const shared = getItemCenter(d as PositionableItem);
+  if (shared) return shared;
   if (typeof d.x === 'number' && typeof d.y === 'number') return { x: d.x as number, y: d.y as number };
   return null;
 }
