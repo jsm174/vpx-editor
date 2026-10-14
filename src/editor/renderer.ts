@@ -567,7 +567,11 @@ elements.canvas!.addEventListener('pointerdown', e => {
           invokeCallback('selectionChangeCallback');
         } else {
           const hitInSelection = state.selectedItems.find(name => includesName(hits, name));
-          if (!hitInSelection) {
+          if (state.selectedItems.length === 1 && hitInSelection) {
+            const index = hits.findIndex(name => nameEquals(name, hitInSelection));
+            const next = hits[(index + 1) % hits.length];
+            if (!nameEquals(next, hitInSelection)) selectItem(next, true);
+          } else if (!hitInSelection) {
             selectItem(hits[0], true);
           }
           const anyUnlocked = state.selectedItems.some(name => !getItem(name)?.is_locked);
