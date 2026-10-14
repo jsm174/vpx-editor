@@ -226,7 +226,7 @@ export const SPINNER_DEFAULTS = {
   damping: 0.9879,
   elasticity: 0.3,
   angle_max: 0.0,
-  angle_min: 0.3,
+  angle_min: 0.0,
   timer_interval: 100,
 };
 
