@@ -495,6 +495,13 @@ export function hitTestFlipper(
   return false;
 }
 
+export function syncFlipperRubberInts(item: Record<string, unknown>): void {
+  for (const prop of ['rubber_thickness', 'rubber_height', 'rubber_width']) {
+    const value = item[prop];
+    if (typeof value === 'number') item[`${prop}_int`] = Math.max(0, Math.trunc(value));
+  }
+}
+
 export function flipperProperties(item: FlipperItem): string {
   return `
     <div class="prop-tabs">
