@@ -92,6 +92,11 @@ function isPositionProp(prop: string): boolean {
   return false;
 }
 
+export function isLockedFieldKey(key: string): boolean {
+  if (key === 'drag_points') return true;
+  return POSITION_PROPS.some(prop => prop === key || prop.startsWith(`${key}.`));
+}
+
 function initGotoIcons(): void {
   elements.propertiesContent!.querySelectorAll<HTMLElement>('.prop-select-with-goto').forEach(container => {
     const sel = container.querySelector('select') as HTMLSelectElement;
