@@ -86,6 +86,12 @@ const POSITION_PROPS: string[] = [
   'flasher_center_y',
 ];
 
+function isLightSeqCenterInBounds(prop: 'pos_x' | 'pos_y', value: number): boolean {
+  const gd = state.gamedata as GameData | null;
+  const max = prop === 'pos_x' ? (gd?.right ?? 1000) - (gd?.left ?? 0) : (gd?.bottom ?? 2000) - (gd?.top ?? 0);
+  return value >= 0 && value < max;
+}
+
 function sanitizeFriction(value: number): number {
   return Number.isNaN(value) || value < 0 ? 0 : value;
 }
@@ -848,6 +854,14 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
           applyColorGradient(target as HTMLInputElement);
         }
         const primaryItem = state.primarySelectedItem ? getItem(state.primarySelectedItem) : undefined;
+        if (
+          primaryItem?._type === 'LightSequencer' &&
+          (prop === 'pos_x' || prop === 'pos_y') &&
+          !isLightSeqCenterInBounds(prop, value as number)
+        ) {
+          updatePropertiesPanel();
+          return;
+        }
         const isLightRenderMode = prop === 'render_mode' && primaryItem?._type === 'Light';
         if (isLightRenderMode) {
           for (const itemName of state.selectedItems) {
