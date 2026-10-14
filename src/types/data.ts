@@ -55,7 +55,7 @@ export interface GameData {
   ssao?: number;
   use_ao?: number;
   use_ssr?: number;
-  tone_mapper?: number;
+  tone_mapper?: string | number;
   color_grade_image?: string;
   image_color_grade?: string;
   difficulty?: number;
