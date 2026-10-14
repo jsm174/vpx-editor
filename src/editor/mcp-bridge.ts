@@ -21,6 +21,7 @@ import { applyGroupVisibilityToItem, syncIndexVisibility, saveGameitemsIndex } f
 import { generateUniqueFileName } from '../shared/gameitem-utils.js';
 import { renderCurrentView } from './view-manager.js';
 import { handleMcpCaptureRequest } from './mcp-capture.js';
+import { syncFlipperRubberInts } from './parts/flipper.js';
 
 interface McpBridgeHooks {
   runUndoRedo: (direction: 'undo' | 'redo') => Promise<boolean>;
@@ -101,6 +102,7 @@ function applyOverrides(item: GameItem, overrides: Record<string, unknown>, skip
     }
     target[k] = v;
   }
+  if (item._type === 'Flipper') syncFlipperRubberInts(target);
   normalizeDragPoints(item);
 }
 

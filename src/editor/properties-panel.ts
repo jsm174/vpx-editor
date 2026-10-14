@@ -23,6 +23,7 @@ import { selectItem, updateItemsList } from './items-panel.js';
 import { updateLayersList } from './layers-panel.js';
 import { getEditable } from './parts/index.js';
 import { partGroupProperties } from './parts/partgroup.js';
+import { syncFlipperRubberInts } from './parts/flipper.js';
 import type { WriteResult } from '../types/ipc.js';
 import type { GameData } from '../types/data.js';
 import {
@@ -1159,6 +1160,10 @@ async function updateItemProperty(itemName: string, prop: string, value: string 
     const finalKey = path[path.length - 1];
     const key = /^\d+$/.test(finalKey) ? parseInt(finalKey, 10) : finalKey;
     (target as Record<string | number, unknown>)[key] = value;
+  }
+
+  if (item._type === 'Flipper' && prop.startsWith('rubber_')) {
+    syncFlipperRubberInts(item as unknown as Record<string, unknown>);
   }
 
   const fileName = item._fileName;
