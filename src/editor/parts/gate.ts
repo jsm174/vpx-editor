@@ -258,7 +258,7 @@ export function gateProperties(item: GateItem): string {
       `
       ${propGroup(`
         ${numberInput('Elasticity', 'elasticity', item.elasticity ?? GATE_DEFAULTS.elasticity, 0.05)}
-        ${numberInput('Friction', 'friction', item.friction ?? GATE_DEFAULTS.friction, 0.05)}
+        ${numberInput('Friction', 'friction', item.friction ?? GATE_DEFAULTS.friction, 0.05, { min: 0 })}
         ${numberInput('Damping', 'damping', item.damping ?? GATE_DEFAULTS.damping, 0.005)}
         ${numberInput('Gravity Factor', 'gravity_factor', item.gravity_factor ?? GATE_DEFAULTS.gravity_factor, 0.05)}
       `)}

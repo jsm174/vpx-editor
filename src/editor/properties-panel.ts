@@ -86,6 +86,10 @@ const POSITION_PROPS: string[] = [
   'flasher_center_y',
 ];
 
+function sanitizeFriction(value: number): number {
+  return Number.isNaN(value) || value < 0 ? 0 : value;
+}
+
 function isPositionProp(prop: string): boolean {
   if (POSITION_PROPS.includes(prop)) return true;
   if (prop.startsWith('drag_points.')) return true;
@@ -281,7 +285,7 @@ function tableProperties(gamedata: GameData): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Playfield Friction</label>
-          <input type="number" class="prop-input" data-prop="friction" value="${(gamedata.friction ?? 0.075).toFixed(4)}" step="0.001">
+          <input type="number" class="prop-input" data-prop="friction" value="${(gamedata.friction ?? 0.075).toFixed(4)}" step="0.001" min="0">
         </div>
         <div class="prop-row">
           <label class="prop-label">Playfield Scatter Angle</label>
@@ -675,6 +679,7 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
           value = target.value;
         } else {
           value = parseFloat(target.value);
+          if (prop === 'friction') value = sanitizeFriction(value);
           if ('convertUnits' in target.dataset) {
             value = convertFromUnit(value);
           }
@@ -831,6 +836,7 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
           }
         } else {
           value = parseFloat(target.value);
+          if (prop === 'friction') value = sanitizeFriction(value);
           if ('convertUnits' in (target as HTMLInputElement).dataset) {
             value = convertFromUnit(value);
           }
@@ -1217,6 +1223,7 @@ function setupTablePropertyHandlers(): void {
           }
         } else {
           value = parseFloat(target.value);
+          if (prop === 'friction') value = sanitizeFriction(value);
           if ('convertUnits' in (target as HTMLInputElement).dataset) {
             value = convertFromUnit(value);
           } else if (prop === 'playfield_reflection_strength') {
@@ -1430,6 +1437,7 @@ function setupBackglassPropertyHandlers(): void {
           value = target.value;
         } else {
           value = parseFloat(target.value);
+          if (prop === 'friction') value = sanitizeFriction(value);
         }
 
         undoManager.beginUndo(`Backglass ${prop} updated`);
@@ -1617,6 +1625,7 @@ function setupPartGroupPropertyHandlers(groupName: string): void {
           value = target.value;
         } else {
           value = parseFloat(target.value);
+          if (prop === 'friction') value = sanitizeFriction(value);
           if (isNaN(value)) value = target.value;
         }
 

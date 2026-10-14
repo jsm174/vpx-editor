@@ -506,7 +506,7 @@ export function rubberProperties(item: unknown): string {
         </div>
         <div class="prop-row">
           <label class="prop-label">Friction</label>
-          <input type="number" class="prop-input" data-prop="friction" value="${(rubberItem.friction ?? RUBBER_DEFAULTS.friction).toFixed(3)}" step="0.05">
+          <input type="number" class="prop-input" data-prop="friction" value="${(rubberItem.friction ?? RUBBER_DEFAULTS.friction).toFixed(3)}" step="0.05" min="0">
         </div>
         <div class="prop-row">
           <label class="prop-label">Scatter Angle</label>
