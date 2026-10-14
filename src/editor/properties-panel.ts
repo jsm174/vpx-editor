@@ -121,12 +121,22 @@ function applyColorGradient(input: HTMLInputElement): void {
   input.style.background = `linear-gradient(to right, ${color}, ${darkColor})`;
 }
 
+const TONE_MAPPER_IDS = ['reinhard', 'agx', 'filmic', 'neutral'];
+
 function tableProperties(gamedata: GameData): string {
-  const tonemapperOptions = ['Reinhard', 'Tony McMapface', 'Filmic']
-    .map(name => {
-      const value = name === 'Reinhard' ? 0 : name === 'Tony McMapface' ? 1 : 2;
-      const selected = (gamedata.tone_mapper ?? 0) === value ? ' selected' : '';
-      return `<option value="${value}"${selected}>${name}</option>`;
+  const toneMappers: [string, string][] = [
+    ['reinhard', 'Reinhard'],
+    ['agx', 'AgX'],
+    ['filmic', 'Filmic'],
+    ['neutral', 'Neutral'],
+  ];
+  const rawToneMapper = gamedata.tone_mapper ?? 'reinhard';
+  const toneMapperId = typeof rawToneMapper === 'number' ? TONE_MAPPER_IDS[rawToneMapper] : rawToneMapper;
+  const currentToneMapper = toneMappers.some(([value]) => value === toneMapperId) ? toneMapperId : 'agx';
+  const tonemapperOptions = toneMappers
+    .map(([value, label]) => {
+      const selected = value === currentToneMapper ? ' selected' : '';
+      return `<option value="${value}"${selected}>${label}</option>`;
     })
     .join('');
 
@@ -1202,7 +1212,7 @@ function setupTablePropertyHandlers(): void {
           }
         } else if (target.tagName === 'SELECT') {
           value = target.value;
-          if (prop === 'tone_mapper' || prop === 'override_physics') {
+          if (prop === 'override_physics' || (prop === 'tone_mapper' && /^\d+$/.test(target.value))) {
             value = parseInt(target.value);
           }
         } else {
