@@ -1,4 +1,5 @@
 import type { Collection } from '../../collection-manager/shared/component.js';
+import { includesName } from '../../../shared/gameitem-utils.js';
 
 export interface SelectElementItem {
   name: string;
@@ -67,7 +68,7 @@ function getLayerPath(name: string, item: Record<string, unknown>): string {
 
 function getCollectionForItem(itemName: string, collections: Collection[]): string {
   for (const col of collections) {
-    if (col.items && col.items.includes(itemName)) {
+    if (col.items && includesName(col.items, itemName)) {
       return col.name;
     }
   }

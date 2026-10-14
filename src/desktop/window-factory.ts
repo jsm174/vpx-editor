@@ -179,7 +179,8 @@ export interface WindowFactory {
     ctx: WindowContext,
     entityType: string,
     currentName: string,
-    existingNames?: string[]
+    existingNames?: string[],
+    allowCaseChange?: boolean
   ): Promise<void>;
   getCollectionEditorContext(): WindowContext | null;
   getCollectionPromptContext(): WindowContext | null;
@@ -1987,7 +1988,8 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
     ctx: WindowContext,
     entityType: string,
     currentName: string,
-    existingNames?: string[]
+    existingNames?: string[],
+    allowCaseChange = false
   ): Promise<void> {
     if (!ctx.extractedDir) return;
     if (renamePromptWindow) {
@@ -2101,6 +2103,7 @@ export function createWindowFactory(deps: WindowFactoryDeps): WindowFactory {
         defaultValue: currentName,
         existingNames: existingNames || [],
         maxLength: ['image', 'sound', 'material', 'renderprobe'].includes(entityType) ? 0 : 31,
+        allowCaseChange,
       });
       renamePromptWindow!.show();
     });

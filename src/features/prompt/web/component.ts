@@ -8,6 +8,7 @@ export interface PromptOptions {
   existingNames: string[];
   maxLength?: number;
   title?: string;
+  allowCaseChange?: boolean;
 }
 
 export interface PromptResult {
@@ -62,6 +63,7 @@ export function initWebPrompt(): WebPromptInstance {
         existingNames = [],
         maxLength = 0,
         title: customTitle,
+        allowCaseChange = false,
       } = options;
 
       const entityTitles = titleMap[entityType];
@@ -82,7 +84,10 @@ export function initWebPrompt(): WebPromptInstance {
           error.textContent = 'Name cannot be empty';
           return false;
         }
-        if (mode === 'rename' && newName.toLowerCase() === currentName.toLowerCase()) {
+        if (
+          mode === 'rename' &&
+          (allowCaseChange ? newName === currentName : newName.toLowerCase() === currentName.toLowerCase())
+        ) {
           okBtn.disabled = true;
           error.textContent = '';
           return false;

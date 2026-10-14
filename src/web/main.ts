@@ -393,6 +393,7 @@ function enhanceApi(): void {
         existingNames,
         maxLength: 31,
         title,
+        allowCaseChange: mode === 'element',
       })
       .then(result => {
         if (result.submitted && result.value) {
