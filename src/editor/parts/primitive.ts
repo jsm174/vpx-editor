@@ -25,6 +25,7 @@ export interface PrimitiveItem {
   normal_map?: string;
   object_space_normal_map?: boolean;
   light_map?: string;
+  state_src_link?: string;
   reflection_probe?: string;
   refraction_probe?: string;
   reflection_strength?: number;
@@ -1062,6 +1063,10 @@ export function primitiveProperties(item: PrimitiveItem): string {
         <div class="prop-row">
           <label class="prop-label">Lightmap</label>
           <select class="prop-select" data-prop="light_map">${lightOptions(item.light_map)}</select>
+        </div>
+        <div class="prop-row">
+          <label class="prop-label">State Link</label>
+          <input type="text" class="prop-input" data-prop="state_src_link" value="${item.state_src_link || ''}">
         </div>
       </div>
       <div class="prop-group">

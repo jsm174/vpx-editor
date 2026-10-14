@@ -401,6 +401,10 @@ export function flasherProperties(item: Flasher): string {
           <select class="prop-select" data-prop="light_map">${lightOptions(item.light_map)}</select>
         </div>
         <div class="prop-row" style="${isAlphaSeg ? 'display:none' : ''}">
+          <label class="prop-label">State Link</label>
+          <input type="text" class="prop-input" data-prop="state_src_link" value="${item.state_src_link || ''}">
+        </div>
+        <div class="prop-row" style="${isAlphaSeg ? 'display:none' : ''}">
           <label class="prop-label">Additive Blend</label>
           <select class="prop-select" data-prop="add_blend">
             <option value="none"${addBlend === 'none' ? ' selected' : ''}>Off</option>

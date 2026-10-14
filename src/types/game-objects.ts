@@ -272,6 +272,7 @@ export interface Wall extends GameObject {
 }
 
 export interface Light extends GameObject {
+  state_src_link?: string;
   center: Point;
   falloff: number;
   falloff_power: number;
@@ -305,6 +306,7 @@ export interface Light extends GameObject {
 }
 
 export interface Primitive extends GameObject {
+  state_src_link?: string;
   position: Point3D;
   size: Point3D;
   rot_and_tra: number[];
@@ -378,6 +380,7 @@ export interface Ramp extends GameObject {
 }
 
 export interface Trigger extends GameObject {
+  state_src_link?: string;
   center: Point;
   radius: number;
   rotation: number;
@@ -566,6 +569,7 @@ export function getFlasherAddBlend(item: { add_blend?: unknown; is_add_blend?: u
 }
 
 export interface Flasher extends GameObject {
+  state_src_link?: string;
   center: Point;
   height: number;
   size: number;

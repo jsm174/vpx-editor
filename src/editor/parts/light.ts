@@ -379,6 +379,7 @@ export function lightProperties(item: unknown): string {
     state?: number;
     blink_pattern?: string;
     blink_interval?: number;
+    state_src_link?: string;
     is_timer_enabled?: boolean;
     timer_interval?: number;
   };
@@ -537,6 +538,10 @@ export function lightProperties(item: unknown): string {
         <div class="prop-row">
           <label class="prop-label">Blink Interval</label>
           <input type="number" class="prop-input" data-prop="blink_interval" data-type="int" value="${lightItem.blink_interval ?? LIGHT_DEFAULTS.blink_interval}" step="25">
+        </div>
+        <div class="prop-row">
+          <label class="prop-label">State Link</label>
+          <input type="text" class="prop-input" data-prop="state_src_link" value="${lightItem.state_src_link || ''}">
         </div>
       </div>
     </div>
