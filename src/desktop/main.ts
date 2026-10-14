@@ -1602,7 +1602,13 @@ ipcMain.on(
     const ctx = windowRegistry.getContextFromEvent(event);
     if (!ctx) return;
     const entityType = data.mode === 'element' && data.elementType ? data.elementType : data.mode;
-    windowFactory.openRenamePromptWindow(ctx, entityType, data.currentName, data.existingNames);
+    windowFactory.openRenamePromptWindow(
+      ctx,
+      entityType,
+      data.currentName,
+      data.existingNames,
+      data.mode === 'element'
+    );
   }
 );
 

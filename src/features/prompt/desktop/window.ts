@@ -16,6 +16,7 @@ interface PromptInitData {
   defaultValue: string;
   existingNames: string[];
   maxLength?: number;
+  allowCaseChange?: boolean;
 }
 
 let mode: 'new' | 'rename' = 'rename';
@@ -23,6 +24,7 @@ let entityType: string = 'element';
 let currentName: string = '';
 let existingNames: string[] = [];
 let maxLength: number = 0;
+let allowCaseChange = false;
 
 setupThemeListener();
 
@@ -32,6 +34,7 @@ window.vpxPrompt.onInit((data: PromptInitData) => {
   currentName = data.currentName || '';
   existingNames = data.existingNames || [];
   maxLength = data.maxLength || 0;
+  allowCaseChange = data.allowCaseChange === true;
 
   const titleMap: Record<string, Record<string, string>> = {
     collection: { new: 'New Collection', rename: 'Rename Collection' },
@@ -66,7 +69,10 @@ function validate(): boolean {
     return false;
   }
 
-  if (mode === 'rename' && newName.toLowerCase() === currentName.toLowerCase()) {
+  if (
+    mode === 'rename' &&
+    (allowCaseChange ? newName === currentName : newName.toLowerCase() === currentName.toLowerCase())
+  ) {
     okBtn.disabled = true;
     error.textContent = '';
     return false;

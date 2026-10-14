@@ -98,6 +98,11 @@ export class OpfsFileSystem implements FileSystemProvider {
 
   async renameFile(oldPath: string, newPath: string): Promise<void> {
     const content = await this.readBinaryFile(oldPath);
+    if (this.normalizePath(oldPath) === this.normalizePath(newPath)) {
+      await this.deleteFile(oldPath);
+      await this.writeBinaryFile(newPath, content);
+      return;
+    }
     await this.writeBinaryFile(newPath, content);
     await this.deleteFile(oldPath);
   }

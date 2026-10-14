@@ -7,6 +7,7 @@ interface PromptInitData {
   defaultValue: string;
   existingNames: string[];
   maxLength?: number;
+  allowCaseChange?: boolean;
 }
 
 export interface PromptAPI {
