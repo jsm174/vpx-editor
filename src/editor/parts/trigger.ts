@@ -45,6 +45,7 @@ interface TriggerItem {
   is_reflection_enabled?: boolean;
   is_enabled?: boolean;
   hit_height?: number;
+  state_src_link?: string;
   is_timer_enabled?: boolean;
   timer_interval?: number;
   is_locked?: boolean;
@@ -474,6 +475,10 @@ export function triggerProperties(item: TriggerItem): string {
         <div class="prop-row">
           <label class="prop-label">Hit Height</label>
           <input type="number" class="prop-input" data-prop="hit_height" data-convert-units value="${convertToUnit(item.hit_height ?? TRIGGER_DEFAULTS.hit_height).toFixed(1)}" step="${convertToUnit(5).toFixed(4)}">${getUnitSuffixHtml()}
+        </div>
+        <div class="prop-row">
+          <label class="prop-label">State Link</label>
+          <input type="text" class="prop-input" data-prop="state_src_link" value="${item.state_src_link || ''}">
         </div>
       </div>
     </div>
