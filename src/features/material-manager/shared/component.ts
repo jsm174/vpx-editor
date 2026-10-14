@@ -398,7 +398,7 @@ export function initMaterialManagerComponent(
         </div>
         <div class="prop-row">
           <label class="prop-label">Friction</label>
-          <input type="number" class="prop-input" data-prop="friction" value="${((mat.friction as number) ?? 0).toFixed(3)}" step="0.01">
+          <input type="number" class="prop-input" data-prop="friction" value="${((mat.friction as number) ?? 0).toFixed(3)}" step="0.01" min="0">
         </div>
         <div class="prop-row">
           <label class="prop-label">Scatter Angle</label>
@@ -438,6 +438,7 @@ export function initMaterialManagerComponent(
           value = target.value;
         } else {
           value = parseFloat(target.value);
+          if (prop === 'friction' && !(value >= 0)) value = 0;
         }
 
         callbacks.undoBegin?.(`Change ${selectedMaterial} ${prop}`);
@@ -490,7 +491,7 @@ export function initMaterialManagerComponent(
           </div>
           <div class="prop-row">
             <label class="prop-label">Friction</label>
-            <input type="number" class="prop-input" id="edit-friction" value="${((mat.friction as number) ?? 0).toFixed(3)}" step="0.01">
+            <input type="number" class="prop-input" id="edit-friction" value="${((mat.friction as number) ?? 0).toFixed(3)}" step="0.01" min="0">
           </div>
           <div class="prop-row">
             <label class="prop-label">Scatter Angle</label>
@@ -556,7 +557,7 @@ export function initMaterialManagerComponent(
           elasticity_falloff: parseFloat(
             (document.getElementById('edit-elasticity-falloff') as HTMLInputElement).value
           ),
-          friction: parseFloat((document.getElementById('edit-friction') as HTMLInputElement).value),
+          friction: Math.max(0, parseFloat((document.getElementById('edit-friction') as HTMLInputElement).value) || 0),
           scatter_angle: parseFloat((document.getElementById('edit-scatter') as HTMLInputElement).value),
         };
         cleanup();
