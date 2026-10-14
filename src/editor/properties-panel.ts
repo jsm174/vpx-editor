@@ -1680,6 +1680,7 @@ export function showRenameModal(itemName: string, elementType?: string): void {
 
 const REFERENCE_PROPERTIES: Record<string, string[]> = {
   Wall: ['surface'],
+  Ramp: ['surface'],
   Light: ['light_map'],
 };
 
