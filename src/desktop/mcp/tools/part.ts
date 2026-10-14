@@ -163,6 +163,19 @@ async function unknownFieldWarnings(ctx: ToolContext, type: string, candidateKey
   ];
 }
 
+async function lockWarnings(ctx: ToolContext, names: string[]): Promise<string[]> {
+  const state = await ctx.loadActiveState();
+  if (!state) return [];
+  return names.flatMap(name => {
+    const item = findItem(state, name);
+    if (!item?.ref.is_locked) return [];
+    return [
+      `"${item.name}" is locked in the editor: it cannot be moved, reshaped, transformed or deleted until unlocked with ` +
+        `vpx_part(action:"modify", part:{ type:"${item.type}", partName:"${item.name}", is_locked:false }).`,
+    ];
+  });
+}
+
 const part: Tool<typeof partInput> = {
   name: 'vpx_part',
   annotations: { destructiveHint: true },
@@ -174,6 +187,8 @@ const part: Tool<typeof partInput> = {
     '"template" (pass `type` — ALWAYS call before "add" to learn the snake_case JSON shape + type gotchas), ' +
     '"export" (pass `name` + `outputPath`). ' +
     'add/modify/transform apply immediately (pass preview:true to inspect first); delete is a preview until confirm:true. ' +
+    'Parts locked in the editor (is_locked in vpx_table parts) keep their non-position fields editable, but cannot be moved, reshaped, transformed or deleted; ' +
+    'set is_locked:false (or true) in a modify patch to unlock (or lock) them, alone or together with other changes. ' +
     "Writes route through the editor's native create/modify/delete flow so undo, canvas, and panels all update. " +
     'Use vpx_history to undo/redo.',
   inputSchema: partInput,
@@ -263,8 +278,9 @@ const part: Tool<typeof partInput> = {
       const warnings = await unknownFieldWarnings(
         ctx,
         type,
-        Object.keys(overrides).filter(k => k !== 'position')
+        Object.keys(overrides).filter(k => k !== 'position' && k !== 'is_locked')
       );
+      if (input.preview && overrides.is_locked !== false) warnings.push(...(await lockWarnings(ctx, [partName])));
       return runEdit(
         ctx,
         {
@@ -293,21 +309,29 @@ const part: Tool<typeof partInput> = {
       for (const key of ['angle', 'scaleX', 'scaleY', 'dx', 'dy', 'center', 'aroundEachPart'] as const) {
         if (input[key] !== undefined) payload[key] = input[key];
       }
-      return runEdit(ctx, {
-        kind: 'transform-part',
-        payload,
-        description: `${input.transform} ${names.join(', ')}`,
-        preview: !!input.preview,
-      });
+      return runEdit(
+        ctx,
+        {
+          kind: 'transform-part',
+          payload,
+          description: `${input.transform} ${names.join(', ')}`,
+          preview: !!input.preview,
+        },
+        input.preview ? await lockWarnings(ctx, names) : []
+      );
     }
 
     if (!input.name) return errorResult('action="delete" requires `name`.');
-    return runEdit(ctx, {
-      kind: 'delete-part',
-      payload: { name: input.name },
-      description: `Delete part "${input.name}"`,
-      preview: !input.confirm,
-    });
+    return runEdit(
+      ctx,
+      {
+        kind: 'delete-part',
+        payload: { name: input.name },
+        description: `Delete part "${input.name}"`,
+        preview: !input.confirm,
+      },
+      input.confirm ? [] : await lockWarnings(ctx, [input.name])
+    );
   },
 };
 

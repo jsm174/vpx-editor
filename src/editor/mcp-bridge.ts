@@ -3,8 +3,9 @@ import { state, undoManager, getItem, type GameItem } from './state.js';
 import { createObject, deleteObject, saveNewObject } from './object-factory.js';
 import { updateItemsList, selectItem } from './items-panel.js';
 import { updateLayersList } from './layers-panel.js';
-import { updatePropertiesPanel } from './properties-panel.js';
-import { saveItemToFile } from './table-loader.js';
+import { updatePropertiesPanel, isLockedFieldKey } from './properties-panel.js';
+import { saveItemToFile, updateGameitemsJson } from './table-loader.js';
+import { updateClipboardMenuState } from './clipboard.js';
 import { invalidateItem } from './canvas-renderer-3d.js';
 import {
   moveObjectTo,
@@ -111,6 +112,13 @@ async function syncLayerFields(item: GameItem, overrides: Record<string, unknown
   await saveGameitemsIndex();
 }
 
+function lockedError(item: GameItem, action: string, extra = ''): string {
+  return (
+    `Part "${item.name}" is locked in the editor, so it cannot ${action}. ` +
+    `Unlock it first with vpx_part(action:"modify", part:{ type:"${item._type}", partName:"${item.name}", is_locked:false })${extra}.`
+  );
+}
+
 async function handleMcpPartOp(data: McpPartRequest): Promise<McpPartResult> {
   if (!state.extractedDir) return { success: false, error: 'No active table' };
   if (state.isTableLocked) return { success: false, error: 'Table is locked' };
@@ -158,14 +166,36 @@ async function handleMcpPartOp(data: McpPartRequest): Promise<McpPartResult> {
     if (!data.partName || !data.overrides) return { success: false, error: 'modify requires partName and overrides' };
     const item = getItem(data.partName);
     if (!item) return { success: false, error: `Part not found: ${data.partName}` };
-    if (item.is_locked) return { success: false, error: `Part "${data.partName}" is locked in the editor.` };
+    if ('is_locked' in data.overrides && typeof data.overrides.is_locked !== 'boolean') {
+      return { success: false, error: '`is_locked` must be true or false.' };
+    }
+    if (item.is_locked && data.overrides.is_locked !== false) {
+      const blocked = Object.keys(data.overrides).filter(isLockedFieldKey);
+      if (blocked.length > 0)
+        return {
+          success: false,
+          error: lockedError(
+            item,
+            `be moved or reshaped (${blocked.join(', ')})`,
+            ', add is_locked:false to this patch, or leave out the position fields'
+          ),
+        };
+    }
     if ('name' in data.overrides && data.overrides.name !== item.name) {
       return { success: false, error: 'Renaming via modify is not supported.' };
     }
+    const wasLocked = item.is_locked === true;
     undoManager.beginUndo(`${item._type} modified (MCP)`);
     undoManager.markForUndo(item.name as string);
     const position = data.overrides.position as { x?: number; y?: number; z?: number } | undefined;
     applyOverrides(item, data.overrides, ['name', 'position']);
+    const lockChanged = (item.is_locked === true) !== wasLocked;
+    if (lockChanged) {
+      if (item.is_locked && state.selectedNode?.itemName === item.name) {
+        state.selectedNode = null;
+      }
+      await updateGameitemsJson(item.name as string);
+    }
     if (position && (position.x !== undefined || position.y !== undefined || position.z !== undefined)) {
       const anchor = getItemAnchor(item);
       moveObjectTo(item.name as string, position.x ?? anchor.x, position.y ?? anchor.y, position.z);
@@ -175,6 +205,10 @@ async function handleMcpPartOp(data: McpPartRequest): Promise<McpPartResult> {
     await undoManager.endUndo();
     if (!ok) return { success: false, error: 'saveItemToFile failed' };
     invalidateItem(item.name as string);
+    if (lockChanged) {
+      updateItemsList('', false);
+      void updateClipboardMenuState();
+    }
     updateLayersList();
     updatePropertiesPanel();
     renderCurrentView();
@@ -189,7 +223,7 @@ async function handleMcpPartOp(data: McpPartRequest): Promise<McpPartResult> {
     for (const name of names) {
       const item = getItem(name);
       if (!item) return { success: false, error: `Part not found: ${name}` };
-      if (item.is_locked) return { success: false, error: `Part "${name}" is locked in the editor.` };
+      if (item.is_locked) return { success: false, error: lockedError(item, 'be transformed') };
       items.push(item);
     }
     const resolvedNames = items.map(item => item.name as string);
@@ -246,6 +280,7 @@ async function handleMcpPartOp(data: McpPartRequest): Promise<McpPartResult> {
     if (!data.partName) return { success: false, error: 'delete requires partName' };
     const item = getItem(data.partName);
     if (!item) return { success: false, error: `Part not found: ${data.partName}` };
+    if (item.is_locked) return { success: false, error: lockedError(item, 'be deleted') };
     const ok = await deleteObject(data.partName);
     if (!ok) return { success: false, error: 'deleteObject failed' };
     updateItemsList('', false);

@@ -10,7 +10,7 @@ const FLIPPER_SAMPLE = {
   material: 'Flipper',
 };
 
-function fakeCtx(): ToolContext {
+function fakeCtx(locked = false): ToolContext {
   return {
     getActiveTable: async () => ({
       workDir: '/tmp/fake',
@@ -21,7 +21,7 @@ function fakeCtx(): ToolContext {
     }),
     loadActiveState: async () =>
       ({
-        items: [{ type: 'Flipper', name: 'LeftFlipper', data: FLIPPER_SAMPLE }],
+        items: [{ type: 'Flipper', name: 'LeftFlipper', data: FLIPPER_SAMPLE, ref: { is_locked: locked } }],
       }) as unknown as Awaited<ReturnType<ToolContext['loadActiveState']>>,
     listWindows: async () => [],
     attachWindow: async () => ({ ok: false, error: 'nope' }),
@@ -127,5 +127,44 @@ describe('vpx_part transform', () => {
   it('rejects a rotate without an angle', async () => {
     const result = await tool.execute({ action: 'transform', name: 'Wall1', transform: 'rotate' }, fakeCtx());
     expect(result.isError).toBe(true);
+  });
+});
+
+describe('vpx_part locked parts', () => {
+  const tool = buildPartTools()[0];
+
+  it('passes is_locked through a modify patch without an unknown field warning', async () => {
+    let op: Record<string, unknown> | undefined;
+    const ctx = fakeCtx(true);
+    ctx.applyEdit = async edit => {
+      op = edit as unknown as Record<string, unknown>;
+      return { success: true, applied: true };
+    };
+    const result = await tool.execute(
+      { action: 'modify', part: { type: 'Flipper', partName: 'LeftFlipper', is_locked: false, start_angle: 100 } },
+      ctx
+    );
+    expect(structured(result).warnings).toBeUndefined();
+    expect(op?.payload).toEqual({ name: 'LeftFlipper', patch: { is_locked: false, start_angle: 100 } });
+  });
+
+  it('warns about the lock in a delete preview', async () => {
+    const result = await tool.execute({ action: 'delete', name: 'LeftFlipper' }, fakeCtx(true));
+    const warnings = structured(result).warnings as string[];
+    expect(warnings[0]).toContain('locked');
+    expect(warnings[0]).toContain('is_locked:false');
+  });
+
+  it('warns about the lock in a transform preview', async () => {
+    const result = await tool.execute(
+      { action: 'transform', name: 'LeftFlipper', transform: 'translate', dx: 10, preview: true },
+      fakeCtx(true)
+    );
+    expect((structured(result).warnings as string[])[0]).toContain('locked');
+  });
+
+  it('does not warn for unlocked parts', async () => {
+    const result = await tool.execute({ action: 'delete', name: 'LeftFlipper' }, fakeCtx());
+    expect(structured(result).warnings).toBeUndefined();
   });
 });
