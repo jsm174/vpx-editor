@@ -279,6 +279,10 @@ function enhanceApi(): void {
     alert('Playing tables is not available in the web version.');
   };
 
+  api.liveEditTable = async () => {
+    alert('Live Edit is not available in the web version.');
+  };
+
   api.getGamedata = async () => {
     try {
       const content = await state.platform!.fileSystem.readFile(`${EXTRACTED_DIR}/gamedata.json`);
@@ -415,11 +419,6 @@ function setupKeyboardShortcuts(): void {
     if ((e.ctrlKey || e.metaKey) && e.key === 's' && !e.shiftKey) {
       e.preventDefault();
       handleSave();
-    }
-
-    if (e.key === 'F7') {
-      e.preventDefault();
-      events.emit('toggle-script-editor');
     }
 
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'l') {

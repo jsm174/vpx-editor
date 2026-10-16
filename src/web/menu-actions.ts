@@ -114,6 +114,9 @@ export function createMenuActionHandler(context: MenuActionContext) {
       case 'play':
         alert('Play is not available in the web version of VPX Editor.');
         break;
+      case 'live-edit':
+        alert('Live Edit is not available in the web version of VPX Editor.');
+        break;
       case 'open-table-info':
         events.emit('show-table-info');
         break;

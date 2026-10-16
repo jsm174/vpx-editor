@@ -304,6 +304,7 @@ export interface VpxEditorAPI {
     options?: ObjExchangeOptions
   ) => Promise<string | null>;
   playTable: () => Promise<void>;
+  liveEditTable: () => Promise<void>;
   onPlayStarted: (callback: IpcCallback) => void;
   onPlayStopped: (callback: IpcCallback) => void;
   onConsoleOpen: (callback: IpcCallback) => void;

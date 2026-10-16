@@ -334,6 +334,7 @@ function createMenu() {
         if (ctx) windowFactory.openScriptEditorWindow(ctx);
       },
       playTable: () => vpxOps.playTable(getVpxOpsDeps()),
+      liveEditTable: () => vpxOps.playTable(getVpxOpsDeps(), 'liveedit'),
       openTableInfoWindow: () => windowFactory.openTableInfoWindow(),
       openSoundManagerWindow: () => windowFactory.openSoundManagerWindow(),
       openImageManagerWindow: () => windowFactory.openImageManagerWindow(),
@@ -467,6 +468,10 @@ async function toggleTableLock(passedCtx?: WindowContext) {
 
 ipcMain.handle('play-table', async () => {
   await vpxOps.playTable(getVpxOpsDeps());
+});
+
+ipcMain.handle('live-edit-table', async () => {
+  await vpxOps.playTable(getVpxOpsDeps(), 'liveedit');
 });
 
 ipcMain.handle('stop-play', () => {

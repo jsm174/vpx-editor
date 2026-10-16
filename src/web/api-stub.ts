@@ -118,6 +118,7 @@ export const vpxEditorAPI = {
   exportImage: async () => ({ success: false, error: 'Not implemented in web version' }),
 
   playTable: async () => {},
+  liveEditTable: async () => {},
   stopPlay: async () => {},
 
   getVersion: async () => __APP_VERSION__,

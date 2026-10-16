@@ -334,7 +334,6 @@ export const menuSchema: MenuItemSchema[] = [
       {
         id: 'script-editor',
         label: 'Script',
-        accelerator: 'F7',
         action: 'open-script-editor',
         requires: ['hasTable'],
         disabledWhen: ['isLocked', 'dialogOpen'],
@@ -560,6 +559,14 @@ export const menuSchema: MenuItemSchema[] = [
         label: 'Play',
         accelerator: 'F5',
         action: 'play',
+        requires: ['hasTable'],
+        disabledWhen: ['dialogOpen'],
+      },
+      {
+        id: 'live-edit',
+        label: 'Live Edit',
+        accelerator: 'F6',
+        action: 'live-edit',
         requires: ['hasTable'],
         disabledWhen: ['dialogOpen'],
       },

@@ -60,6 +60,7 @@ export interface ElectronMenuActions {
   toggleBackglassView: () => void;
   openScriptEditorWindow: () => void;
   playTable: () => void;
+  liveEditTable: () => void;
   openTableInfoWindow: () => void;
   openSoundManagerWindow: () => void;
   openImageManagerWindow: () => void;
@@ -274,6 +275,9 @@ function createActionHandler(
 
     case 'play':
       return () => actions.playTable();
+
+    case 'live-edit':
+      return () => actions.liveEditTable();
 
     case 'open-table-info':
       return () => actions.openTableInfoWindow();

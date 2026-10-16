@@ -947,19 +947,28 @@ document.getElementById('btn-play')?.addEventListener('click', () => {
   window.vpxEditor.playTable();
 });
 
+document.getElementById('btn-live-edit')?.addEventListener('click', () => {
+  window.vpxEditor.liveEditTable();
+});
+
+// Play and Live Edit share one VPinballX process, so both buttons are blocked while it runs.
 window.vpxEditor.onPlayStarted?.(() => {
-  const btn = document.getElementById('btn-play') as HTMLButtonElement | null;
-  if (btn) {
-    btn.disabled = true;
-    btn.classList.add('playing');
+  for (const id of ['btn-play', 'btn-live-edit']) {
+    const btn = document.getElementById(id) as HTMLButtonElement | null;
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.add('playing');
+    }
   }
 });
 
 window.vpxEditor.onPlayStopped?.(() => {
-  const btn = document.getElementById('btn-play') as HTMLButtonElement | null;
-  if (btn) {
-    btn.disabled = false;
-    btn.classList.remove('playing');
+  for (const id of ['btn-play', 'btn-live-edit']) {
+    const btn = document.getElementById(id) as HTMLButtonElement | null;
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove('playing');
+    }
   }
 });
 
@@ -1259,6 +1268,18 @@ document.addEventListener('keydown', async e => {
   if (e.key === 'F10' || e.key === 'F11') {
     e.preventDefault();
     addPointAtCursor(e.key === 'F11');
+    return;
+  }
+
+  if (e.key === 'F9') {
+    e.preventDefault();
+    if (state.extractedDir) switchViewMode(state.viewMode === VIEW_MODE_3D ? VIEW_MODE_2D : VIEW_MODE_3D);
+    return;
+  }
+
+  if ((e.key === 'd' || e.key === 'D') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    if (isEditableElementFocused()) return;
+    if (state.extractedDir) window.vpxEditor.toggleScriptEditor();
     return;
   }
 

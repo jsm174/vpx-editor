@@ -7,6 +7,7 @@ import { render } from './canvas-renderer.js';
 import { is3DInitialized } from './canvas-renderer-3d.js';
 import { setCanvasCursor } from './cursor-utils.js';
 import type { ObjectType } from '../types/game-objects.js';
+import { insertShortcuts } from '../shared/insert-shortcuts.js';
 
 export type { ObjectType };
 
@@ -257,11 +258,14 @@ export function initElementsToolbar(): void {
   const toolbar = document.getElementById('elements-toolbar');
   if (!toolbar) return;
 
+  const shortcuts = insertShortcuts(navigator.platform.toUpperCase().includes('MAC'));
+
   for (const type of objectTypes) {
     const btn = document.createElement('button');
     btn.className = 'toolbox-btn';
     btn.dataset.type = type;
-    btn.dataset.tooltip = objectTypeLabels[type] || type;
+    const label = objectTypeLabels[type] || type;
+    btn.dataset.tooltip = shortcuts[type] ? `${label} (${shortcuts[type]})` : label;
 
     const img = document.createElement('img');
     img.src = `icons/${elementIcons[type] || type.toLowerCase()}.png`;

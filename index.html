@@ -88,10 +88,16 @@
         <button id="btn-play" class="tool-btn icon-btn" data-tooltip="Play (Not available in web)" disabled>
           <img src="icons/play.png" alt="Play">
         </button>
+        <button id="btn-live-edit" class="tool-btn icon-btn" data-tooltip="Live Edit (Not available in web)" disabled>
+          <img src="icons/live-edit.png" alt="Live Edit">
+        </button>
         <!-- @end-web-only -->
         <!-- @electron-only -->
-        <button id="btn-play" class="tool-btn icon-btn" data-tooltip="Play">
+        <button id="btn-play" class="tool-btn icon-btn" data-tooltip="Play (F5)">
           <img src="icons/play.png" alt="Play">
+        </button>
+        <button id="btn-live-edit" class="tool-btn icon-btn" data-tooltip="Live Edit (F6)">
+          <img src="icons/live-edit.png" alt="Live Edit">
         </button>
         <!-- @end-electron-only -->
       </div>
@@ -103,13 +109,13 @@
         <div class="toolbox-section">
           <div class="toolbox-title">TOOLBAR</div>
           <div class="toolbox-grid" id="toolbar-tools">
-            <button id="tool-magnify" class="toolbox-btn" data-tooltip="Magnify">
+            <button id="tool-magnify" class="toolbox-btn" data-tooltip="Magnify (Z)">
               <img src="icons/magnify.png" alt="Magnify">
             </button>
-            <button id="tool-select" class="toolbox-btn active" data-tooltip="Select">
+            <button id="tool-select" class="toolbox-btn active" data-tooltip="Select (V)">
               <img src="icons/arrow.png" alt="Select">
             </button>
-            <button id="tool-pan" class="toolbox-btn" data-tooltip="Pan">
+            <button id="tool-pan" class="toolbox-btn" data-tooltip="Pan (H)">
               <img src="icons/pan.png" alt="Pan">
             </button>
             <button id="tool-measure" class="toolbox-btn" data-tooltip="Measure Distance (M)">
@@ -118,10 +124,10 @@
             <button id="toggle-backglass" class="toolbox-btn" data-tooltip="Backglass View/POV">
               <img src="icons/backglass.png" alt="Backglass">
             </button>
-            <button id="tool-script" class="toolbox-btn" data-tooltip="Script Editor">
+            <button id="tool-script" class="toolbox-btn" data-tooltip="Script Editor (D)">
               <img src="icons/script.png" alt="Script">
             </button>
-            <button id="tool-3d" class="toolbox-btn" data-tooltip="3D View">
+            <button id="tool-3d" class="toolbox-btn" data-tooltip="3D View (F9)">
               <img src="icons/3d.png" alt="3D">
             </button>
           </div>

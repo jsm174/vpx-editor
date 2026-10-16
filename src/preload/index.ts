@@ -438,6 +438,7 @@ const vpxEditorAPI: VpxEditorAPI = {
   exportMesh: (primitiveFileName: string, suggestedName: string, options?: ObjExchangeOptions) =>
     ipcRenderer.invoke('export-mesh', primitiveFileName, suggestedName, options),
   playTable: (): Promise<void> => ipcRenderer.invoke('play-table'),
+  liveEditTable: (): Promise<void> => ipcRenderer.invoke('live-edit-table'),
   onPlayStarted: (callback: () => void): void => {
     ipcRenderer.on('play-started', () => callback());
   },

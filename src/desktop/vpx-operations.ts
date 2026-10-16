@@ -7,6 +7,7 @@ import { getLastFolder, setLastFolder, Settings } from './settings-manager.js';
 import type { AuditFinding, GlbExportOptions, ObjExportOptions } from '@francisdb/vpin-wasm';
 import type { WindowContext, WindowRegistry } from './window-context.js';
 import { bundledGlfDir } from './bundled-resources.js';
+import { vpinballSupportsOption } from './vpinball-options.js';
 import { prepareGlfStarterWorkDir } from './mcp/library/glf/starter.js';
 
 const MAX_RECENT_FILES = 10;
@@ -775,7 +776,9 @@ export async function assembleVPX(outputPath: string, deps: AssembleDeps, target
   }
 }
 
-export async function playTable(deps: PlayDeps & SaveDeps & AssembleDeps): Promise<void> {
+export type PlayMode = 'play' | 'liveedit';
+
+export async function playTable(deps: PlayDeps & SaveDeps & AssembleDeps, mode: PlayMode = 'play'): Promise<void> {
   const { windowRegistry, settings } = deps;
   const ctx = windowRegistry.getFocused();
   if (!ctx || !ctx.extractedDir) {
@@ -792,6 +795,18 @@ export async function playTable(deps: PlayDeps & SaveDeps & AssembleDeps): Promi
     return;
   }
 
+  if (mode === 'liveedit') {
+    const supported = await vpinballSupportsOption(settings.vpinballPath, '-LiveEdit', isRunningInFlatpak());
+    if (supported === false) {
+      dialog.showErrorBox(
+        'Live Edit Not Supported',
+        'The configured VPinballX does not list the -LiveEdit option, so it is too old for Live Edit. ' +
+          'Update VPinballX to a recent build, or set a newer one in Preferences > Paths.'
+      );
+      return;
+    }
+  }
+
   if (!ctx.currentTablePath) {
     const result = await dialog.showMessageBox(ctx.window, {
       type: 'warning',
@@ -805,7 +820,7 @@ export async function playTable(deps: PlayDeps & SaveDeps & AssembleDeps): Promi
     if (result.response === 0) {
       const saved = await saveVPXAs(deps);
       if (saved && ctx.currentTablePath) {
-        return playTable(deps);
+        return playTable(deps, mode);
       }
     }
     return;
@@ -816,7 +831,10 @@ export async function playTable(deps: PlayDeps & SaveDeps & AssembleDeps): Promi
   const playVpxPath = path.join(playDir, `${ctx.tableName}.vpx`);
 
   ctx.window.webContents.send('play-started');
-  ctx.window.webContents.send('status', 'Building table for play...');
+  ctx.window.webContents.send(
+    'status',
+    mode === 'liveedit' ? 'Building table for live edit...' : 'Building table for play...'
+  );
   ctx.window.webContents.send('console-open');
 
   await fs.promises.mkdir(playDir, { recursive: true });
@@ -841,17 +859,22 @@ export async function playTable(deps: PlayDeps & SaveDeps & AssembleDeps): Promi
     }
   }
 
-  await runAssembleThenPlay(ctx, playVpxPath, settings);
+  await runAssembleThenPlay(ctx, playVpxPath, settings, mode);
 }
 
-async function runAssembleThenPlay(ctx: WindowContext, vpxPath: string, settings: Settings): Promise<void> {
+async function runAssembleThenPlay(
+  ctx: WindowContext,
+  vpxPath: string,
+  settings: Settings,
+  mode: PlayMode
+): Promise<void> {
   playingContext = ctx;
   try {
     await runVpinAssemble(ctx, vpxPath, 'Assembling table...', msg => {
       ctx.window.webContents.send('status', msg);
     });
     sendConsoleOutput(ctx, 'success', 'Assembly complete.');
-    launchVPinball(ctx, vpxPath, settings);
+    launchVPinball(ctx, vpxPath, settings, mode);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[play] Assembly failed:', err);
@@ -863,8 +886,8 @@ async function runAssembleThenPlay(ctx: WindowContext, vpxPath: string, settings
   }
 }
 
-export function launchVPinball(ctx: WindowContext, vpxPath: string, settings: Settings): void {
-  const vpinballArgs = ['-play', vpxPath];
+export function launchVPinball(ctx: WindowContext, vpxPath: string, settings: Settings, mode: PlayMode = 'play'): void {
+  const vpinballArgs = [mode === 'liveedit' ? '-LiveEdit' : '-play', vpxPath];
   let spawnCmd: string;
   let spawnArgs: string[];
 
@@ -879,7 +902,14 @@ export function launchVPinball(ctx: WindowContext, vpxPath: string, settings: Se
   const playCmd = `${spawnCmd} ${spawnArgs.join(' ')}`;
   sendConsoleOutput(ctx, 'command', `$ ${playCmd}`);
   sendConsoleOutput(ctx, 'stdout', '');
-  ctx.window.webContents.send('status', 'Playing...');
+  if (mode === 'liveedit') {
+    sendConsoleOutput(
+      ctx,
+      'info',
+      `Live edit works on the built copy, not the extracted project: ${vpxPath}. VPinballX marks it an unstable preview.`
+    );
+  }
+  ctx.window.webContents.send('status', mode === 'liveedit' ? 'Live editing...' : 'Playing...');
 
   vpinballProcess = spawn(spawnCmd, spawnArgs, {
     stdio: ['ignore', 'pipe', 'pipe'],
