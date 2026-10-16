@@ -19,7 +19,7 @@ const { editorState, undoManagerMock, hitMock } = vi.hoisted(() => ({
 vi.mock('./state.js', () => ({
   state: editorState,
   undoManager: undoManagerMock,
-  getItem: (name: string) => editorState.items[name],
+  getItem: (name: string) => editorState.items[name] ?? editorState.items[name.toLowerCase()],
   isItemVisible: (item: { hidden?: boolean }) => !item.hidden,
   setSelection: (items: string | string[], primary: string | null = null) => {
     editorState.selectedItems = Array.isArray(items) ? items : [items];
@@ -151,6 +151,16 @@ describe('addPointAtCursor', () => {
     addPointAtCursor(false);
     expect(saveItemToFile).not.toHaveBeenCalled();
   });
+
+  it('selects the item under the cursor when it was not selected', () => {
+    editorState.primarySelectedItem = 'Wall1';
+    editorState.selectedItems = ['Wall1'];
+    hitMock.mockReturnValue(['Wall2']);
+    addPointAtCursor(false);
+    expect(editorState.selectedItems).toEqual(['Wall2']);
+    expect(editorState.primarySelectedItem).toBe('Wall2');
+    expect(editorState.selectedNode).toEqual({ itemName: 'Wall2', nodeIndex: 1 });
+  });
 });
 
 describe('multi-node selection', () => {
@@ -208,6 +218,16 @@ describe('multi-node selection', () => {
     expect(nodesOf('Wall1')).toHaveLength(4);
   });
 
+  it('delete does nothing on a locked item', () => {
+    editorState.items.Wall1 = wall({ is_locked: true, drag_points: [...square(), { x: 5, y: 5, smooth: false }] });
+    deleteSelectedNodes();
+    expect(nodesOf('Wall1')).toHaveLength(5);
+    toggleNodeInSelection('Wall1', 1);
+    deleteSelectedNodes();
+    expect(nodesOf('Wall1')).toHaveLength(5);
+    expect(saveItemToFile).not.toHaveBeenCalled();
+  });
+
   it('adding a point drops the group, since node indices shift', () => {
     toggleNodeInSelection('Wall1', 2);
     addNode('Wall1', 20, 5);
@@ -227,6 +247,23 @@ describe('window selection of control points', () => {
     expect(picked).toBe(true);
     expect(editorState.primarySelectedItem).toBe('Wall2');
     expect(editorState.selectedItems).toEqual(['Wall2']);
+    expect(editorState.selectedNode).toEqual({ itemName: 'Wall2', nodeIndex: 2 });
+  });
+
+  it('uses the item name rather than the lowercase key when every item may be picked', () => {
+    editorState.items = {
+      wall1: wall({ name: 'Wall1' }),
+      wall2: wall({ name: 'Wall2', drag_points: [{ x: 100, y: 100 }] }),
+    };
+    expect(selectNodesInRect(aroundNode2, null, null)).toBe(true);
+    expect(editorState.selectedItems).toEqual(['Wall1']);
+    expect(editorState.selectedNode).toEqual({ itemName: 'Wall1', nodeIndex: 2 });
+  });
+
+  it('prefers the selected item regardless of name case', () => {
+    editorState.items = { wall1: wall({ name: 'Wall1' }), wall2: wall({ name: 'Wall2' }) };
+    editorState.primarySelectedItem = 'WALL2';
+    expect(selectNodesInRect(aroundNode2, null, null)).toBe(true);
     expect(editorState.selectedNode).toEqual({ itemName: 'Wall2', nodeIndex: 2 });
   });
 

@@ -1240,8 +1240,9 @@ document.addEventListener('keydown', async e => {
       setMeasureMode(false);
     } else if (state.creationMode) {
       exitCreationMode();
-    } else if (state.selectedNode) {
+    } else if (state.selectedNode || state.selectedNodes) {
       state.selectedNode = null;
+      state.selectedNodes = null;
       updatePropertiesPanel();
       render();
     }

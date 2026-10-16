@@ -9,6 +9,7 @@ import { render } from './canvas-renderer.js';
 import { findClosestSegmentIndex, findItemsAtPoint } from './utils.js';
 import { VIEW_MODE_3D } from '../shared/constants.js';
 import { nameEquals } from '../shared/gameitem-utils.js';
+import { invokeCallback } from '../shared/callbacks.js';
 
 interface SelectedNode {
   itemName: string;
@@ -88,7 +89,8 @@ export function deleteSelectedNodes(): void {
   }
 
   const item = getItem(primary.itemName);
-  if (!item || !item.drag_points || item.drag_points.length - indices.length < getMinDragPoints(item._type)) return;
+  if (!item || item.is_locked || !item.drag_points) return;
+  if (item.drag_points.length - indices.length < getMinDragPoints(item._type)) return;
 
   undoManager.beginUndo('Control points deleted');
   undoManager.markForUndo(primary.itemName);
@@ -146,7 +148,7 @@ export function selectNodesInRect(
   candidateItems: string[] | null,
   base: NodeSelection | null
 ): boolean {
-  const names = candidateItems ?? Object.keys(state.items);
+  const names = candidateItems ?? Object.entries(state.items).map(([key, item]) => item.name || key);
   const candidates = names.flatMap(name => {
     const item = getItem(name);
     if (!item || !item.drag_points || item.drag_points.length === 0 || !isItemVisible(item, name)) return [];
@@ -177,7 +179,7 @@ export function getMinDragPoints(type: string): number {
 
 export function deleteNode(itemName: string, nodeIndex: number): void {
   const item = getItem(itemName);
-  if (!item || !item.drag_points || item.drag_points.length <= getMinDragPoints(item._type)) return;
+  if (!item || item.is_locked || !item.drag_points || item.drag_points.length <= getMinDragPoints(item._type)) return;
 
   undoManager.beginUndo('Control point deleted');
   undoManager.markForUndo(itemName);
@@ -290,6 +292,9 @@ export function addPointAtCursor(smooth: boolean): void {
   const { x, y } = state.lastMousePosition;
   const target = pickPointTarget(findItemsAtPoint(state.items, x, y), state.primarySelectedItem);
   if (!target) return;
+  const selectionChanged = !state.primarySelectedItem || !nameEquals(state.primarySelectedItem, target);
+  if (selectionChanged) setSelection([target], target);
   addNode(target, x, y, smooth);
   updatePropertiesPanel();
+  if (selectionChanged) invokeCallback('selectionChangeCallback');
 }

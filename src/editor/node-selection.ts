@@ -50,7 +50,7 @@ export function pickNodesInRect(
       if (p.x >= rect.minX && p.x <= rect.maxX && p.y >= rect.minY && p.y <= rect.maxY) indices.push(i);
     });
     if (indices.length === 0) continue;
-    if (name === preferred) return { itemName: name, indices };
+    if (preferred && nameEquals(name, preferred)) return { itemName: name, indices };
     if (!best || indices.length > best.indices.length) best = { itemName: name, indices };
   }
   return best;
