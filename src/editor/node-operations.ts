@@ -4,7 +4,8 @@ import { DragPoint } from './state.js';
 import { saveItemToFile } from './table-loader.js';
 import { updatePropertiesPanel } from './properties-panel.js';
 import { render } from './canvas-renderer.js';
-import { findClosestSegmentIndex } from './utils.js';
+import { findClosestSegmentIndex, findItemsAtPoint } from './utils.js';
+import { VIEW_MODE_3D } from '../shared/constants.js';
 
 interface SelectedNode {
   itemName: string;
@@ -22,6 +23,8 @@ interface NewDragPoint {
   is_locked: boolean;
   editor_layer: number;
 }
+
+export const EDITABLE_DRAG_POINT_TYPES: string[] = ['Wall', 'Ramp', 'Rubber', 'Light', 'Trigger', 'Flasher'];
 
 export function toggleNodeSmooth(itemName: string, nodeIndex: number): void {
   const item = getItem(itemName);
@@ -135,4 +138,26 @@ export function addNode(itemName: string, worldX: number, worldY: number, smooth
   saveItemToFile(itemName);
   undoManager.endUndo();
   render();
+}
+
+function canAddPointTo(name: string): boolean {
+  const item = getItem(name);
+  return !!item && !item.is_locked && !!item.drag_points && EDITABLE_DRAG_POINT_TYPES.includes(item._type);
+}
+
+/** Prefers the selected item when it is under the cursor, then the topmost hit, then the selection itself. */
+export function pickPointTarget(hits: string[], selected: string | null): string | null {
+  const editableSelected = selected && canAddPointTo(selected) ? selected : null;
+  const editableHits = hits.filter(canAddPointTo);
+  return editableHits.find(name => name === editableSelected) ?? editableHits[0] ?? editableSelected;
+}
+
+/** Adds a point at the cursor, so the nearest edge bulges out to it. Used by the F10 / F11 shortcuts. */
+export function addPointAtCursor(smooth: boolean): void {
+  if (state.viewMode === VIEW_MODE_3D || !state.lastMousePosition || state.isTableLocked) return;
+  const { x, y } = state.lastMousePosition;
+  const target = pickPointTarget(findItemsAtPoint(state.items, x, y), state.primarySelectedItem);
+  if (!target) return;
+  addNode(target, x, y, smooth);
+  updatePropertiesPanel();
 }

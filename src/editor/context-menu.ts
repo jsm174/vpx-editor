@@ -1,6 +1,6 @@
 import { state, Collection, DragPoint, getItem } from './state.js';
 import { hasClipboard } from './clipboard.js';
-import { getMinDragPoints } from './node-operations.js';
+import { getMinDragPoints, EDITABLE_DRAG_POINT_TYPES } from './node-operations.js';
 import { toggleItemInCollection, isItemInCollection } from './collections.js';
 import '../types/ipc.js';
 
@@ -20,6 +20,7 @@ interface NodeContextMenuCallbacks {
 
 interface ObjectContextMenuCallbacks {
   onAddPoint?: (itemName: string, worldX: number, worldY: number) => void;
+  onAddSmoothPoint?: (itemName: string, worldX: number, worldY: number) => void;
   onFlipX?: (itemName: string) => void;
   onFlipY?: (itemName: string) => void;
   onRotate?: (itemName: string, worldX: number, worldY: number) => void;
@@ -216,8 +217,6 @@ function positionMenu(menu: HTMLDivElement, screenX: number, screenY: number): v
   menu.style.top = top + 'px';
 }
 
-const EDITABLE_DRAG_POINT_TYPES: string[] = ['Wall', 'Ramp', 'Rubber', 'Light', 'Trigger', 'Flasher'];
-
 export function showNodeContextMenu(
   screenX: number,
   screenY: number,
@@ -302,7 +301,14 @@ export async function showObjectContextMenu(
 
   if (canEditPoints) {
     menu.appendChild(
-      createMenuItem('Add Point', () => callbacks.onAddPoint?.(itemName, worldX, worldY), isEditDisabled)
+      createMenuItem('Add Point (F10)', () => callbacks.onAddPoint?.(itemName, worldX, worldY), isEditDisabled)
+    );
+    menu.appendChild(
+      createMenuItem(
+        'Add Smooth Point (F11)',
+        () => callbacks.onAddSmoothPoint?.(itemName, worldX, worldY),
+        isEditDisabled
+      )
     );
   }
 

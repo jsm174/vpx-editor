@@ -54,7 +54,14 @@ import { setCallback, invokeCallback } from '../shared/callbacks.js';
 import { addLongPressContextMenu } from '../shared/long-press.js';
 import { setCanvasCursor } from './cursor-utils.js';
 import { loadTable, saveItemToFile } from './table-loader.js';
-import { toggleNodeSmooth, deleteNode, toggleNodeSlingshot, addPointToObject, addNode } from './node-operations.js';
+import {
+  toggleNodeSmooth,
+  deleteNode,
+  toggleNodeSlingshot,
+  addPointToObject,
+  addNode,
+  addPointAtCursor,
+} from './node-operations.js';
 import { openTableAudit, runTableAuditAfterLoad, resetTableAudit } from './table-audit.js';
 import {
   transformItemName,
@@ -802,6 +809,7 @@ elements.canvas!.addEventListener('contextmenu', e => {
           onDrawInFront: drawItemInFront,
           onDrawInBack: drawItemInBack,
           onAddPoint: addPointToObject,
+          onAddSmoothPoint: (itemName, worldX, worldY) => addNode(itemName, worldX, worldY, true),
           onFlipX: itemName => flipObjectX(itemName, renderCurrentView),
           onFlipY: itemName => flipObjectY(itemName, renderCurrentView),
           onRotate: rotateObject,
@@ -1192,6 +1200,12 @@ document.addEventListener('keydown', async e => {
     document.getElementById('tool-magnify')?.classList.add('active');
     document.querySelectorAll('.toolbox-btn').forEach(b => b.classList.remove('creating'));
     setCanvasCursor("url('cursors/magnify.png') 0 0, zoom-in");
+    return;
+  }
+
+  if (e.key === 'F10' || e.key === 'F11') {
+    e.preventDefault();
+    addPointAtCursor(e.key === 'F11');
     return;
   }
 
