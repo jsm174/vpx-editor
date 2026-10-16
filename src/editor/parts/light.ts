@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { state, elements } from '../state.js';
-import { toScreen, generateSmoothedPath, pointInPolygon } from '../utils.js';
+import { toScreen, generateSmoothedPath, pointInPolygon, getStrokeStyle, getLineWidth } from '../utils.js';
 import { getSurfaceHeight } from '../../shared/3d-material-helpers.js';
 import { loadTexture } from '../texture-loader.js';
 import { imageOptions, surfaceOptions } from '../../shared/options-generators.js';
@@ -150,7 +150,9 @@ function renderOutline(
   cy: number,
   scale: number,
   toScreenFn: ((x: number, y: number) => Point) | null,
-  drawCrossAlways: boolean
+  drawCrossAlways: boolean,
+  outlineColor: string = RENDER_COLOR_BLACK,
+  outlineWidth: number = 1
 ): void {
   const lightItem = item as {
     falloff_radius?: number;
@@ -161,7 +163,7 @@ function renderOutline(
   const falloff = (lightItem.falloff_radius ?? lightItem.falloff ?? LIGHT_DEFAULTS.falloff) * scale;
   const isCustomShape = lightItem.drag_points && lightItem.drag_points.length >= 3;
 
-  ctx.lineWidth = 1;
+  ctx.lineWidth = outlineWidth;
 
   if (isCustomShape) {
     ctx.strokeStyle = RENDER_COLOR_RED;
@@ -172,7 +174,7 @@ function renderOutline(
     const result = generateSmoothedPath(lightItem.drag_points!, true, PATH_SMOOTHING_ACCURACY);
     const vertices = Array.isArray(result) ? result : result.vertices;
     if (vertices.length >= 2) {
-      ctx.strokeStyle = RENDER_COLOR_BLACK;
+      ctx.strokeStyle = outlineColor;
       ctx.beginPath();
       const first = toScreenFn
         ? toScreenFn(vertices[0].x, vertices[0].y)
@@ -189,7 +191,7 @@ function renderOutline(
       ctx.stroke();
     }
   } else {
-    ctx.strokeStyle = RENDER_COLOR_BLACK;
+    ctx.strokeStyle = outlineColor;
     ctx.beginPath();
     ctx.arc(cx, cy, falloff, 0, Math.PI * 2);
     ctx.stroke();
@@ -197,8 +199,8 @@ function renderOutline(
 
   if (isCustomShape || drawCrossAlways) {
     const crossSize = LIGHT_CROSS_SIZE * scale;
-    ctx.strokeStyle = RENDER_COLOR_BLACK;
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = outlineColor;
+    ctx.lineWidth = outlineWidth;
     ctx.beginPath();
     ctx.moveTo(cx - crossSize, cy);
     ctx.lineTo(cx + crossSize, cy);
@@ -247,7 +249,7 @@ export function uiRenderPass1(item: unknown, _isSelected: boolean): void {
   ctx.fill();
 }
 
-export function uiRenderPass2(item: unknown, _isSelected: boolean): void {
+export function uiRenderPass2(item: unknown, isSelected: boolean): void {
   if (!elements.ctx) return;
   const ctx = elements.ctx;
 
@@ -263,7 +265,17 @@ export function uiRenderPass2(item: unknown, _isSelected: boolean): void {
 
   const { x: cx, y: cy } = toScreen(center.x, center.y);
 
-  renderOutline(ctx, item, cx, cy, state.zoom, toScreen, state.drawLightCenters);
+  renderOutline(
+    ctx,
+    item,
+    cx,
+    cy,
+    state.zoom,
+    toScreen,
+    state.drawLightCenters,
+    getStrokeStyle(item as { is_locked?: boolean }, isSelected, RENDER_COLOR_BLACK),
+    getLineWidth(isSelected)
+  );
 
   if (lightItem.show_bulb_mesh) {
     const meshRadius = (lightItem.mesh_radius ?? LIGHT_DEFAULTS.mesh_radius) * LIGHT_BULB_MESH_SCALE * state.zoom;
