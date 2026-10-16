@@ -1,10 +1,6 @@
 import type { SelectedNodeInfo, SelectedNodesInfo } from './state.js';
 import { nameEquals } from '../shared/gameitem-utils.js';
 
-/**
- * The control points selected on the primary item. `group` only counts while it names the same item and still
- * contains the primary node, so code that assigns `selectedNode` directly cannot leave a stale group behind.
- */
 export function selectedNodeIndices(primary: SelectedNodeInfo | null, group: SelectedNodesInfo | null): number[] {
   if (!primary) return [];
   if (group && nameEquals(group.itemName, primary.itemName) && group.indices.includes(primary.nodeIndex)) {
@@ -13,7 +9,6 @@ export function selectedNodeIndices(primary: SelectedNodeInfo | null, group: Sel
   return [primary.nodeIndex];
 }
 
-/** Shift+click: adds the clicked node (making it primary), or removes it if it was already selected. */
 export function toggleNodeSelection(indices: number[], clicked: number): { indices: number[]; primary: number | null } {
   if (indices.includes(clicked)) {
     const rest = indices.filter(i => i !== clicked);
@@ -34,10 +29,6 @@ export interface NodeCandidate {
   points: { x: number; y: number }[];
 }
 
-/**
- * Window selection of control points. A selection holds the points of one item, so when the rectangle covers
- * points of several items, the preferred item wins if it has any, otherwise the one with the most points inside.
- */
 export function pickNodesInRect(
   candidates: NodeCandidate[],
   rect: RectBounds,
@@ -56,7 +47,6 @@ export function pickNodesInRect(
   return best;
 }
 
-/** Window select with Shift: keeps the points already selected and appends the newly picked ones. */
 export function mergeNodeIndices(existing: number[], added: number[]): number[] {
   return [...existing, ...added.filter(i => !existing.includes(i))];
 }

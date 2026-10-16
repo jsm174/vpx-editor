@@ -31,7 +31,6 @@ vi.mock('./properties-panel.js', () => ({ updatePropertiesPanel: vi.fn() }));
 vi.mock('./canvas-renderer.js', () => ({ render: vi.fn() }));
 vi.mock('./utils.js', () => ({
   findItemsAtPoint: hitMock,
-  // Always inserts after the first point, so the tests can see where the splice lands.
   findClosestSegmentIndex: () => 1,
 }));
 
@@ -237,7 +236,6 @@ describe('multi-node selection', () => {
 });
 
 describe('window selection of control points', () => {
-  // Covers only the corner at (10, 10), which is node 2 of the square.
   const aroundNode2 = { startX: 9, endX: 11, startY: 9, endY: 11 };
   const nodesOf = (name: string) => editorState.items[name].drag_points as { x: number; y: number }[];
 
@@ -300,6 +298,25 @@ describe('window selection of control points', () => {
   it('does not duplicate points that are already in the base selection', () => {
     selectNodesInRect(aroundNode2, ['Wall1'], { itemName: 'Wall1', indices: [2, 3] });
     expect(getSelectedNodeIndices()).toEqual([2, 3]);
+  });
+
+  it('keeps the other selected items when the box is additive', () => {
+    editorState.selectedItems = ['Wall1', 'Wall2'];
+    editorState.primarySelectedItem = 'Wall2';
+    editorState.items.Wall2 = wall({ drag_points: [{ x: 100, y: 100 }] });
+    selectNodesInRect(aroundNode2, null, null, true);
+    expect(editorState.selectedItems).toEqual(['Wall1', 'Wall2']);
+    expect(editorState.primarySelectedItem).toBe('Wall1');
+    expect(editorState.selectedNode).toEqual({ itemName: 'Wall1', nodeIndex: 2 });
+  });
+
+  it('adds the picked item to the selection when the box is additive', () => {
+    editorState.selectedItems = ['Wall2'];
+    editorState.primarySelectedItem = 'Wall2';
+    editorState.items.Wall2 = wall({ drag_points: [{ x: 100, y: 100 }] });
+    selectNodesInRect(aroundNode2, null, null, true);
+    expect(editorState.selectedItems).toEqual(['Wall2', 'Wall1']);
+    expect(editorState.primarySelectedItem).toBe('Wall1');
   });
 
   it('ignores a base selection from another item', () => {

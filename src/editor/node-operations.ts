@@ -8,7 +8,7 @@ import { updatePropertiesPanel } from './properties-panel.js';
 import { render } from './canvas-renderer.js';
 import { findClosestSegmentIndex, findItemsAtPoint } from './utils.js';
 import { VIEW_MODE_3D } from '../shared/constants.js';
-import { nameEquals } from '../shared/gameitem-utils.js';
+import { includesName, nameEquals } from '../shared/gameitem-utils.js';
 import { invokeCallback } from '../shared/callbacks.js';
 
 interface SelectedNode {
@@ -50,7 +50,6 @@ export function getSelectedNodeIndices(): number[] {
   return selectedNodeIndices(state.selectedNode, state.selectedNodes);
 }
 
-/** Shift+click on a control point of the selected item: adds it to, or removes it from, the node selection. */
 export function toggleNodeInSelection(itemName: string, nodeIndex: number): void {
   const sameItem = !!state.selectedNode && nameEquals(state.selectedNode.itemName, itemName);
   const current = sameItem ? getSelectedNodeIndices() : [];
@@ -61,7 +60,6 @@ export function toggleNodeInSelection(itemName: string, nodeIndex: number): void
   render();
 }
 
-/** Moves every selected control point by the same offset, so the primary node ends up at the given position. */
 export function moveSelectedNodes(itemName: string, primaryIndex: number, worldX: number, worldY: number): void {
   const item = getItem(itemName);
   if (!item || !item.drag_points || !item.drag_points[primaryIndex]) return;
@@ -78,7 +76,6 @@ export function moveSelectedNodes(itemName: string, primaryIndex: number, worldX
   }
 }
 
-/** Deletes every selected control point as one undo step. Does nothing if too few points would be left. */
 export function deleteSelectedNodes(): void {
   const primary = state.selectedNode;
   if (!primary) return;
@@ -119,7 +116,6 @@ export interface NodeBoxRect {
   endY: number;
 }
 
-/** The current control point selection, or null when no point is selected. */
 export function snapshotNodeSelection(): NodeSelection | null {
   if (!state.selectedNode) return null;
   return { itemName: state.selectedNode.itemName, indices: getSelectedNodeIndices() };
@@ -131,22 +127,15 @@ export function restoreNodeSelection(selection: NodeSelection): void {
   state.selectedNodes = indices.length > 1 ? { itemName, indices } : null;
 }
 
-/**
- * Items whose control points a window selection started now may pick. null means every visible item, which is
- * what "always draw control points" shows. Otherwise only the selected items draw their points.
- */
 export function nodeBoxCandidateItems(): string[] | null {
   return state.alwaysDrawDragPoints ? null : [...state.selectedItems];
 }
 
-/**
- * Window selection of control points: picks the points inside the rectangle, appends them to `base` when it is
- * for the same item, and selects the item and the points. Returns false when no point was inside.
- */
 export function selectNodesInRect(
   rect: NodeBoxRect,
   candidateItems: string[] | null,
-  base: NodeSelection | null
+  base: NodeSelection | null,
+  additive = false
 ): boolean {
   const names = candidateItems ?? Object.entries(state.items).map(([key, item]) => item.name || key);
   const candidates = names.flatMap(name => {
@@ -168,7 +157,13 @@ export function selectNodesInRect(
 
   const sameItem = base && nameEquals(base.itemName, picked.itemName) ? base : null;
   const indices = sameItem ? mergeNodeIndices(sameItem.indices, picked.indices) : picked.indices;
-  setSelection([picked.itemName], picked.itemName);
+  let items = [picked.itemName];
+  if (additive) {
+    items = includesName(state.selectedItems, picked.itemName)
+      ? state.selectedItems
+      : [...state.selectedItems, picked.itemName];
+  }
+  setSelection(items, picked.itemName);
   restoreNodeSelection({ itemName: picked.itemName, indices });
   return true;
 }
@@ -214,36 +209,6 @@ export function toggleNodeSlingshot(itemName: string, nodeIndex: number): void {
   render();
 }
 
-export function addPointToObject(itemName: string, worldX: number, worldY: number): void {
-  const item = getItem(itemName);
-  if (!item || !item.drag_points) return;
-
-  undoManager.beginUndo('Control point added');
-  undoManager.markForUndo(itemName);
-
-  const insertIndex = findClosestSegmentIndex(item, worldX, worldY);
-
-  const newPoint: NewDragPoint = {
-    x: worldX,
-    y: worldY,
-    z: 0,
-    smooth: false,
-    is_slingshot: false,
-    has_auto_texture: true,
-    tex_coord: 0,
-    is_locked: false,
-    editor_layer: 0,
-  };
-
-  item.drag_points.splice(insertIndex, 0, newPoint as DragPoint);
-  (state as { selectedNode: SelectedNode | null }).selectedNode = { itemName, nodeIndex: insertIndex };
-  state.selectedNodes = null;
-
-  saveItemToFile(itemName);
-  undoManager.endUndo();
-  render();
-}
-
 export function addNode(itemName: string, worldX: number, worldY: number, smooth: boolean = false): void {
   const item = getItem(itemName);
   if (!item || !item.drag_points) return;
@@ -279,14 +244,12 @@ function canAddPointTo(name: string): boolean {
   return !!item && !item.is_locked && !!item.drag_points && EDITABLE_DRAG_POINT_TYPES.includes(item._type);
 }
 
-/** Prefers the selected item when it is under the cursor, then the topmost hit, then the selection itself. */
 export function pickPointTarget(hits: string[], selected: string | null): string | null {
   const editableSelected = selected && canAddPointTo(selected) ? selected : null;
   const editableHits = hits.filter(canAddPointTo);
   return editableHits.find(name => name === editableSelected) ?? editableHits[0] ?? editableSelected;
 }
 
-/** Adds a point at the cursor, so the nearest edge bulges out to it. Used by the F10 / F11 shortcuts. */
 export function addPointAtCursor(smooth: boolean): void {
   if (state.viewMode === VIEW_MODE_3D || !state.lastMousePosition || state.isTableLocked) return;
   const { x, y } = state.lastMousePosition;

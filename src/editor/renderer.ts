@@ -58,7 +58,6 @@ import {
   toggleNodeSmooth,
   deleteNode,
   toggleNodeSlingshot,
-  addPointToObject,
   addNode,
   addPointAtCursor,
   getSelectedNodeIndices,
@@ -401,8 +400,11 @@ function zoomAtPoint(offsetX: number, offsetY: number, zoomFactor: number): void
 
 addLongPressContextMenu(elements.canvas!);
 
+let middleButtonPan = false;
+
 function startMiddleButtonPan(e: MouseEvent): void {
   e.preventDefault();
+  middleButtonPan = true;
   state.isDragging = true;
   state.dragStart = { x: e.clientX - state.panX, y: e.clientY - state.panY };
   document.getElementById('tool-select')?.classList.remove('active');
@@ -412,14 +414,9 @@ function startMiddleButtonPan(e: MouseEvent): void {
   setCanvasCursor('grabbing');
   try {
     elements.canvas!.setPointerCapture('pointerId' in e ? (e as PointerEvent).pointerId : 1);
-  } catch {
-    // Capture is best effort; the pan still follows the cursor over the canvas.
-  }
+  } catch {}
 }
 
-// Some X11 setups report the left button as held during plain mouse moves, so a middle press arrives as a
-// pointermove instead of a pointerdown and the release as a pointermove instead of a pointerup. The
-// mousedown / mouseup events still fire, so the middle-button pan starts and stops from those as well.
 elements.canvas!.addEventListener('mousedown', e => {
   if (e.button === 1 && !state.isDragging && state.tool !== 'magnify') {
     startMiddleButtonPan(e);
@@ -427,7 +424,7 @@ elements.canvas!.addEventListener('mousedown', e => {
 });
 
 document.addEventListener('mouseup', e => {
-  if (e.button === 1 && state.isDragging) {
+  if (e.button === 1 && middleButtonPan) {
     handleCanvasPointerEnd(e);
   }
 });
@@ -546,7 +543,6 @@ elements.canvas!.addEventListener('pointerdown', e => {
         if (!e.shiftKey) {
           selectItem(null, true);
         } else if (nodesBefore) {
-          // Shift keeps the selected points, so they stay highlighted while the box is dragged.
           restoreNodeSelection(nodesBefore);
           updatePropertiesPanel();
         }
@@ -697,10 +693,7 @@ function getItemsInRect(rect: DragRect): string[] {
   return [...result];
 }
 
-// Items whose control points a window selection may pick. null means every visible item (the "always draw
-// control points" setting); otherwise the items that were selected, and so drawing their points, when the box started.
 let dragRectNodeItems: string[] | null = null;
-// Points that were selected when a Shift+box started; the box appends to them.
 let dragRectNodeBase: { itemName: string; indices: number[] } | null = null;
 
 async function handleCanvasPointerEnd(e: PointerEvent | MouseEvent): Promise<void> {
@@ -717,8 +710,7 @@ async function handleCanvasPointerEnd(e: PointerEvent | MouseEvent): Promise<voi
       updatePropertiesPanel();
       invokeCallback('selectionChangeCallback');
     } else {
-      // No whole object inside the box: select the control points in it, like the original editor.
-      if (selectNodesInRect(dragRect, dragRectNodeItems, dragRectNodeBase)) {
+      if (selectNodesInRect(dragRect, dragRectNodeItems, dragRectNodeBase, e.shiftKey)) {
         updatePropertiesPanel();
         invokeCallback('selectionChangeCallback');
       }
@@ -755,6 +747,7 @@ async function handleCanvasPointerEnd(e: PointerEvent | MouseEvent): Promise<voi
     }
   }
   state.isDragging = false;
+  middleButtonPan = false;
   if (state.tool !== 'magnify' && (e.altKey || state.tool === 'pan')) {
     setCanvasCursor('grab');
   } else if (state.tool !== 'magnify' && e.ctrlKey) {
@@ -861,7 +854,7 @@ elements.canvas!.addEventListener('contextmenu', e => {
           },
           onDrawInFront: drawItemInFront,
           onDrawInBack: drawItemInBack,
-          onAddPoint: addPointToObject,
+          onAddPoint: addNode,
           onAddSmoothPoint: (itemName, worldX, worldY) => addNode(itemName, worldX, worldY, true),
           onFlipX: itemName => flipObjectX(itemName, renderCurrentView),
           onFlipY: itemName => flipObjectY(itemName, renderCurrentView),
@@ -951,7 +944,6 @@ document.getElementById('btn-live-edit')?.addEventListener('click', () => {
   window.vpxEditor.liveEditTable();
 });
 
-// Play and Live Edit share one VPinballX process, so both buttons are blocked while it runs.
 window.vpxEditor.onPlayStarted?.(() => {
   for (const id of ['btn-play', 'btn-live-edit']) {
     const btn = document.getElementById(id) as HTMLButtonElement | null;
@@ -1904,6 +1896,7 @@ initViewSettings();
 async function handleDocumentPointerEnd(): Promise<void> {
   if (state.isDragging) {
     state.isDragging = false;
+    middleButtonPan = false;
     setCanvasCursor(getToolCursor());
   }
   if (state.draggingNode) {
