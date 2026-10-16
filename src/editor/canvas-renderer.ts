@@ -1,3 +1,5 @@
+import { selectedNodeIndices } from './node-selection.js';
+import { nameEquals } from '../shared/gameitem-utils.js';
 import { state, elements, isItemVisible, isItemSelected, dragRect, getItem, getItemByFileName } from './state.js';
 import type { GameItem, DragPoint } from './state.js';
 import {
@@ -360,11 +362,6 @@ function renderGenericCenter(item: ItemWithCenter, isSelected: boolean): void {
   ctx.fill();
 }
 
-interface SelectedNode {
-  itemName: string;
-  nodeIndex: number;
-}
-
 interface ObjectTypeConfig {
   dragPointColor?: string;
   dragPointFirstColor?: string;
@@ -379,13 +376,15 @@ function renderControlPoints(item: ItemWithDragPoints, itemName: string): void {
   const baseColor = typeConfig?.dragPointColor || DRAGPOINT_COLOR_DEFAULT;
   const firstColor = typeConfig?.dragPointFirstColor;
 
+  const selectedIndices = selectedNodeIndices(state.selectedNode, state.selectedNodes);
+
   for (let i = 0; i < item.drag_points.length; i++) {
     const pt = item.drag_points[i];
     const { x, y } = getDragPointCoords(pt);
     const { x: sx, y: sy } = toScreen(x, y);
 
-    const selectedNode = state.selectedNode as SelectedNode | null;
-    const isSelectedNode = selectedNode && selectedNode.itemName === itemName && selectedNode.nodeIndex === i;
+    const isSelectedNode =
+      !!state.selectedNode && nameEquals(state.selectedNode.itemName, itemName) && selectedIndices.includes(i);
     const isDragging = state.draggingNode && isSelectedNode;
 
     let strokeColor: string;

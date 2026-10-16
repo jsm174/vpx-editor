@@ -85,6 +85,11 @@ export interface SelectedNodeInfo {
   nodeIndex: number;
 }
 
+export interface SelectedNodesInfo {
+  itemName: string;
+  indices: number[];
+}
+
 export interface EditorColors {
   defaultMaterial: string;
   elementSelect: string;
@@ -134,6 +139,7 @@ export interface EditorState {
   showMaterials: boolean;
   creationMode: string | null;
   selectedNode: SelectedNodeInfo | null;
+  selectedNodes: SelectedNodesInfo | null;
   draggingNode: boolean;
   draggingObject: boolean;
   objectDragStart: Point;
@@ -230,6 +236,7 @@ export const state: EditorState = {
   showMaterials: false,
   creationMode: null,
   selectedNode: null,
+  selectedNodes: null,
   draggingNode: false,
   draggingObject: false,
   objectDragStart: { x: 0, y: 0 },

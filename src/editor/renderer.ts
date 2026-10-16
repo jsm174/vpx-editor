@@ -61,6 +61,14 @@ import {
   addPointToObject,
   addNode,
   addPointAtCursor,
+  getSelectedNodeIndices,
+  toggleNodeInSelection,
+  moveSelectedNodes,
+  deleteSelectedNodes,
+  snapshotNodeSelection,
+  restoreNodeSelection,
+  nodeBoxCandidateItems,
+  selectNodesInRect,
 } from './node-operations.js';
 import { openTableAudit, runTableAuditAfterLoad, resetTableAudit } from './table-audit.js';
 import {
@@ -496,6 +504,15 @@ elements.canvas!.addEventListener('pointerdown', e => {
 
           const nodeIndex = findNodeAtPoint(item, world.x, world.y);
           if (nodeIndex >= 0) {
+            if (e.shiftKey) {
+              toggleNodeInSelection(state.primarySelectedItem, nodeIndex);
+              return;
+            }
+            const keepGroup =
+              !!state.selectedNode &&
+              nameEquals(state.selectedNode.itemName, state.primarySelectedItem) &&
+              getSelectedNodeIndices().includes(nodeIndex);
+            if (!keepGroup) state.selectedNodes = null;
             state.selectedNode = { itemName: state.primarySelectedItem, nodeIndex };
             if (!item.is_locked && !state.isTableLocked) {
               undoManager.beginUndo('Control point moved');
@@ -513,7 +530,9 @@ elements.canvas!.addEventListener('pointerdown', e => {
         }
       }
 
+      const nodesBefore = snapshotNodeSelection();
       state.selectedNode = null;
+      state.selectedNodes = null;
       updatePropertiesPanel();
 
       const hits = findItemsAtPoint(state.items, world.x, world.y);
@@ -522,8 +541,14 @@ elements.canvas!.addEventListener('pointerdown', e => {
         dragRect.active = true;
         dragRect.startX = dragRect.endX = world.x;
         dragRect.startY = dragRect.endY = world.y;
+        dragRectNodeItems = nodeBoxCandidateItems();
+        dragRectNodeBase = e.shiftKey ? nodesBefore : null;
         if (!e.shiftKey) {
           selectItem(null, true);
+        } else if (nodesBefore) {
+          // Shift keeps the selected points, so they stay highlighted while the box is dragged.
+          restoreNodeSelection(nodesBefore);
+          updatePropertiesPanel();
         }
         elements.canvas!.setPointerCapture(e.pointerId);
       } else {
@@ -614,14 +639,7 @@ elements.canvas!.addEventListener('pointermove', e => {
   } else if (state.draggingNode && state.selectedNode) {
     const item = getItem(state.selectedNode.itemName);
     if (item && item.drag_points && (state.nodeMoved || pastDragThreshold(e))) {
-      const pt = item.drag_points[state.selectedNode.nodeIndex];
-      if (pt.vertex) {
-        pt.vertex.x = world.x;
-        pt.vertex.y = world.y;
-      } else {
-        pt.x = world.x;
-        pt.y = world.y;
-      }
+      moveSelectedNodes(state.selectedNode.itemName, state.selectedNode.nodeIndex, world.x, world.y);
       state.nodeMoved = true;
       render();
       updatePropertiesPanel();
@@ -679,6 +697,12 @@ function getItemsInRect(rect: DragRect): string[] {
   return [...result];
 }
 
+// Items whose control points a window selection may pick. null means every visible item (the "always draw
+// control points" setting); otherwise the items that were selected, and so drawing their points, when the box started.
+let dragRectNodeItems: string[] | null = null;
+// Points that were selected when a Shift+box started; the box appends to them.
+let dragRectNodeBase: { itemName: string; indices: number[] } | null = null;
+
 async function handleCanvasPointerEnd(e: PointerEvent | MouseEvent): Promise<void> {
   if ('pointerId' in e) elements.canvas!.releasePointerCapture(e.pointerId);
   if (dragRect.active) {
@@ -692,6 +716,12 @@ async function handleCanvasPointerEnd(e: PointerEvent | MouseEvent): Promise<voi
       }
       updatePropertiesPanel();
       invokeCallback('selectionChangeCallback');
+    } else {
+      // No whole object inside the box: select the control points in it, like the original editor.
+      if (selectNodesInRect(dragRect, dragRectNodeItems, dragRectNodeBase)) {
+        updatePropertiesPanel();
+        invokeCallback('selectionChangeCallback');
+      }
     }
     dragRect.active = false;
     render();
@@ -1151,7 +1181,7 @@ document.addEventListener('keydown', async e => {
     if (state.isTableLocked) return;
 
     if (state.selectedNode) {
-      deleteNode(state.selectedNode.itemName, state.selectedNode.nodeIndex);
+      deleteSelectedNodes();
       e.preventDefault();
       return;
     }
