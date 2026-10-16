@@ -54,4 +54,17 @@ describe.skipIf(process.platform === 'win32')('vpinballSupportsOption', () => {
   it('is null when the executable cannot be run', async () => {
     expect(await vpinballSupportsOption(path.join(dir, 'missing'), '-LiveEdit')).toBeNull();
   });
+
+  it('runs the executable once per path and option', async () => {
+    const counter = path.join(dir, 'runs');
+    const file = path.join(dir, 'counted.sh');
+    await fs.writeFile(file, `#!/bin/sh\necho run >> "${counter}"\ncat <<'EOF'\n${NEW_HELP}\nEOF\n`, { mode: 0o755 });
+    expect(await vpinballSupportsOption(file, '-LiveEdit')).toBe(true);
+    expect(await vpinballSupportsOption(file, '-LiveEdit')).toBe(true);
+    expect((await fs.readFile(counter, 'utf8')).trim().split('\n')).toHaveLength(1);
+  });
+
+  it('skips the probe on Windows, where -h blocks on a message box', async () => {
+    expect(await vpinballSupportsOption(await script('win.sh', OLD_HELP), '-LiveEdit', false, 'win32')).toBeNull();
+  });
 });
