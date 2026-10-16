@@ -393,6 +393,37 @@ function zoomAtPoint(offsetX: number, offsetY: number, zoomFactor: number): void
 
 addLongPressContextMenu(elements.canvas!);
 
+function startMiddleButtonPan(e: MouseEvent): void {
+  e.preventDefault();
+  state.isDragging = true;
+  state.dragStart = { x: e.clientX - state.panX, y: e.clientY - state.panY };
+  document.getElementById('tool-select')?.classList.remove('active');
+  document.getElementById('tool-magnify')?.classList.remove('active');
+  document.getElementById('tool-pan')?.classList.add('active');
+  document.querySelectorAll('.toolbox-btn').forEach(b => b.classList.remove('creating'));
+  setCanvasCursor('grabbing');
+  try {
+    elements.canvas!.setPointerCapture('pointerId' in e ? (e as PointerEvent).pointerId : 1);
+  } catch {
+    // Capture is best effort; the pan still follows the cursor over the canvas.
+  }
+}
+
+// Some X11 setups report the left button as held during plain mouse moves, so a middle press arrives as a
+// pointermove instead of a pointerdown and the release as a pointermove instead of a pointerup. The
+// mousedown / mouseup events still fire, so the middle-button pan starts and stops from those as well.
+elements.canvas!.addEventListener('mousedown', e => {
+  if (e.button === 1 && !state.isDragging && state.tool !== 'magnify') {
+    startMiddleButtonPan(e);
+  }
+});
+
+document.addEventListener('mouseup', e => {
+  if (e.button === 1 && state.isDragging) {
+    handleCanvasPointerEnd(e);
+  }
+});
+
 elements.canvas!.addEventListener('pointerdown', e => {
   if (state.tool === 'measure' && e.button === 0) {
     const world = toWorld(e.offsetX, e.offsetY);
@@ -428,15 +459,7 @@ elements.canvas!.addEventListener('pointerdown', e => {
   }
 
   if (e.button === 1) {
-    e.preventDefault();
-    state.isDragging = true;
-    state.dragStart = { x: e.clientX - state.panX, y: e.clientY - state.panY };
-    document.getElementById('tool-select')?.classList.remove('active');
-    document.getElementById('tool-magnify')?.classList.remove('active');
-    document.getElementById('tool-pan')?.classList.add('active');
-    document.querySelectorAll('.toolbox-btn').forEach(b => b.classList.remove('creating'));
-    setCanvasCursor('grabbing');
-    elements.canvas!.setPointerCapture(e.pointerId);
+    startMiddleButtonPan(e);
     return;
   }
 
@@ -656,8 +679,8 @@ function getItemsInRect(rect: DragRect): string[] {
   return [...result];
 }
 
-async function handleCanvasPointerEnd(e: PointerEvent): Promise<void> {
-  elements.canvas!.releasePointerCapture(e.pointerId);
+async function handleCanvasPointerEnd(e: PointerEvent | MouseEvent): Promise<void> {
+  if ('pointerId' in e) elements.canvas!.releasePointerCapture(e.pointerId);
   if (dragRect.active) {
     const itemsInBox = getItemsInRect(dragRect);
     if (itemsInBox.length > 0) {
