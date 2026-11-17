@@ -106,7 +106,7 @@ jobs:
           archive: false
 
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [version]
     permissions:
       contents: read

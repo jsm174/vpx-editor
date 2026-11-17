@@ -319,6 +319,7 @@ function handleDrop(e: DragEvent, _targetId: string, baseNode: BaseTreeNode): vo
   const targetGroupName = targetNode.nodeType === 'root' ? null : targetNode.groupName!;
 
   if (itemName) {
+    if (targetGroupName === null) return;
     reassignItemToGroup(itemName, targetGroupName);
   } else if (groupName) {
     if (groupName !== targetGroupName && !isDescendantGroup(targetGroupName, groupName)) {

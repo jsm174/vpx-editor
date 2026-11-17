@@ -54,3 +54,11 @@ export function getPartGroupInsertIndex(gameitems: { file_name: string }[]): num
   }
   return lastGroupIdx + 1;
 }
+
+export const MIN_PRIMITIVE_SIDES = 3;
+export const MAX_PRIMITIVE_SIDES = 100;
+
+export function clampPrimitiveSides(sides: number): number {
+  if (!Number.isFinite(sides)) return MIN_PRIMITIVE_SIDES;
+  return Math.min(MAX_PRIMITIVE_SIDES, Math.max(MIN_PRIMITIVE_SIDES, Math.round(sides)));
+}

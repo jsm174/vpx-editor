@@ -29,6 +29,7 @@ export interface GameData {
   use_trail_for_balls?: boolean;
   user_detail_level?: number;
   override_physics?: number;
+  physic_profile?: number;
   override_physics_flipper?: boolean;
   gravity?: number;
   friction?: number;
