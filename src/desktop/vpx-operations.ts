@@ -19,6 +19,10 @@ export async function initVpinModule(): Promise<typeof import('@francisdb/vpin-w
   if (!vpinModule) {
     vpinModule = await import('@francisdb/vpin-wasm');
     await vpinModule.default();
+    vpinModule.set_log_callback((level, message) => {
+      if (level === 'error') console.error(`vpin: ${message}`);
+      else console.warn(`vpin: ${message}`);
+    });
   }
   return vpinModule;
 }

@@ -1,5 +1,6 @@
 import type { AuditFinding, GlbExportOptions, MeshIoOptions, ObjExportOptions } from '@francisdb/vpin-wasm';
 import type { VpxEngine, VpxFiles, ProgressCallback, PrimitiveMeshData } from './types.js';
+import { clampPrimitiveSides } from '../shared/gameitem-utils.js';
 
 let vpinModule: typeof import('@francisdb/vpin-wasm') | null = null;
 
@@ -11,6 +12,10 @@ export class VpinWasmEngine implements VpxEngine {
 
     vpinModule = await import('@francisdb/vpin-wasm');
     await vpinModule.default();
+    vpinModule.set_log_callback((level, message) => {
+      if (level === 'error') console.error(`vpin: ${message}`);
+      else console.warn(`vpin: ${message}`);
+    });
     this.initialized = true;
     console.log('VPin WASM engine initialized');
   }
@@ -89,7 +94,7 @@ export class VpinWasmEngine implements VpxEngine {
     if (!this.initialized || !vpinModule) {
       throw new Error('VpxEngine not initialized');
     }
-    const mesh = vpinModule.generate_builtin_primitive(sides, drawTexturesInside);
+    const mesh = vpinModule.generate_builtin_primitive(clampPrimitiveSides(sides), drawTexturesInside);
     const result: PrimitiveMeshData = {
       name: mesh.name,
       positions: mesh.positions,

@@ -98,8 +98,7 @@ export function formatFileSize(bytes: number): string {
 }
 
 export function volumeToGain(volume: number): number {
-  const normalized = (volume + 100) / 200;
-  return Math.max(0, Math.min(1, normalized));
+  return Math.max(0, Math.min(1, 1 + volume / 100));
 }
 
 export function sortSounds<
