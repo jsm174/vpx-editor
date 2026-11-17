@@ -1,5 +1,6 @@
 import { restoreFileChanges } from './mcp/file-transaction.js';
 import type { FileChange } from '../shared/file-changes.js';
+import { clampPrimitiveSides } from '../shared/gameitem-utils.js';
 import { app, BrowserWindow, Menu, dialog, ipcMain, shell, nativeTheme } from 'electron';
 import path from 'node:path';
 import fs from 'fs-extra';
@@ -563,7 +564,7 @@ ipcMain.handle('obj-to-mesh', async (_event, filePath: string) => {
 ipcMain.handle('generate-builtin-primitive', async (_event, sides: number, drawTexturesInside: boolean) => {
   try {
     const vpin = await vpxOps.initVpinModule();
-    const mesh = vpin.generate_builtin_primitive(sides, drawTexturesInside);
+    const mesh = vpin.generate_builtin_primitive(clampPrimitiveSides(sides), drawTexturesInside);
     const result = {
       success: true,
       mesh: {

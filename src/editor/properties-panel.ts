@@ -9,7 +9,7 @@ import {
   setItem,
   deleteItem,
 } from './state.js';
-import { generateUniqueFileName } from '../shared/gameitem-utils.js';
+import { clampPrimitiveSides, generateUniqueFileName } from '../shared/gameitem-utils.js';
 import { getDragPointCoords } from '../types/game-objects.js';
 import { VIEW_MODE_3D } from '../shared/constants.js';
 import { convertFromUnit, convertToUnit, getUnitSuffixHtml, hexToColorref } from './utils.js';
@@ -95,6 +95,12 @@ function isLightSeqCenterInBounds(prop: 'pos_x' | 'pos_y', value: number): boole
 
 function sanitizeFriction(value: number): number {
   return Number.isNaN(value) || value < 0 ? 0 : value;
+}
+
+function applyInputClamp(input: { value: string }, value: number, clamp: (value: number) => number): number {
+  const clamped = clamp(value);
+  if (clamped !== value) input.value = String(clamped);
+  return clamped;
 }
 
 function isPositionProp(prop: string): boolean {
@@ -301,6 +307,13 @@ function tableProperties(gamedata: GameData): string {
         <div class="prop-row">
           <label class="prop-label">Default Elements Scatter</label>
           <input type="number" class="prop-input" data-prop="default_scatter" value="${(gamedata.default_scatter ?? 0).toFixed(2)}" step="0.5">
+        </div>
+        <div class="prop-row">
+          <label class="prop-label">Physics Profile</label>
+          <select class="prop-select" data-prop="physic_profile">
+            <option value="0"${(gamedata.physic_profile ?? 0) !== 1 ? ' selected' : ''}>10.8</option>
+            <option value="1"${gamedata.physic_profile === 1 ? ' selected' : ''}>10.9</option>
+          </select>
         </div>
         <div class="prop-row">
           <label class="prop-label">Overwrite by Global Set</label>
@@ -686,7 +699,7 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
           value = target.value;
         } else {
           value = parseFloat(target.value);
-          if (prop === 'friction') value = sanitizeFriction(value);
+          if (prop === 'friction') value = applyInputClamp(target, value, sanitizeFriction);
           if ('convertUnits' in target.dataset) {
             value = convertFromUnit(value);
           }
@@ -843,13 +856,14 @@ export function updatePropertiesPanel(resetTab: boolean = false): void {
           }
         } else {
           value = parseFloat(target.value);
-          if (prop === 'friction') value = sanitizeFriction(value);
+          if (prop === 'friction') value = applyInputClamp(target, value, sanitizeFriction);
           if ('convertUnits' in (target as HTMLInputElement).dataset) {
             value = convertFromUnit(value);
           }
           if ((target as HTMLInputElement).dataset.type === 'int') {
             value = Math.round(value);
           }
+          if (prop === 'sides') value = applyInputClamp(target, value, clampPrimitiveSides);
         }
         if ((target as HTMLInputElement).type === 'color') {
           applyColorGradient(target as HTMLInputElement);
@@ -1237,12 +1251,16 @@ function setupTablePropertyHandlers(): void {
           }
         } else if (target.tagName === 'SELECT') {
           value = target.value;
-          if (prop === 'override_physics' || (prop === 'tone_mapper' && /^\d+$/.test(target.value))) {
+          if (
+            prop === 'override_physics' ||
+            prop === 'physic_profile' ||
+            (prop === 'tone_mapper' && /^\d+$/.test(target.value))
+          ) {
             value = parseInt(target.value);
           }
         } else {
           value = parseFloat(target.value);
-          if (prop === 'friction') value = sanitizeFriction(value);
+          if (prop === 'friction') value = applyInputClamp(target, value, sanitizeFriction);
           if ('convertUnits' in (target as HTMLInputElement).dataset) {
             value = convertFromUnit(value);
           } else if (prop === 'playfield_reflection_strength') {
@@ -1456,7 +1474,7 @@ function setupBackglassPropertyHandlers(): void {
           value = target.value;
         } else {
           value = parseFloat(target.value);
-          if (prop === 'friction') value = sanitizeFriction(value);
+          if (prop === 'friction') value = applyInputClamp(target, value, sanitizeFriction);
         }
 
         undoManager.beginUndo(`Backglass ${prop} updated`);
@@ -1644,7 +1662,7 @@ function setupPartGroupPropertyHandlers(groupName: string): void {
           value = target.value;
         } else {
           value = parseFloat(target.value);
-          if (prop === 'friction') value = sanitizeFriction(value);
+          if (prop === 'friction') value = applyInputClamp(target, value, sanitizeFriction);
           if (isNaN(value)) value = target.value;
         }
 

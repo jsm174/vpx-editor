@@ -16,6 +16,7 @@ import {
   type ObjExchangeOptions,
 } from '../shared/obj-transform.js';
 import { UNIT_CONVERSION_M, UNIT_CONVERSION_VPU } from '../shared/constants.js';
+import { clampPrimitiveSides } from '../shared/gameitem-utils.js';
 
 type Vpin = typeof import('@francisdb/vpin-wasm');
 
@@ -150,7 +151,7 @@ export async function buildPrimitiveObjExport(
     const itemData = JSON.parse(await fs.promises.readFile(path.join(extractedDir, primitiveFileName), 'utf-8'));
     const prim = itemData.Primitive;
     if (!prim || prim.use_3d_mesh) return null;
-    const mesh = vpin.generate_builtin_primitive(prim.sides ?? 4, !!prim.draw_textures_inside);
+    const mesh = vpin.generate_builtin_primitive(clampPrimitiveSides(prim.sides ?? 4), !!prim.draw_textures_inside);
     const objBytes = vpin.mesh_to_obj(
       prim.name || 'primitive',
       mesh.positions,

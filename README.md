@@ -18,7 +18,7 @@ This project was initially created with the assistance of Claude AI.
 > **Always make a backup of your VPX files before editing!** This editor is in early development and is bound to have bugs.
 
 > [!NOTE]
-> This editor converts tables to use **Part Groups** instead of Layers, a new feature introduced in VPX 10.8.1. Tables saved with this editor require **VPinball 10.8.1 or later** to run.
+> This editor converts tables to use **Part Groups** instead of Layers, a new feature introduced in VPX 10.9.0. Tables saved with this editor require **VPinball 10.9.0 or later** to run.
 
 ## Features
 
@@ -130,7 +130,7 @@ Blender-style navigation:
 
 Download the latest release for your platform from the [Releases](https://github.com/vpinball/vpx-editor/releases) page.
 
-- **VPinball 10.8.1+** - Required only for playing tables from the editor
+- **VPinball 10.9.0+** - Required only for playing tables from the editor
 
 ## Development
 
